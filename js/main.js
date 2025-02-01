@@ -1,11 +1,11 @@
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: document.documentElement.clientWidth,
+    height: document.documentElement.clientHeight,
     scene: [HomeScene, GameScene],
     scale: {
-        mode: Phaser.Scale.RESIZE,  // 画面サイズに合わせる
-        autoCenter: Phaser.Scale.CENTER_BOTH // 中央揃え
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.CENTER_BOTH
     }
 };
 
