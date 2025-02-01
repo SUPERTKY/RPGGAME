@@ -1,7 +1,7 @@
 class HomeScene extends Phaser.Scene {
     constructor() {
         super({ key: "HomeScene" });
-        this.firstClick = false; // 初回クリックを管理
+        this.firstClick = false; // 最初のクリック管理
     }
 
     preload() {
@@ -14,31 +14,40 @@ class HomeScene extends Phaser.Scene {
         let bg = this.add.image(0, 0, "background").setOrigin(0, 0);
         bg.setDisplaySize(this.scale.width, this.scale.height);
 
+        // 🎵 BGMの準備
+        this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
+
+        // **ボタンの設定（最初は無効）**
         let button = this.add.image(this.scale.width / 2, this.scale.height / 2, "startButton").setScale(0.5);
-        button.setInteractive();
+        button.setInteractive(false); // 初回は押せない
 
         this.add.text(this.scale.width / 2 - 100, 100, "My Phaser Game", {
             fontSize: "40px",
             fill: "#ffffff"
         });
 
-        // 🎵 BGMの準備
-        this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
-
-        // **ボタンのクリック処理**
-        button.on("pointerdown", () => {
+        // **最初のクリック処理（画面のどこでも反応）**
+        this.input.once("pointerdown", () => {
             if (!this.firstClick) {
-                // **最初のクリック: BGMを再生するだけ**
+                // **BGM再生**
                 if (!this.bgm.isPlaying) {
                     this.bgm.play();
                 }
-                this.firstClick = true; // 次からはシーン遷移ができる
-                console.log("BGM開始 - もう一度押すとゲーム開始");
-            } else {
-                // **2回目以降のクリック: ゲームシーンに移動**
+
+                // **ボタンを有効化**
+                button.setInteractive(true);
+                this.firstClick = true;
+                console.log("BGM開始 - 次のクリックでゲーム開始");
+            }
+        });
+
+        // **ボタンのクリック処理（2回目以降）**
+        button.on("pointerdown", () => {
+            if (this.firstClick) {
                 this.scene.start("GameScene");
                 console.log("ゲーム開始！");
             }
         });
     }
 }
+
