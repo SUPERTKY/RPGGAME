@@ -12,7 +12,11 @@ class GameScene extends Phaser.Scene {
     create() {
         // 🔵 **前のシーンの残像を消す**
         this.cameras.main.setBackgroundColor("#000000");
-        this.scene.restart(); // **前の画像を確実にクリア**
+        // this.scene.restart(); の代わりに以下のコードに変更
+this.events.once("shutdown", () => {
+    this.sound.stopAll(); // すべての音を止める
+});
+
 
         // 🎨 **背景画像を配置し、全画面スケール**
         let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background");
