@@ -4,26 +4,22 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("background", "assets/村.png"); // 🎨 新しい背景
+        this.load.image("background2", "assets/村.png"); // 🎨 **背景をバックグラウンド2に変更**
         this.load.image("matchingButton", "assets/MATCHINGBUTTON.png"); // 🔘 マッチングボタン
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 🎵 新しいBGM
     }
 
     create() {
-        // 🔵 **前のシーンの背景を完全にリセット**
+        // 🔵 **前のシーンの残像を消す**
         this.cameras.main.setBackgroundColor("#000000");
-        this.children.removeAll(); // **すべてのオブジェクトを削除**
+        this.children.removeAll(); // **前のオブジェクトをクリア**
 
-        // 🎨 **背景画像を中央配置＆画面いっぱいに拡大**
-        if (!this.textures.exists("background")) {
-            console.error("背景画像がロードされていません！");
-        }
-
-        let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background");
+        // 🎨 **背景を "バックグラウンド2" に設定**
+        let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
         let scaleX = this.scale.width / bg.width;
         let scaleY = this.scale.height / bg.height;
         let scale = Math.max(scaleX, scaleY);
-        bg.setScale(scale).setScrollFactor(0).setDepth(-5); // **背景を確実に最背面へ**
+        bg.setScale(scale).setScrollFactor(0).setDepth(-5); // **最背面に配置**
 
         // 📜 **タイトルテキスト**
         this.add.text(this.scale.width / 2, 100, "ゲーム画面", {
@@ -37,12 +33,10 @@ class GameScene extends Phaser.Scene {
             .setDepth(2)
             .setScale(0.5);
 
-        // 🎵 **前のBGMを停止**
+        // 🎵 **BGMをセット**
         if (this.sound.get("bgm")) {
             this.sound.stopByKey("bgm");
         }
-
-        // 🎵 **新しいBGMを再生**
         if (!this.sound.get("newBgm")) {
             this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
             this.newBgm.play();
@@ -82,4 +76,5 @@ class GameScene extends Phaser.Scene {
             .setDepth(3); // **最前面に配置**
     }
 }
+
 
