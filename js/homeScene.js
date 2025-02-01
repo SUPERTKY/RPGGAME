@@ -14,9 +14,13 @@ class HomeScene extends Phaser.Scene {
         let bg = this.add.image(0, 0, "background").setOrigin(0, 0);
         bg.setDisplaySize(this.scale.width, this.scale.height);
 
-        // **ボタンの設定（初回クリック時は無効）**
+        // 🎵 BGMの準備
+        this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
+
+        // **ボタンの設定（最初は無効）**
         let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.4);
-        button.setInteractive(false); // 初回は押せない
+        button.setInteractive(); // ここでは無効にしない（エラーの原因を回避）
+        button.setVisible(false); // 最初は非表示
         button.setDepth(2);
 
         // **袋文字のテキスト（中央配置）**
@@ -29,18 +33,16 @@ class HomeScene extends Phaser.Scene {
             align: "center"
         }).setOrigin(0.5, 0.5).setDepth(2);
 
-        // **クリックエリア（画面全体をクリック可能に）**
-        this.input.once("pointerdown", () => {
-            console.log("画面がクリックされた - BGM再生");
+        // **1回目のクリックでBGM再生 & ボタン表示**
+        this.input.once("pointerdown", (pointer) => {
+            console.log(`画面がクリックされた: x=${pointer.x}, y=${pointer.y}`);
 
-            // **BGMが再生されていなければ流す**
-            if (!this.bgm.isPlaying) {
-                this.bgm.play();
+            if (!this.firstClick) {
+                console.log("BGM再生開始");
+                this.bgm.play(); // BGM再生
+                button.setVisible(true); // ボタンを表示
+                this.firstClick = true;
             }
-
-            // **ボタンを有効化**
-            button.setInteractive();
-            this.firstClick = true;
         });
 
         // **ボタンのクリック処理（2回目以降）**
@@ -57,4 +59,3 @@ class HomeScene extends Phaser.Scene {
         });
     }
 }
-
