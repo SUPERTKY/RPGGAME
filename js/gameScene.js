@@ -9,13 +9,18 @@ class GameScene extends Phaser.Scene {
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 新しいBGMをロード
     }
 
-       create() {
-        // **背景をウィンドウサイズにフィットさせる**
+         create() {
+        // **前のシーンの画像を防ぐため、背景色を黒に設定**
+        this.cameras.main.setBackgroundColor("#000000");
+
+        // **背景画像を中央配置し、画面いっぱいに拡大**
         let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background");
         let scaleX = this.scale.width / bg.width;
         let scaleY = this.scale.height / bg.height;
         let scale = Math.max(scaleX, scaleY); // 画面を埋めるようにスケールを決定
-        bg.setScale(scale).setScrollFactor(0);
+        bg.setScale(scale).setScrollFactor(0).setDepth(-1); // **常に最背面にする**
+
+        bg.setInteractive(); // **背景をクリック可能にする**
 
         bg.setInteractive(); // **背景をクリック可能にする**
         // 🔵 背景画像の追加
