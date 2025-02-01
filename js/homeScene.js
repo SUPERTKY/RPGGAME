@@ -6,7 +6,7 @@ class HomeScene extends Phaser.Scene {
     preload() {
         this.load.image("background", "assets/background.png");
         this.load.image("startButton", "assets/startButton.png");
-        this.load.audio("bgm", "assets/bgm.mp3"); // 🎵 音楽をロード
+        this.load.audio("bgm", "assets/Old_FortThe_sun_goes_down.mp3"); // 🎵 音楽をロード
     }
 
     create() {
