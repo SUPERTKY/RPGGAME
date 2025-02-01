@@ -4,8 +4,8 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("player", "assets/player.png");
-        this.load.audio("newBgm", "assets/newBgm.mp3"); // 新しいBGMをロード
+        this.load.image("player", "assets/MACHINGBUTTON.png");
+        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 新しいBGMをロード
     }
 
     create() {
