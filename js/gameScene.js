@@ -3,7 +3,7 @@ class GameScene extends Phaser.Scene {
         super({ key: "GameScene", dom: { createContainer: true } });
 
         // 🎯 バージョン情報
-        this.version = "1.0.4"; // 🔹 バージョンアップ
+        this.version = "1.0.5"; // 🔹 バージョンアップ
     }
 
     preload() {
