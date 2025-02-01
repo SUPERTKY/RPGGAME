@@ -5,26 +5,24 @@ class HomeScene extends Phaser.Scene {
 
     preload() {
         this.load.image("background", "assets/background.png");
-        this.load.image("startButton", "assets/startButton.png"); 
+        this.load.image("startButton", "assets/startButton.png");
     }
-create() {
-    let bg = this.add.image(0, 0, "background");
-    bg.setOrigin(0, 0); 
-    bg.setDisplaySize(this.scale.width + 5, this.scale.height + 5); // 少し大きめに
-}
 
     create() {
-        this.add.image(400, 300, "background");
+        // 背景画像を全画面に設定
+        let bg = this.add.image(0, 0, "background");
+        bg.setOrigin(0, 0);
+        bg.setDisplaySize(this.scale.width + 5, this.scale.height + 5); // 右端対策
 
-        let button = this.add.image(400, 400, "startButton").setScale(0.5);
+        // スタートボタン
+        let button = this.add.image(this.scale.width / 2, this.scale.height / 2, "startButton").setScale(0.5);
         button.setInteractive();
-
-        // ボタンをクリックでGameSceneに移動
         button.on("pointerdown", () => {
             this.scene.start("GameScene");
         });
 
-        this.add.text(250, 100, "RPGGAME", {
+        // タイトルテキスト
+        this.add.text(this.scale.width / 2 - 100, 100, "RPGGAME", {
             fontSize: "40px",
             fill: "#ffffff"
         });
