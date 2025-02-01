@@ -25,7 +25,7 @@ class HomeScene extends Phaser.Scene {
         button.setDepth(2); // Z軸中央
 
         // **袋文字のテキスト（中央配置）**
-        let text = this.add.text(this.scale.width / 2, this.scale.height / 2, "勇者達の謎すぎる戦い", {
+        let text = this.add.text(this.scale.width / 2, this.scale.height / 2, "勇者達の無意味すぎる戦い", {
             fontSize: "64px", // 文字を大きく
             fill: "#ffffff", // 文字の色
             stroke: "#000000", // 袋文字の色（黒）
