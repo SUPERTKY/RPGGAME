@@ -2,7 +2,7 @@ const config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
     height: window.innerHeight,
-    scene: [IntroScene, HomeScene, GameScene], // ⚡ 必ず `IntroScene` から開始
+    scene: [IntroScene, HomeScene, GameScene], // 🎮 必ず `IntroScene` から開始
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
@@ -14,8 +14,6 @@ const config = {
 
 const game = new Phaser.Game(config);
 
-// ⚠️ 明示的に `IntroScene` をスタート
-game.scene.start("IntroScene");
 
 
 
