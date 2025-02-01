@@ -79,11 +79,11 @@ class GameScene extends Phaser.Scene {
         input.style.opacity = "1";
         input.style.display = "block";
 
-        this.inputBox = this.add.dom(this.scale.width / 2, 200, input)
-            .setOrigin(0.5, 0.5)
-            .setDepth(3)
-            .setVisible(true);
-        
+this.inputBox = this.add.dom(this.scale.width / 2, 200, input)
+    .setOrigin(0.5, 0.5)
+    .setDepth(9999) // 💡 優先度を最大に
+    .setVisible(true);
+
         console.log("inputBox DOM要素をシーンに追加", this.inputBox);
     }
 }
