@@ -1,32 +1,25 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <style>
-    html, body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background-color: black;
-    }
-</style>
-
-    <style>
-    body {
-        margin: 0;
-        overflow: hidden; /* スクロールバーを非表示 */
-    }
-    canvas {
-        display: block;
-        width: 100vw; /* ビューポート幅 */
-        height: 100vh; /* ビューポート高さ */
-    }
-</style>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phaser 2Dゲーム</title>
+    <title>Phaser.js 2Dゲーム</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* スクロールバー防止 */
+            background-color: black;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
 </head>
 <body>
     <script src="js/homeScene.js"></script>
@@ -34,3 +27,4 @@
     <script src="js/main.js"></script>
 </body>
 </html>
+
