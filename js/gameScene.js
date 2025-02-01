@@ -1,7 +1,8 @@
 class GameScene extends Phaser.Scene {
-    constructor() {
-        super({ key: "GameScene" });
-    }
+constructor() {
+    super({ key: "GameScene", dom: { createContainer: true } });
+}
+
 
     preload() {
         this.load.image("background2", "assets/村.png"); // 🎨 **背景をバックグラウンド2に変更**
