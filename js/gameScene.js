@@ -4,7 +4,7 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("background", "assets/background.png"); // 背景画像をロード
+        this.load.image("background", "assets/村.png"); // 背景画像をロード
         this.load.image("player", "assets/MATCHINGBUTTON.png"); // マッチングボタン用画像
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 新しいBGMをロード
     }
