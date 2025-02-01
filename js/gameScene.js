@@ -14,5 +14,8 @@ class GameScene extends Phaser.Scene {
         });
 
         this.player = this.add.image(400, 300, "player");
+
+        // ホーム画面のBGMを停止しない
+        this.sound.stopByKey("bgm"); // 🔴 もし止めたければこれを有効化
     }
 }
