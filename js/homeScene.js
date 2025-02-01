@@ -21,7 +21,7 @@ class HomeScene extends Phaser.Scene {
         // **ボタンの設定（最初は押せないが、表示されている）**
         let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.4);
         button.setInteractive(); // **最初からインタラクティブにするが…**
-        button.setAlpha(0.5); // **最初は半透明にして押せない状態を視覚化**
+        button.setAlpha(1); // **最初は半透明にして押せない状態を視覚化**
         button.setDepth(2); // Z軸中央
 
         // **袋文字のテキスト（中央配置）**
