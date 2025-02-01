@@ -27,18 +27,13 @@ class HomeScene extends Phaser.Scene {
             fontSize: "32px",
             fill: "#ffffff", // 文字の色
             stroke: "#000000", // 袋文字の色（黒）
-            strokeThickness: 8, // 枠の太さ（太くしてはっきり見えるように）
+            strokeThickness: 8, // 枠の太さ
             fontStyle: "bold",
             align: "center"
         }).setOrigin(0.5, 0.5).setDepth(2); // 完全中央配置
 
-        // **透明のクリックエリアを作成**
-        let clickableArea = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x000000, 0);
-        clickableArea.setOrigin(0.5, 0.5);
-        clickableArea.setInteractive();
-
-        // **クリックイベントを正しく機能させる**
-        clickableArea.once("pointerdown", () => {
+        // **クリックを確実に機能させる（透明エリアを削除し、Phaserのネイティブイベントを使用）**
+        this.input.once("pointerdown", () => {
             console.log("画面がクリックされた - BGM再生");
 
             // **BGMが再生されていなければ流す**
@@ -60,3 +55,4 @@ class HomeScene extends Phaser.Scene {
         });
     }
 }
+
