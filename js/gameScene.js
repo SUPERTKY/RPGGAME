@@ -5,7 +5,7 @@ class GameScene extends Phaser.Scene {
 
     preload() {
         this.load.image("player", "assets/MACHINGBUTTON.png");
-        this.load.audio("newBgm", "assets/ピエロは暗闇で踊る.mp3"); // 新しいBGMをロード
+        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 新しいBGMをロード
     }
 
     create() {
