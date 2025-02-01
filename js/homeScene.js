@@ -10,9 +10,9 @@ class HomeScene extends Phaser.Scene {
 
     create() {
         // 背景画像を全画面に設定
-        let bg = this.add.image(0, 0, "background");
-        bg.setOrigin(0, 0);
-        bg.setDisplaySize(this.scale.width + 5, this.scale.height + 5); // 右端対策
+let bg = this.add.image(0, 0, "background");
+    bg.setOrigin(0, 0); 
+    bg.setDisplaySize(this.scale.width + 10, this.scale.height); // 右端に余裕を持たせる
 
         // スタートボタン
         let button = this.add.image(this.scale.width / 2, this.scale.height / 2, "startButton").setScale(0.5);
