@@ -18,22 +18,27 @@ class HomeScene extends Phaser.Scene {
         this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
 
         // **ボタンの設定（最初は無効）**
-        let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.35);
+        let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.3);
         button.setInteractive(false); // 初回は押せない
         button.setDepth(2); // Z軸中央
 
-        // **袋文字のテキスト（完全に中央配置）**
+        // **袋文字のテキスト（フォントサイズを大きく＆完全中央）**
         let text = this.add.text(this.scale.width / 2, this.scale.height / 2, "My Phaser Game", {
-            fontSize: "32px",
+            fontSize: "64px", // 文字を大きく
             fill: "#ffffff", // 文字の色
             stroke: "#000000", // 袋文字の色（黒）
-            strokeThickness: 8, // 枠の太さ
+            strokeThickness: 10, // 枠の太さ（大きくしてはっきり見えるように）
             fontStyle: "bold",
             align: "center"
         }).setOrigin(0.5, 0.5).setDepth(2); // 完全中央配置
 
-        // **クリックを確実に機能させる（透明エリアを削除し、Phaserのネイティブイベントを使用）**
-        this.input.once("pointerdown", () => {
+        // **透明のクリックエリア（再導入・バグ解決用）**
+        let clickableArea = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x000000, 0);
+        clickableArea.setOrigin(0.5, 0.5);
+        clickableArea.setInteractive();
+
+        // **クリックイベント（どこでもクリック可能）**
+        clickableArea.once("pointerdown", () => {
             console.log("画面がクリックされた - BGM再生");
 
             // **BGMが再生されていなければ流す**
@@ -52,6 +57,11 @@ class HomeScene extends Phaser.Scene {
                 console.log("ボタンが押された - ゲーム開始");
                 this.scene.start("GameScene");
             }
+        });
+
+        // **デバッグ用：どこをクリックしたかを確認**
+        this.input.on("pointerdown", (pointer) => {
+            console.log(`クリック位置: x=${pointer.x}, y=${pointer.y}`);
         });
     }
 }
