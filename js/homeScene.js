@@ -29,7 +29,10 @@ class HomeScene extends Phaser.Scene {
 
         // 🎵 BGM 再生（ループ付き）
         this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
-        this.bgm.play();
+        this.input.once("pointerdown", () => {
+    this.bgm.play();
+});
+
     }
 }
 
