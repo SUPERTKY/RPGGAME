@@ -20,8 +20,9 @@ class HomeScene extends Phaser.Scene {
         // **ボタンの設定（最初は無効）**
         let button = this.add.image(this.scale.width / 2, this.scale.height * 0.7, "startButton").setScale(0.5);
         button.setInteractive(false); // 初回は押せない
+        button.setDepth(2); // Z軸中央
 
-        // **袋文字のテキスト**
+        // **袋文字のテキスト（中央配置）**
         let text = this.add.text(this.scale.width / 2, this.scale.height * 0.2, "My Phaser Game", {
             fontSize: "40px",
             fill: "#ffffff", // 文字の色
@@ -29,9 +30,9 @@ class HomeScene extends Phaser.Scene {
             strokeThickness: 8, // 枠の太さ
             fontStyle: "bold",
             align: "center"
-        }).setOrigin(0.5);
+        }).setOrigin(0.5).setDepth(2); // Z軸中央
 
-        // **最初のクリック処理（画面のどこでも反応）**
+        // **クリックイベント（画面のどこでも有効）**
         this.input.once("pointerdown", () => {
             if (!this.firstClick) {
                 // **BGM再生**
@@ -55,5 +56,4 @@ class HomeScene extends Phaser.Scene {
         });
     }
 }
-
 
