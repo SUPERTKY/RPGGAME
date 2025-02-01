@@ -45,7 +45,7 @@ class GameScene extends Phaser.Scene {
             console.log(`🎮 [GameScene v${this.version}] マッチングボタン（画像）が押されました`);
         });
 
-        document.querySelector("canvas").style.overflow = "visible";
+        
 
         console.log(`✅ [GameScene v${this.version}] create 完了`);
     }
