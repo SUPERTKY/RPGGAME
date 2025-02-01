@@ -71,35 +71,36 @@ class GameScene extends Phaser.Scene {
     }
 
     createFramedInputBox() {
-        console.log(`🛠 [GameScene v${this.version}] createFramedInputBox 実行開始`);
+    console.log(`🛠 [GameScene v${this.version}] createFramedInputBox 実行開始`);
 
-        if (this.inputBox) {
-            console.log(`🛠 [GameScene v${this.version}] 既存のテキストボックスを削除`);
-            this.inputBox.destroy();
-        }
-
-        const input = document.createElement("input");
-        input.type = "text";
-        input.placeholder = "暗証番号を入力";
-        input.style.fontSize = "20px";
-        input.style.width = "200px";
-        input.style.padding = "10px";
-        input.style.textAlign = "center";
-        input.style.border = "5px solid red";
-        input.style.borderRadius = "10px";
-        input.style.background = "yellow";
-        input.style.boxShadow = "0px 4px 8px rgba(0, 0, 0, 0.3)";
-        input.style.position = "relative";
-        input.style.zIndex = "99999";
-        input.style.pointerEvents = "auto";
-        input.style.display = "block";
-        input.style.opacity = "1";
-
-        this.inputBox = this.add.dom(this.scale.width / 2, 200, input)
-            .setOrigin(0.5, 0.5)
-            .setDepth(9999)
-            .setVisible(true);
-
-        console.log(`✅ [GameScene v${this.version}] inputBox DOM要素をシーンに追加`, this.inputBox);
+    if (this.inputBox) {
+        console.log(`🛠 [GameScene v${this.version}] 既存のテキストボックスを削除`);
+        this.inputBox.destroy();
     }
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "暗証番号を入力";
+    input.style.fontSize = "20px";
+    input.style.width = "200px";
+    input.style.padding = "10px";
+    input.style.textAlign = "center";
+    input.style.border = "5px solid red";
+    input.style.borderRadius = "10px";
+    input.style.background = "yellow";
+    input.style.boxShadow = "0px 4px 8px rgba(0, 0, 0, 0.3)";
+    input.style.position = "absolute"; // ← 修正
+    input.style.zIndex = "1000"; // ← 修正
+    input.style.pointerEvents = "auto";
+    input.style.display = "block";
+    input.style.opacity = "1";
+
+    this.inputBox = this.add.dom(this.scale.width / 2, 200, input)
+        .setOrigin(0.5, 0.5)
+        .setDepth(1000) // ← 修正
+        .setVisible(true);
+
+    console.log(`✅ [GameScene v${this.version}] inputBox DOM要素をシーンに追加`, this.inputBox);
+}
+
 }
