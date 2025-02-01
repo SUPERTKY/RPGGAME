@@ -2,8 +2,8 @@ class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: "GameScene", dom: { createContainer: true } });
 
-        // 🎯 現在のバージョン情報をデバッグログに追加
-        this.version = "1.0.3"; // ⬅️ ここを変更してバージョン管理
+        // 🎯 バージョン情報
+        this.version = "1.0.4"; // 🔹 バージョンアップ
         console.log(`🛠 [GameScene] バージョン: ${this.version}`);
     }
 
@@ -11,7 +11,7 @@ class GameScene extends Phaser.Scene {
         console.log(`🛠 [GameScene v${this.version}] preload 開始`);
         this.load.image("background2", "assets/村.png");
         this.load.image("matchingButton", "assets/MATCHINGBUTTON.png");
-        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
+        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 🎵 新しいBGMをロード
         console.log(`🛠 [GameScene v${this.version}] preload 完了`);
     }
 
@@ -32,6 +32,9 @@ class GameScene extends Phaser.Scene {
             .setDepth(2)
             .setScale(0.5);
 
+        // 🎵 **BGMを完全にリセット**
+        this.resetBgm();
+
         console.log(`🛠 [GameScene v${this.version}] テキストボックス作成予定...`);
         setTimeout(() => {
             console.log(`🛠 [GameScene v${this.version}] テキストボックスを作成`);
@@ -45,6 +48,26 @@ class GameScene extends Phaser.Scene {
         document.querySelector("canvas").style.overflow = "visible";
 
         console.log(`✅ [GameScene v${this.version}] create 完了`);
+    }
+
+    resetBgm() {
+        console.log("🎵 BGMリセット開始");
+
+        // **古いBGMを停止・削除**
+        if (this.newBgm) {
+            console.log("🎵 既存の新BGMを停止・削除");
+            this.newBgm.stop();
+            this.newBgm.destroy();
+        }
+
+        console.log("🎵 すべてのBGMを停止");
+        this.sound.stopAll();
+
+        console.log("🎵 新BGMをロード");
+        this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
+
+        console.log("🎵 新BGMを再生");
+        this.newBgm.play();
     }
 
     createFramedInputBox() {
@@ -80,4 +103,3 @@ class GameScene extends Phaser.Scene {
         console.log(`✅ [GameScene v${this.version}] inputBox DOM要素をシーンに追加`, this.inputBox);
     }
 }
-
