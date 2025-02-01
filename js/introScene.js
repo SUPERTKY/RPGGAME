@@ -4,18 +4,21 @@ class IntroScene extends Phaser.Scene {
     }
 
     create() {
-        // 背景を白にする
+        // ⚡ 確実に背景を白にする
         this.cameras.main.setBackgroundColor("#ffffff");
 
-        // 「クリックして開始」を中央に表示
+        // 「クリックして開始」のテキストを中央に表示
         let text = this.add.text(this.scale.width / 2, this.scale.height / 2, "クリックして開始", {
             fontSize: "32px",
             fill: "#000000",
             fontFamily: "Arial"
         }).setOrigin(0.5);
 
+        console.log("IntroScene が実行された！"); // ✅ デバッグ用メッセージ
+
         // クリックで「HomeScene」に遷移
         this.input.once("pointerdown", () => {
+            console.log("クリックされた -> HomeSceneへ移動");
             this.scene.start("HomeScene");
         });
     }
