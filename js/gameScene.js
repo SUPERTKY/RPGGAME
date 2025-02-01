@@ -94,6 +94,10 @@ class GameScene extends Phaser.Scene {
     input.style.pointerEvents = "auto";
     input.style.display = "block";
     input.style.opacity = "1";
+        this.inputBox.setScale(1);
+this.inputBox.setSize(200, 40);
+this.inputBox.setVisible(true);
+
 
     this.inputBox = this.add.dom(this.scale.width / 2, 200, input)
         .setOrigin(0.5, 0.5)
