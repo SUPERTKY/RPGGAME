@@ -4,36 +4,31 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("background2", "assets/村.png"); // 🎨 **背景をバックグラウンド2に変更**
+        this.load.image("background2", "assets/村.png"); // 🎨 背景画像
         this.load.image("matchingButton", "assets/MATCHINGBUTTON.png"); // 🔘 マッチングボタン
-        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 🎵 新しいBGM
+        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 🎵 BGM
     }
 
     create() {
-        // 🔵 **前のシーンの残像を消す**
         this.cameras.main.setBackgroundColor("#000000");
-        this.children.removeAll(); // **前のオブジェクトをクリア**
+        this.children.removeAll();
 
-        // 🎨 **背景を "バックグラウンド2" に設定**
         let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
         let scaleX = this.scale.width / bg.width;
         let scaleY = this.scale.height / bg.height;
         let scale = Math.max(scaleX, scaleY);
-        bg.setScale(scale).setScrollFactor(0).setDepth(-5); // **最背面に配置**
+        bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-        // 📜 **タイトルテキスト**
         this.add.text(this.scale.width / 2, 100, "ゲーム画面", {
             fontSize: "40px",
             fill: "#ffffff"
         }).setOrigin(0.5, 0.5).setDepth(1);
 
-        // 🔘 **マッチングボタン**
         this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
             .setInteractive()
             .setDepth(2)
             .setScale(0.5);
 
-        // 🎵 **BGMをセット**
         if (this.sound.get("bgm")) {
             this.sound.stopByKey("bgm");
         }
@@ -42,10 +37,8 @@ class GameScene extends Phaser.Scene {
             this.newBgm.play();
         }
 
-        // 📌 **テキストボックスを追加**
         this.createFramedInputBox();
 
-        // 🔘 **マッチングボタンのクリック処理**
         this.matchingButton.on("pointerdown", () => {
             console.log("マッチングボタン（画像）が押されました");
         });
@@ -53,7 +46,7 @@ class GameScene extends Phaser.Scene {
 
     createFramedInputBox() {
         if (this.inputBox) {
-            this.inputBox.destroy(); // **既存のDOM要素を削除**
+            this.inputBox.destroy();
         }
 
         const input = document.createElement("input");
@@ -73,6 +66,6 @@ class GameScene extends Phaser.Scene {
 
         this.inputBox = this.add.dom(this.scale.width / 2, 200, input)
             .setOrigin(0.5, 0.5)
-            .setDepth(3); // **最前面に配置**
+            .setDepth(3);
     }
 }
