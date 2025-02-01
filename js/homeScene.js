@@ -7,6 +7,11 @@ class HomeScene extends Phaser.Scene {
         this.load.image("background", "assets/background.png");
         this.load.image("startButton", "assets/startButton.png"); 
     }
+create() {
+    let bg = this.add.image(0, 0, "background");
+    bg.setOrigin(0, 0); 
+    bg.setDisplaySize(this.scale.width + 5, this.scale.height + 5); // 少し大きめに
+}
 
     create() {
         this.add.image(400, 300, "background");
@@ -19,7 +24,7 @@ class HomeScene extends Phaser.Scene {
             this.scene.start("GameScene");
         });
 
-        this.add.text(250, 100, "My Phaser Game", {
+        this.add.text(250, 100, "RPGGAME", {
             fontSize: "40px",
             fill: "#ffffff"
         });
