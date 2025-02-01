@@ -18,11 +18,10 @@ class HomeScene extends Phaser.Scene {
         // 🎵 BGMの準備
         this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
 
-        // **ボタンの設定（最初は非表示）**
+        // **ボタンの設定（最初は表示するが、押せない）**
         let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.4);
-        button.setInteractive(false); // 初回は押せない
-        button.setVisible(false); // **最初は非表示**
-        button.setDepth(2);
+        button.setInteractive(false); // **最初は押せない**
+        button.setDepth(2); // Z軸中央
 
         // **袋文字のテキスト（中央配置）**
         let text = this.add.text(this.scale.width / 2, this.scale.height / 2, "My Phaser Game", {
@@ -34,14 +33,13 @@ class HomeScene extends Phaser.Scene {
             align: "center"
         }).setOrigin(0.5, 0.5).setDepth(2);
 
-        // **背景をクリックしたらBGM再生 & ボタン表示**
+        // **背景をクリックしたらBGM再生 & ボタンが押せるようになる**
         bg.once("pointerdown", () => {
             console.log("背景がクリックされた - BGM再生");
 
             if (!this.firstClick) {
                 this.bgm.play(); // **BGM再生**
-                button.setVisible(true); // **ボタンを表示**
-                button.setInteractive(); // **ボタンを有効化**
+                button.setInteractive(); // **ボタンを押せるようにする**
                 this.firstClick = true;
             }
         });
@@ -60,4 +58,3 @@ class HomeScene extends Phaser.Scene {
         });
     }
 }
-
