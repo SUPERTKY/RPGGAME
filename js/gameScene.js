@@ -5,7 +5,7 @@ class GameScene extends Phaser.Scene {
 
     preload() {
         this.load.image("background", "assets/村.png"); // 背景画像をロード
-        this.load.image("player", "assets/MATCHINGBUTTON.png"); // マッチングボタン用画像
+        this.load.image("matchingButton", "assets/MATCHINGBUTTON.png"); // マッチングボタン用画像
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 新しいBGMをロード
     }
 
@@ -26,8 +26,11 @@ class GameScene extends Phaser.Scene {
             fill: "#ffffff"
         }).setDepth(1); // **テキストを前面にする**
 
-        // 🔘 マッチングボタン画像
-        this.player = this.add.image(400, 300, "player").setInteractive().setDepth(1);
+        // 🔘 **マッチングボタン（画像）**
+        this.matchingButton = this.add.image(400, 350, "matchingButton")
+            .setInteractive()
+            .setDepth(1)
+            .setScale(0.5); // 画像のサイズ調整
 
         // 🎵 前のBGMを停止
         if (this.sound.get("bgm")) {
@@ -41,8 +44,10 @@ class GameScene extends Phaser.Scene {
         // 📌 テキストボックスを追加
         this.createFramedInputBox();
 
-        // 🎮 マッチングボタンを追加
-        this.createMatchButton();
+        // 🔘 画像ボタンのクリック処理
+        this.matchingButton.on("pointerdown", () => {
+            console.log("マッチングボタン（画像）が押されました");
+        });
     }
 
     createFramedInputBox() {
@@ -65,29 +70,5 @@ class GameScene extends Phaser.Scene {
 
         this.inputBox = this.add.dom(400, 200, input).setDepth(2); // **前面に配置**
     }
-
-    createMatchButton() {
-        const button = this.add.text(400, 350, "マッチング", {
-            fontSize: "30px",
-            fill: "#ffffff",
-            backgroundColor: "#007BFF",
-            padding: { left: 15, right: 15, top: 8, bottom: 8 }
-        })
-        .setOrigin(0.5)
-        .setInteractive()
-        .setDepth(1) // **前面に配置**
-        .setStyle({
-            border: "3px solid #0056b3", // 枠
-            borderRadius: "10px",
-            boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.3)", // 立体感
-            cursor: "pointer"
-        });
-
-        // 🔘 クリック時の処理
-        button.on("pointerdown", () => {
-            console.log("マッチングボタンが押されました");
-        });
-    }
 }
-
 
