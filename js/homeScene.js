@@ -13,14 +13,15 @@ class HomeScene extends Phaser.Scene {
     create() {
         let bg = this.add.image(0, 0, "background").setOrigin(0, 0);
         bg.setDisplaySize(this.scale.width, this.scale.height);
+        bg.setInteractive(); // **背景をクリック可能に**
 
         // 🎵 BGMの準備
         this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
 
-        // **ボタンの設定（最初は無効）**
+        // **ボタンの設定（最初は非表示）**
         let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.4);
-        button.setInteractive(); // ここでは無効にしない（エラーの原因を回避）
-        button.setVisible(false); // 最初は非表示
+        button.setInteractive(false); // 初回は押せない
+        button.setVisible(false); // **最初は非表示**
         button.setDepth(2);
 
         // **袋文字のテキスト（中央配置）**
@@ -33,14 +34,14 @@ class HomeScene extends Phaser.Scene {
             align: "center"
         }).setOrigin(0.5, 0.5).setDepth(2);
 
-        // **1回目のクリックでBGM再生 & ボタン表示**
-        this.input.once("pointerdown", (pointer) => {
-            console.log(`画面がクリックされた: x=${pointer.x}, y=${pointer.y}`);
+        // **背景をクリックしたらBGM再生 & ボタン表示**
+        bg.once("pointerdown", () => {
+            console.log("背景がクリックされた - BGM再生");
 
             if (!this.firstClick) {
-                console.log("BGM再生開始");
-                this.bgm.play(); // BGM再生
-                button.setVisible(true); // ボタンを表示
+                this.bgm.play(); // **BGM再生**
+                button.setVisible(true); // **ボタンを表示**
+                button.setInteractive(); // **ボタンを有効化**
                 this.firstClick = true;
             }
         });
@@ -59,3 +60,4 @@ class HomeScene extends Phaser.Scene {
         });
     }
 }
+
