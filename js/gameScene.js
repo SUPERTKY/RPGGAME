@@ -1,21 +1,22 @@
-export class GameScene extends Phaser.Scene {
+class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: "GameScene", dom: { createContainer: true } });
 
         // 🎯 バージョン情報
-        this.version = "1.0.5"; // 🔹 バージョンアップ
+        this.version = "1.0.4"; // 🔹 バージョンアップ
+        console.log(🛠 [GameScene] バージョン: ${this.version});
     }
 
     preload() {
-        console.log(`🛠 [GameScene v${this.version}] preload 開始`);
+        console.log(🛠 [GameScene v${this.version}] preload 開始);
         this.load.image("background2", "assets/村.png");
         this.load.image("matchingButton", "assets/MATCHINGBUTTON.png");
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 🎵 新しいBGMをロード
-        console.log(`🛠 [GameScene v${this.version}] preload 完了`);
+        console.log(🛠 [GameScene v${this.version}] preload 完了);
     }
 
     create() {
-        console.log(`🛠 [GameScene v${this.version}] create 開始`);
+        console.log(🛠 [GameScene v${this.version}] create 開始);
 
         this.cameras.main.setBackgroundColor("#000000");
         this.children.removeAll();
@@ -34,20 +35,19 @@ export class GameScene extends Phaser.Scene {
         // 🎵 **BGMを完全にリセット**
         this.resetBgm();
 
-        console.log(`🛠 [GameScene v${this.version}] テキストボックス作成予定...`);
-        setTimeout(() => this.createFramedInputBox(), 100); // thisのスコープ修正
+        console.log(🛠 [GameScene v${this.version}] テキストボックス作成予定...);
+        setTimeout(() => {
+            console.log(🛠 [GameScene v${this.version}] テキストボックスを作成);
+            this.createFramedInputBox();
+        }, 100);
 
         this.matchingButton.on("pointerdown", () => {
-            console.log(`🎮 [GameScene v${this.version}] マッチングボタン（画像）が押されました`);
+            console.log(🎮 [GameScene v${this.version}] マッチングボタン（画像）が押されました);
         });
 
-        // Canvasの取得方法を修正
-        let canvas = this.sys.game.canvas;
-        if (canvas) {
-            canvas.style.overflow = "visible";
-        }
+        document.querySelector("canvas").style.overflow = "visible";
 
-        console.log(`✅ [GameScene v${this.version}] create 完了`);
+        console.log(✅ [GameScene v${this.version}] create 完了);
     }
 
     resetBgm() {
@@ -55,9 +55,9 @@ export class GameScene extends Phaser.Scene {
 
         // **古いBGMを停止・削除**
         if (this.newBgm) {
-            console.log("🎵 既存の新BGMを停止");
+            console.log("🎵 既存の新BGMを停止・削除");
             this.newBgm.stop();
-            this.newBgm = null; // destroy() は不要
+            this.newBgm.destroy();
         }
 
         console.log("🎵 すべてのBGMを停止");
@@ -71,46 +71,35 @@ export class GameScene extends Phaser.Scene {
     }
 
     createFramedInputBox() {
-        console.log(`🛠 [GameScene v${this.version}] createFramedInputBox 実行開始`);
+        console.log(🛠 [GameScene v${this.version}] createFramedInputBox 実行開始);
 
-        // 既存のテキストボックスを削除
         if (this.inputBox) {
+            console.log(🛠 [GameScene v${this.version}] 既存のテキストボックスを削除);
             this.inputBox.destroy();
         }
 
-        // `input` 要素を作成
-        let input = document.createElement("input");
+        const input = document.createElement("input");
         input.type = "text";
-        input.id = "gameInput";  
         input.placeholder = "暗証番号を入力";
         input.style.fontSize = "20px";
         input.style.width = "200px";
-        input.style.height = "40px";
         input.style.padding = "10px";
         input.style.textAlign = "center";
         input.style.border = "5px solid red";
         input.style.borderRadius = "10px";
         input.style.background = "yellow";
         input.style.boxShadow = "0px 4px 8px rgba(0, 0, 0, 0.3)";
-        input.style.position = "fixed";
-        input.style.zIndex = "1000";
+        input.style.position = "relative";
+        input.style.zIndex = "99999";
         input.style.pointerEvents = "auto";
+        input.style.display = "block";
         input.style.opacity = "1";
 
-        // Phaser の `DOMElement` として追加
         this.inputBox = this.add.dom(this.scale.width / 2, 200, input)
             .setOrigin(0.5, 0.5)
-            .setDepth(1000)
+            .setDepth(9999)
             .setVisible(true);
 
-        console.log("🛠 this.inputBox:", this.inputBox);
-
-        if (this.inputBox) {
-            this.inputBox.setSize(200, 40);
-        } else {
-            console.error("❌ this.inputBox が作成されませんでした！");
-        }
-
-        console.log(`✅ [GameScene v${this.version}] inputBox DOM要素をシーンに追加`, this.inputBox);
+        console.log(✅ [GameScene v${this.version}] inputBox DOM要素をシーンに追加, this.inputBox);
     }
-}
+} 
