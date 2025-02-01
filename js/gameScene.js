@@ -33,14 +33,18 @@ class GameScene extends Phaser.Scene {
             .setDepth(1)
             .setScale(0.5); // 画像のサイズ調整
 
-        // 🎵 **前のBGMを停止**
-        if (this.sound.get("bgm")) {
-            this.sound.stopByKey("bgm");
-        }
 
-        // 🎵 **新しいBGMを再生**
-        this.newBgm = this.sound.add("newBgm", { loop: true });
-        this.newBgm.play();
+       // 🎵 BGMを停止（既に再生されている場合）
+if (this.sound.get("bgm")) {
+    this.sound.stopByKey("bgm");
+}
+
+// 🎵 すでにBGMが再生されていないか確認してから再生
+if (!this.sound.get("newBgm")) {
+    this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
+    this.newBgm.play();
+}
+
 
         // 📌 **テキストボックスを追加**
         this.createFramedInputBox();
