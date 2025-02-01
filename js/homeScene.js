@@ -13,14 +13,14 @@ class HomeScene extends Phaser.Scene {
     create() {
         let bg = this.add.image(0, 0, "background").setOrigin(0, 0);
         bg.setDisplaySize(this.scale.width, this.scale.height);
-        bg.setInteractive(); // **背景をクリック可能に**
 
         // 🎵 BGMの準備
         this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
 
-        // **ボタンの設定（最初は表示するが、押せない）**
+        // **ボタンの設定（最初から表示されるが、押せない）**
         let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.4);
-        button.setInteractive(false); // **最初は押せない**
+        button.setInteractive({ useHandCursor: false }); // **最初は押せない**
+        button.disableInteractive(); // **ボタンを無効化**
         button.setDepth(2); // Z軸中央
 
         // **袋文字のテキスト（中央配置）**
@@ -33,9 +33,9 @@ class HomeScene extends Phaser.Scene {
             align: "center"
         }).setOrigin(0.5, 0.5).setDepth(2);
 
-        // **背景をクリックしたらBGM再生 & ボタンが押せるようになる**
-        bg.once("pointerdown", () => {
-            console.log("背景がクリックされた - BGM再生");
+        // **背景クリックを確実に機能させる**
+        this.input.once("pointerdown", () => {
+            console.log("画面がクリックされた - BGM再生");
 
             if (!this.firstClick) {
                 this.bgm.play(); // **BGM再生**
