@@ -2,17 +2,21 @@ const config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
     height: window.innerHeight,
-    scene: [IntroScene, HomeScene, GameScene], // 🎮 最初に IntroScene を実行
+    scene: [IntroScene, HomeScene, GameScene], // ⚡ 必ず `IntroScene` から開始
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
     audio: {
-        disableWebAudio: false // 🔊 オーディオを有効化
+        disableWebAudio: false // 🎵 オーディオを有効化
     }
 };
 
 const game = new Phaser.Game(config);
+
+// ⚠️ 明示的に `IntroScene` をスタート
+game.scene.start("IntroScene");
+
 
 
 // ウィンドウサイズ変更時に修正
