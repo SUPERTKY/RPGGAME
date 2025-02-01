@@ -4,8 +4,8 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("player", "assets/MACHINGBUTTON.png");
-        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 新しいBGMをロード
+        this.load.image("player", "assets/player.png");
+        this.load.audio("newBgm", "assets/newBgm.mp3"); // 新しいBGMをロード
     }
 
     create() {
@@ -16,7 +16,12 @@ class GameScene extends Phaser.Scene {
 
         this.player = this.add.image(400, 300, "player");
 
-        // 新しいBGMを再生
+        // 🔴 ホーム画面のBGMを停止（前のBGMが "bgm" というキーなら）
+        if (this.sound.get("bgm")) {
+            this.sound.stopByKey("bgm");
+        }
+
+        // 🎵 新しいBGMを再生
         this.newBgm = this.sound.add("newBgm", { loop: true });
         this.newBgm.play();
 
