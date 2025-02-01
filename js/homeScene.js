@@ -22,7 +22,7 @@ class HomeScene extends Phaser.Scene {
         button.setInteractive(false); // 初回は押せない
         button.setDepth(2); // Z軸中央
 
-        // **袋文字のテキスト（完全中央配置 & 視認性UP）**
+        // **袋文字のテキスト（完全に中央配置 & 視認性UP）**
         let text = this.add.text(this.scale.width / 2, this.scale.height / 2, "My Phaser Game", {
             fontSize: "64px", // 大きく
             fill: "#ffffff", // 文字の色
@@ -32,14 +32,14 @@ class HomeScene extends Phaser.Scene {
             align: "center"
         }).setOrigin(0.5, 0.5).setDepth(2); // 完全中央配置
 
-        // **透明のクリックエリア（全画面クリック可能に）**
-        let clickableArea = this.add.rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height);
-        clickableArea.setOrigin(0.5, 0.5);
-        clickableArea.setInteractive({ useHandCursor: true }); // クリック可能にする
-        clickableArea.setDepth(1); // 背景より手前に設定
+        // **透明のクリックエリア（Graphicsを使用）**
+        let clickableArea = this.add.graphics();
+        clickableArea.fillStyle(0x000000, 0); // 透明
+        clickableArea.fillRect(0, 0, this.scale.width, this.scale.height);
+        clickableArea.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height), Phaser.Geom.Rectangle.Contains);
 
         // **クリックイベント（どこを押してもOK）**
-        clickableArea.once("pointerdown", (pointer) => {
+        this.input.once("pointerdown", (pointer) => {
             console.log(`画面がクリックされた: x=${pointer.x}, y=${pointer.y}`);
 
             if (!this.firstClick) {
