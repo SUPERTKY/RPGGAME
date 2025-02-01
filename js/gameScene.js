@@ -4,7 +4,6 @@ class GameScene extends Phaser.Scene {
 
         // 🎯 バージョン情報
         this.version = "1.0.4"; // 🔹 バージョンアップ
-        console.log(🛠 [GameScene] バージョン: ${this.version});
     }
 
     preload() {
