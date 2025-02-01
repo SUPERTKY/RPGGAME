@@ -1,7 +1,7 @@
 class HomeScene extends Phaser.Scene {
     constructor() {
         super({ key: "HomeScene" });
-        this.firstClick = false; // 最初のクリックを管理
+        this.firstClick = false; // 初回クリックを管理
     }
 
     preload() {
@@ -14,40 +14,33 @@ class HomeScene extends Phaser.Scene {
         let bg = this.add.image(0, 0, "background").setOrigin(0, 0);
         bg.setDisplaySize(this.scale.width, this.scale.height);
 
-        // 🎵 BGMの準備
-        this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
-
-        // **ボタンの設定（最初は無効）**
-        let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.3);
+        // **ボタンの設定（初回クリック時は無効）**
+        let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.4);
         button.setInteractive(false); // 初回は押せない
-        button.setDepth(2); // Z軸中央
+        button.setDepth(2);
 
-        // **袋文字のテキスト（完全に中央配置 & 視認性UP）**
+        // **袋文字のテキスト（中央配置）**
         let text = this.add.text(this.scale.width / 2, this.scale.height / 2, "My Phaser Game", {
-            fontSize: "64px", // 大きく
+            fontSize: "64px", // 文字を大きく
             fill: "#ffffff", // 文字の色
             stroke: "#000000", // 袋文字の色（黒）
             strokeThickness: 10, // 枠の太さ
             fontStyle: "bold",
             align: "center"
-        }).setOrigin(0.5, 0.5).setDepth(2); // 完全中央配置
+        }).setOrigin(0.5, 0.5).setDepth(2);
 
-        // **透明のクリックエリア（Graphicsを使用）**
-        let clickableArea = this.add.graphics();
-        clickableArea.fillStyle(0x000000, 0); // 透明
-        clickableArea.fillRect(0, 0, this.scale.width, this.scale.height);
-        clickableArea.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height), Phaser.Geom.Rectangle.Contains);
+        // **クリックエリア（画面全体をクリック可能に）**
+        this.input.once("pointerdown", () => {
+            console.log("画面がクリックされた - BGM再生");
 
-        // **クリックイベント（どこを押してもOK）**
-        this.input.once("pointerdown", (pointer) => {
-            console.log(`画面がクリックされた: x=${pointer.x}, y=${pointer.y}`);
-
-            if (!this.firstClick) {
-                console.log("BGM再生開始");
-                this.bgm.play(); // BGM再生
-                button.setInteractive(); // ボタンを有効化
-                this.firstClick = true;
+            // **BGMが再生されていなければ流す**
+            if (!this.bgm.isPlaying) {
+                this.bgm.play();
             }
+
+            // **ボタンを有効化**
+            button.setInteractive();
+            this.firstClick = true;
         });
 
         // **ボタンのクリック処理（2回目以降）**
@@ -64,5 +57,4 @@ class HomeScene extends Phaser.Scene {
         });
     }
 }
-
 
