@@ -15,17 +15,26 @@ class GameScene extends Phaser.Scene {
         this.cleanupOldData();
     }
 
-    async cleanupOldData() {
-        try {
-            await fetch(`${API_URL}/cleanup`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ playerId: this.playerId })
-            });
-        } catch (error) {
-            console.error("古いデータの削除エラー:", error);
+    async function cleanupOldData(request, env) {
+    let body = await request.json();
+    let playerId = body.playerId;
+
+    let waitingData = await env.MATCH_STORAGE.get("waiting");
+    if (waitingData) {
+        let waitingPlayer = JSON.parse(waitingData);
+        
+        // 🔹 **待機リストに自分がいたら削除**
+        if (waitingPlayer.playerId === playerId) {
+            await env.MATCH_STORAGE.delete("waiting");
+            console.log(`リロード検知: プレイヤー ${playerId} の古い待機データを削除しました`);
         }
     }
+
+    return new Response(JSON.stringify({ message: "古い待機データを削除しました" }), {
+        headers: getCORSHeaders()
+    });
+}
+
 
     async leaveGame() {
         if (this.isMatching || this.roomId) {
