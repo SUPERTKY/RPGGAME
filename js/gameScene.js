@@ -24,40 +24,41 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    async cleanupOldData(request, env) {
-    let body = await request.json();
-    let playerId = body.playerId;
+    async cleanupOldData() {
+    let retries = 3; // 最大3回リトライ
+    for (let i = 0; i < retries; i++) {
+        try {
+            console.log(`🧹 cleanupOldData 実行 (試行 ${i + 1}) : ${this.playerId}`);
 
-    console.log(`🧹 cleanupOldData 実行: ${playerId}`);
+            let response = await fetch(`${API_URL}/cleanup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId })
+            });
 
-    // 1. 待機プレイヤーのデータを取得し、削除
-    let waitingData = await env.MATCH_STORAGE.get("waiting");
-    if (waitingData) {
-        let waitingPlayer = JSON.parse(waitingData);
-        if (waitingPlayer.playerId === playerId) {
-            await env.MATCH_STORAGE.delete("waiting");
-            console.log(`🗑️ 削除: プレイヤー ${playerId} の待機データ`);
-        }
-    }
-
-    // 2. 過去のマッチングデータをすべて削除
-    let matchKeys = await env.MATCH_STORAGE.list(); 
-    for (let key of matchKeys.keys) {
-        let roomData = await env.MATCH_STORAGE.get(key.name);
-        if (roomData) {
-            let room = JSON.parse(roomData);
-
-            if (room.players && room.players.includes(playerId)) {
-                await env.MATCH_STORAGE.delete(key.name);
-                console.log(`🗑️ ルーム削除: ${key.name}（プレイヤー ${playerId} の古いマッチング）`);
+            if (!response.ok) {
+                throw new Error(`HTTPエラー: ${response.status}`);
             }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                throw new Error("❌ JSON変換エラー: サーバーのレスポンスが不正です");
+            }
+
+            console.log("🗑️ cleanupOldData 結果:", data);
+            return; // 成功したら終了
+        } catch (error) {
+            console.error(`❌ cleanupOldData エラー (試行 ${i + 1}):`, error);
+            if (i === retries - 1) {
+                console.error("🚨 cleanupOldData のリトライ失敗: サーバーに問題がある可能性があります");
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機してリトライ
         }
     }
-
-    return new Response(JSON.stringify({ message: "古いマッチングデータを削除しました" }), {
-        headers: getCORSHeaders()
-    });
 }
+
 
 
     preload() {
