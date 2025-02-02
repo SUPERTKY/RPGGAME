@@ -30,13 +30,14 @@ class GameScene extends Phaser.Scene {
 
         console.log("GameScene: ユーザーID =", this.playerId);
 
-        if (!window.db) {
-            console.error("Firebase Database が未定義です！");
+        if (typeof window.db === "undefined") {
+            console.error("🔥 Firebase Database が未定義です！ ゲームを開始できません！");
             return;
         }
         
-        this.roomRef = window.db.ref("gameRooms/room1/players"); // ✅ `window.db` を使用
+        this.roomRef = window.db.ref("gameRooms/room1/players");
 
+        // ✅ マッチングボタンを追加
         this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
             .setInteractive()
             .setDepth(2)
@@ -102,3 +103,4 @@ class GameScene extends Phaser.Scene {
         this.scene.start("GamePlayScene");
     }
 }
+
