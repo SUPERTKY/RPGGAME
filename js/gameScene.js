@@ -12,7 +12,7 @@ class GameScene extends Phaser.Scene {
 
     create() {
         this.cameras.main.setBackgroundColor("#000000");
-        this.children.removeAll();
+        
 
         let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
         let scaleX = this.scale.width / bg.width;
