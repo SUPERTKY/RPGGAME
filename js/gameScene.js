@@ -145,5 +145,4 @@ class GameScene extends Phaser.Scene {
     }
 }
 
-// 🔹 `GameScene` をエクスポート
-export default GameScene;
+
