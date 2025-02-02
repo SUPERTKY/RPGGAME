@@ -1,10 +1,10 @@
-const API_URL = "https://mute-hall-fe0f.6hk7hzcfqs.workers.dev";  // Cloudflare Workers のURL
+const API_URL = "https://mute-hall-fe0f.6hk7hzcfqs.workers.dev";  
 
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: "GameScene" });
-        this.isMatching = false; // 🔹 マッチング中かどうかを管理
-        this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`; // 🔹 IDの衝突を防ぐ
+        this.isMatching = false;
+        this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     }
 
     preload() {
@@ -38,8 +38,8 @@ class GameScene extends Phaser.Scene {
                 console.log("すでにマッチング中です...");
                 return;
             }
-            this.isMatching = true; // 🔹 これ以上押せないようにする
-            console.log(`マッチングボタンが押されました (Player ID: ${this.playerId})`);
+            this.isMatching = true;
+            console.log(`マッチング開始 (Player ID: ${this.playerId})`);
             this.matchPlayer();
         });
     }
@@ -49,7 +49,7 @@ class GameScene extends Phaser.Scene {
             let response = await fetch(`${API_URL}/match`, { 
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ playerId: this.playerId }) // 🔹 プレイヤーIDを送信
+                body: JSON.stringify({ playerId: this.playerId })
             });
 
             if (!response.ok) {
@@ -66,7 +66,7 @@ class GameScene extends Phaser.Scene {
             }
         } catch (error) {
             console.error("マッチングエラー:", error);
-            this.isMatching = false; // 🔹 失敗時に再度押せるようにする
+            this.isMatching = false;
         }
     }
 
@@ -97,6 +97,3 @@ class GameScene extends Phaser.Scene {
         this.scene.start("BattleScene", { roomId: this.roomId });
     }
 }
-
-
-
