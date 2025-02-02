@@ -3,12 +3,14 @@ const API_URL = "https://mute-hall-fe0f.6hk7hzcfqs.workers.dev";  // Cloudflare 
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: "GameScene" });
+        this.isMatching = false; // 🔹 マッチング中かどうかを管理
+        this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`; // 🔹 IDの衝突を防ぐ
     }
 
     preload() {
-        this.load.image("background2", "assets/村.png"); // 🎨 背景画像
-        this.load.image("matchingButton", "assets/MATCHINGBUTTON.png"); // 🔘 マッチングボタン
-        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 🎵 BGM
+        this.load.image("background2", "assets/村.png");
+        this.load.image("matchingButton", "assets/MATCHINGBUTTON.png");
+        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
     }
 
     create() {
@@ -26,23 +28,18 @@ class GameScene extends Phaser.Scene {
             fill: "#ffffff"
         }).setOrigin(0.5, 0.5).setDepth(1);
 
-        // 🎵 **BGMの管理**
-        if (this.sound.get("bgm")) {
-            this.sound.stopByKey("bgm"); // 既存のBGMを止める
-        }
-        if (!this.sound.get("newBgm")) {
-            this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
-            this.newBgm.play();
-        }
-
-        // 🔘 **マッチングボタンの設定**
         this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
             .setInteractive()
             .setDepth(2)
             .setScale(0.5);
 
         this.matchingButton.on("pointerdown", () => {
-            console.log("マッチングボタンが押されました");
+            if (this.isMatching) {
+                console.log("すでにマッチング中です...");
+                return;
+            }
+            this.isMatching = true; // 🔹 これ以上押せないようにする
+            console.log(`マッチングボタンが押されました (Player ID: ${this.playerId})`);
             this.matchPlayer();
         });
     }
@@ -51,7 +48,8 @@ class GameScene extends Phaser.Scene {
         try {
             let response = await fetch(`${API_URL}/match`, { 
                 method: "POST",
-                headers: { "Content-Type": "application/json" }
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId }) // 🔹 プレイヤーIDを送信
             });
 
             if (!response.ok) {
@@ -68,6 +66,7 @@ class GameScene extends Phaser.Scene {
             }
         } catch (error) {
             console.error("マッチングエラー:", error);
+            this.isMatching = false; // 🔹 失敗時に再度押せるようにする
         }
     }
 
@@ -98,5 +97,6 @@ class GameScene extends Phaser.Scene {
         this.scene.start("BattleScene", { roomId: this.roomId });
     }
 }
+
 
 
