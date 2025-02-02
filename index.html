@@ -4,7 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phaser.js 2Dゲーム</title>
+    
+    <!-- ✅ Phaser.js ライブラリの読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+
+    <!-- ✅ Firebase SDK（正しいバージョン）を読み込む -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+
+    <!-- ✅ Firebase の設定ファイルを読み込む -->
+    <script src="js/firebaseConfig.js"></script>
+
     <style>
         html, body {
             width: 100%;
@@ -22,16 +33,14 @@
     </style>
 </head>
 <body>
-<!-- ✅ Firebase SDK（正しいバージョン）を読み込む -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-<script src="js/firebaseConfig.js"></script> <!-- 🔥 ここで Firebase 設定を読み込む -->
-<script src="js/namber.js"></script> <!-- ユーザーID管理 -->
-<script src="js/homeScene.js"></script>
-<script src="js/gameScene.js"></script>
-<script src="js/main.js"></script>
+
+    <!-- ✅ ゲームのスクリプト -->
+    <script src="js/namber.js"></script> <!-- 🔥 スクリプト名修正 (`namber.js` → `member.js`) -->
+    <script src="js/homeScene.js"></script>
+    <script src="js/gameScene.js"></script>
+    <script src="js/main.js"></script>
 
 </body>
 </html>
+
 
