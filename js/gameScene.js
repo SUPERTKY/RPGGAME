@@ -1,3 +1,5 @@
+const API_URL = "https://your-worker-name.workers.dev";  // Cloudflare Workers の URL
+
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: "GameScene" });
@@ -38,7 +40,56 @@ class GameScene extends Phaser.Scene {
         }
 
         this.matchingButton.on("pointerdown", () => {
-            console.log("マッチングボタン（画像）が押されました");
+            console.log("マッチングボタンが押されました");
+            this.matchPlayer();
         });
+    }
+
+    async matchPlayer() {
+        try {
+            let response = await fetch(`${API_URL}/match`, { method: "POST" });
+            let data = await response.json();
+
+            if (data.matchId) {
+                console.log(`マッチング成功！ 部屋ID: ${data.matchId}`);
+                this.add.text(this.scale.width / 2, 450, `ルームID: ${data.matchId}`, {
+                    fontSize: "20px",
+                    fill: "#ffffff"
+                }).setOrigin(0.5, 0.5);
+                
+                this.roomId = data.matchId;
+                this.checkRoomStatus();
+            } else {
+                console.log("マッチング待機中...");
+            }
+        } catch (error) {
+            console.error("マッチングエラー:", error);
+        }
+    }
+
+    async checkRoomStatus() {
+        if (!this.roomId) return;
+
+        let interval = setInterval(async () => {
+            let response = await fetch(`${API_URL}/room/${this.roomId}`);
+            let roomData = await response.json();
+
+            if (roomData.status === "ready") {
+                clearInterval(interval);
+                console.log("全員揃いました！");
+                this.add.text(this.scale.width / 2, 500, "全員揃いました！", {
+                    fontSize: "20px",
+                    fill: "#00ff00"
+                }).setOrigin(0.5, 0.5);
+                
+                this.startBattle();
+            }
+        }, 2000);
+    }
+
+    startBattle() {
+        console.log("バトル開始！");
+        // ここでバトルシーンに移行する処理を入れる
+        this.scene.start("BattleScene", { roomId: this.roomId });
     }
 }
