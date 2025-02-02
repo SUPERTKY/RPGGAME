@@ -85,9 +85,10 @@ class GameScene extends Phaser.Scene {
 
 
     async checkRoomStatus() {
-        if (!this.roomId) return;
+    if (!this.roomId) return;
 
-        let interval = setInterval(async () => {
+    let interval = setInterval(async () => {
+        try {
             let response = await fetch(`${API_URL}/room/${this.roomId}`);
             let roomData = await response.json();
 
@@ -103,8 +104,12 @@ class GameScene extends Phaser.Scene {
             } else {
                 console.log("待機中...");
             }
-        }, 2000);
-    }
+        } catch (error) {
+            console.error("ルーム確認エラー:", error);
+        }
+    }, 2000);
+}
+
 
     startBattle() {
         console.log("バトル開始！");
