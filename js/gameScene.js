@@ -1,14 +1,14 @@
-const API_URL = "https://mute-hall-fe0f.6hk7hzcfqs.workers.dev";  
+const API_URL = "https://mute-hall-fe0f.6hk7hzcfqs.workers.dev";
 
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: "GameScene" });
         this.isMatching = false;
+        this.matchingStartTime = null;
+        this.roomId = null;
         this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
-        window.addEventListener("beforeunload", () => {
-            this.leaveGame();
-        });
+        window.addEventListener("beforeunload", this.leaveGame.bind(this));
     }
 
     async cleanupOldData() {
@@ -44,7 +44,7 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        this.cleanupOldData(); // 🔹 ゲーム開始時に古いデータを削除
+        this.cleanupOldData(); // ゲーム開始時に古いデータを削除
         this.cameras.main.setBackgroundColor("#000000");
         this.children.removeAll();
 
@@ -81,6 +81,11 @@ class GameScene extends Phaser.Scene {
             console.log(`マッチング開始 (Player ID: ${this.playerId})`);
             this.matchPlayer();
         });
+
+        this.waitingText = this.add.text(this.scale.width / 2, 450, "", {
+            fontSize: "20px",
+            fill: "#ffffff"
+        }).setOrigin(0.5, 0.5);
     }
 
     async matchPlayer() {
@@ -102,7 +107,6 @@ class GameScene extends Phaser.Scene {
                 this.checkRoomStatus();
             } else {
                 console.log("マッチング待機中...");
-                
                 setTimeout(() => {
                     this.checkRoomStatus();
                 }, 2000);
@@ -116,27 +120,28 @@ class GameScene extends Phaser.Scene {
     async checkRoomStatus() {
         if (!this.roomId) return;
 
+        this.matchingStartTime = Date.now(); // マッチング開始時間を記録
         let interval = setInterval(async () => {
             try {
                 let response = await fetch(`${API_URL}/room/${this.roomId}`);
                 let roomData = await response.json();
 
+                // 待機時間を更新
+                let elapsedSeconds = Math.floor((Date.now() - this.matchingStartTime) / 1000);
+                this.waitingText.setText(`待機時間: ${elapsedSeconds}秒`);
+
                 if (roomData.status === "ready") {
                     clearInterval(interval);
                     console.log("全員揃いました！");
-                    this.add.text(this.scale.width / 2, 500, "全員揃いました！", {
-                        fontSize: "20px",
-                        fill: "#00ff00"
-                    }).setOrigin(0.5, 0.5);
-
+                    this.waitingText.setText("全員揃いました！");
                     this.startBattle();
                 } else {
-                    console.log("待機中...");
+                    console.log(`待機中... (${elapsedSeconds}秒経過)`);
                 }
             } catch (error) {
                 console.error("ルーム確認エラー:", error);
             }
-        }, 2000);
+        }, 1000); // 1秒ごとに更新
     }
 
     startBattle() {
@@ -145,4 +150,4 @@ class GameScene extends Phaser.Scene {
     }
 }
 
-
+export default GameScene;
