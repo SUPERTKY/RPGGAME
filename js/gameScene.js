@@ -6,9 +6,9 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("background2", "assets/村.png");
-        this.load.image("matchingButton", "assets/MATCHINGBUTTON.png");
-        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
+        this.load.image("background2", "assets/村.png"); // 🎨 背景画像
+        this.load.image("matchingButton", "assets/MATCHINGBUTTON.png"); // 🔘 マッチングボタン
+        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 🎵 BGM
     }
 
     create() {
@@ -26,6 +26,16 @@ class GameScene extends Phaser.Scene {
             fill: "#ffffff"
         }).setOrigin(0.5, 0.5).setDepth(1);
 
+        // 🎵 **BGMの管理**
+        if (this.sound.get("bgm")) {
+            this.sound.stopByKey("bgm"); // 既存のBGMを止める
+        }
+        if (!this.sound.get("newBgm")) {
+            this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
+            this.newBgm.play();
+        }
+
+        // 🔘 **マッチングボタンの設定**
         this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
             .setInteractive()
             .setDepth(2)
@@ -88,4 +98,5 @@ class GameScene extends Phaser.Scene {
         this.scene.start("BattleScene", { roomId: this.roomId });
     }
 }
+
 
