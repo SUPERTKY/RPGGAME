@@ -8,32 +8,20 @@ class GameScene extends Phaser.Scene {
         this.matchingStartTime = null;
         this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
-        window.addEventListener("beforeunload", this.leaveGame.bind(this));
-    }
-
-    async cleanupOldData() {
-        try {
-            await fetch(`${API_URL}/cleanup`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ playerId: this.playerId })
-            });
-        } catch (error) {
-            console.error("古いデータの削除エラー:", error);
-        }
+        // 🔹 リロード時でも確実にデータ削除するために visibilitychange を使用
+        document.addEventListener("visibilitychange", async () => {
+            if (document.visibilityState === "hidden") {
+                await this.leaveGame();
+            }
+        });
     }
 
     async leaveGame() {
         if (this.isMatching || this.roomId) {
-            try {
-                await fetch(`${API_URL}/leave`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ playerId: this.playerId, matchId: this.roomId })
-                });
-            } catch (error) {
-                console.error("退出エラー:", error);
-            }
+            const payload = JSON.stringify({ playerId: this.playerId, matchId: this.roomId });
+            const blob = new Blob([payload], { type: "application/json" });
+            navigator.sendBeacon(`${API_URL}/leave`, blob);  // 🔹 `fetch()` の代わりに `sendBeacon()` を使用
+            console.log("✅ ページ離脱時に `leaveGame()` を実行");
         }
     }
 
@@ -44,7 +32,6 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        this.cleanupOldData(); // 🔹 クラス内のメソッドとして呼び出し
         this.cameras.main.setBackgroundColor("#000000");
         this.children.removeAll();
 
@@ -78,7 +65,7 @@ class GameScene extends Phaser.Scene {
                 return;
             }
             this.isMatching = true;
-            console.log(`マッチング開始 (Player ID: ${this.playerId})`);
+            console.log(`🚀 マッチング開始 (Player ID: ${this.playerId})`);
             await this.matchPlayer();
         });
 
@@ -88,37 +75,37 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5, 0.5);
     }
 
-   async matchPlayer() {
-    try {
-        console.log("🚀 マッチング開始: 古いデータ削除を実行");
-        await this.cleanupOldData();  // 確実に実行
+    async matchPlayer() {
+        try {
+            console.log("🧹 先に古いデータを削除");
+            await this.cleanupOldData();
 
-        let response = await fetch(`${API_URL}/match`, { 
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ playerId: this.playerId })
-        });
+            let response = await fetch(`${API_URL}/match`, { 
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId })
+            });
 
-        if (!response.ok) {
-            throw new Error(`HTTPエラー: ${response.status}`);
-        }
+            if (!response.ok) {
+                throw new Error(`HTTPエラー: ${response.status}`);
+            }
 
-        let data = await response.json();
-        if (data.matchId) {
-            console.log(`✅ マッチング成功！ 部屋ID: ${data.matchId}`);
-            this.roomId = data.matchId;
-            this.checkRoomStatus();
-        } else {
-            console.log("⏳ マッチング待機中...");
-            setTimeout(() => {
+            let data = await response.json();
+            if (data.matchId) {
+                console.log(`✅ マッチング成功！ 部屋ID: ${data.matchId}`);
+                this.roomId = data.matchId;
                 this.checkRoomStatus();
-            }, 2000);
+            } else {
+                console.log("⏳ マッチング待機中...");
+                setTimeout(() => {
+                    this.checkRoomStatus();
+                }, 2000);
+            }
+        } catch (error) {
+            console.error("❌ マッチングエラー:", error);
+            this.isMatching = false;
         }
-    } catch (error) {
-        console.error("❌ マッチングエラー:", error);
-        this.isMatching = false;
     }
-}
 
     async checkRoomStatus() {
         if (!this.roomId) return;
@@ -147,9 +134,25 @@ class GameScene extends Phaser.Scene {
     }
 
     startBattle() {
-        console.log("バトル開始！");
+        console.log("🎮 バトル開始！");
         this.scene.start("BattleScene", { roomId: this.roomId });
     }
+
+    async cleanupOldData() {
+        try {
+            let response = await fetch(`${API_URL}/cleanup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId })
+            });
+
+            let data = await response.json();
+            console.log("🗑️ cleanupOldData 結果:", data);
+        } catch (error) {
+            console.error("古いデータの削除エラー:", error);
+        }
+    }
 }
+
 
 
