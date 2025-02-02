@@ -11,17 +11,39 @@ class GameScene extends Phaser.Scene {
         window.addEventListener("beforeunload", this.leaveGame.bind(this));
     }
 
-    async cleanupOldData() {
-        try {
-            await fetch(`${API_URL}/cleanup`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ playerId: this.playerId })
-            });
-        } catch (error) {
-            console.error("古いデータの削除エラー:", error);
+   async function cleanupOldData(request, env) {
+    let body = await request.json();
+    let playerId = body.playerId;
+
+    // 🔹 既存の待機プレイヤーデータを取得
+    let waitingData = await env.MATCH_STORAGE.get("waiting");
+    if (waitingData) {
+        let waitingPlayer = JSON.parse(waitingData);
+
+        // 🔹 **もし自分のデータなら削除**
+        if (waitingPlayer.playerId === playerId) {
+            await env.MATCH_STORAGE.delete("waiting");
+            console.log(`古い待機データを削除: ${playerId}`);
         }
     }
+
+    // 🔹 **自分が過去にマッチした部屋がある場合、削除**
+    let matchKeys = await env.MATCH_STORAGE.list(); // すべてのキーを取得
+    for (let key of matchKeys.keys) {
+        let roomData = await env.MATCH_STORAGE.get(key.name);
+        if (roomData) {
+            let room = JSON.parse(roomData);
+            if (room.players && room.players.includes(playerId)) {
+                await env.MATCH_STORAGE.delete(key.name);
+                console.log(`古いマッチングルーム削除: ${key.name}`);
+            }
+        }
+    }
+
+    return new Response(JSON.stringify({ message: "古いデータを削除しました" }), {
+        headers: getCORSHeaders()
+    });
+}
 
     async leaveGame() {
         if (this.isMatching || this.roomId) {
@@ -89,33 +111,37 @@ class GameScene extends Phaser.Scene {
     }
 
     async matchPlayer() {
-        try {
-            let response = await fetch(`${API_URL}/match`, { 
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ playerId: this.playerId })
-            });
+    try {
+        // 🔹 過去の自分のデータを確実に削除
+        await this.cleanupOldData();
 
-            if (!response.ok) {
-                throw new Error(`HTTPエラー: ${response.status}`);
-            }
+        let response = await fetch(`${API_URL}/match`, { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playerId: this.playerId })
+        });
 
-            let data = await response.json();
-            if (data.matchId) {
-                console.log(`マッチング成功！ 部屋ID: ${data.matchId}`);
-                this.roomId = data.matchId;
-                this.checkRoomStatus();
-            } else {
-                console.log("マッチング待機中...");
-                setTimeout(() => {
-                    this.checkRoomStatus();
-                }, 2000);
-            }
-        } catch (error) {
-            console.error("マッチングエラー:", error);
-            this.isMatching = false;
+        if (!response.ok) {
+            throw new Error(`HTTPエラー: ${response.status}`);
         }
+
+        let data = await response.json();
+        if (data.matchId) {
+            console.log(`マッチング成功！ 部屋ID: ${data.matchId}`);
+            this.roomId = data.matchId;
+            this.checkRoomStatus();
+        } else {
+            console.log("マッチング待機中...");
+            setTimeout(() => {
+                this.checkRoomStatus();
+            }, 2000);
+        }
+    } catch (error) {
+        console.error("マッチングエラー:", error);
+        this.isMatching = false;
     }
+}
+
 
     async checkRoomStatus() {
         if (!this.roomId) return;
