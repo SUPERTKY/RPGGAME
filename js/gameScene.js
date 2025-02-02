@@ -15,17 +15,7 @@ class GameScene extends Phaser.Scene {
         this.cleanupOldData();
     }
 
-    async function cleanupOldData() {
-    try {
-        await fetch(`${API_URL}/cleanup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ playerId: this.playerId })
-        });
-    } catch (error) {
-        console.error("古いデータの削除エラー:", error);
-    }
-}
+    
 
 
 
@@ -156,6 +146,17 @@ class GameScene extends Phaser.Scene {
 class BattleScene extends Phaser.Scene {
     constructor() {
         super({ key: "BattleScene" });
+         async function cleanupOldData() {
+    try {
+        await fetch(`${API_URL}/cleanup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playerId: this.playerId })
+        });
+    } catch (error) {
+        console.error("古いデータの削除エラー:", error);
+    }
+}
     }
 
     create(data) {
