@@ -138,20 +138,40 @@ class GameScene extends Phaser.Scene {
         this.scene.start("BattleScene", { roomId: this.roomId });
     }
 
-    async cleanupOldData() {
-        try {
-            let response = await fetch(`${API_URL}/cleanup`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ playerId: this.playerId })
-            });
+async function cleanupOldData(request, env) {
+    let body = await request.json();
+    let playerId = body.playerId;
 
-            let data = await response.json();
-            console.log("🗑️ cleanupOldData 結果:", data);
-        } catch (error) {
-            console.error("古いデータの削除エラー:", error);
+    console.log(`🧹 cleanupOldData 実行: ${playerId}`);
+
+    // 1. 待機リストのデータを取得
+    let waitingData = await env.MATCH_STORAGE.get("waiting");
+    if (waitingData) {
+        let waitingPlayer = JSON.parse(waitingData);
+        if (waitingPlayer.playerId === playerId) {
+            await env.MATCH_STORAGE.delete("waiting");
+            console.log(`🗑️ 削除: プレイヤー ${playerId} の待機データ`);
         }
     }
+
+    // 2. 過去のルームを全て削除
+    let matchKeys = await env.MATCH_STORAGE.list(); 
+    for (let key of matchKeys.keys) {
+        let roomData = await env.MATCH_STORAGE.get(key.name);
+        if (roomData) {
+            let room = JSON.parse(roomData);
+            if (room.players && room.players.includes(playerId)) {
+                await env.MATCH_STORAGE.delete(key.name);
+                console.log(`🗑️ ルーム削除: ${key.name}`);
+            }
+        }
+    }
+
+    return new Response(JSON.stringify({ message: "古いデータを削除しました" }), {
+        headers: getCORSHeaders()
+    });
+}
+
 }
 
 
