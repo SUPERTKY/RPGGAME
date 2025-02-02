@@ -1,10 +1,29 @@
 const API_URL = "https://mute-hall-fe0f.6hk7hzcfqs.workers.dev";  
 
 class GameScene extends Phaser.Scene {
-    constructor() {
+     constructor() {
         super({ key: "GameScene" });
         this.isMatching = false;
         this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+
+        // 🔹 ページが閉じられたら強制的に退出
+        window.addEventListener("beforeunload", () => {
+            this.leaveGame();
+        });
+    }
+
+    async leaveGame() {
+        if (this.isMatching || this.roomId) {
+            try {
+                await fetch(`${API_URL}/leave`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ playerId: this.playerId, matchId: this.roomId })
+                });
+            } catch (error) {
+                console.error("退出エラー:", error);
+            }
+        }
     }
 
     preload() {
