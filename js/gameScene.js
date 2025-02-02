@@ -28,7 +28,6 @@ class GameScene extends Phaser.Scene {
             fill: "#ffffff"
         }).setOrigin(0.5, 0.5).setDepth(1);
 
-        // 🎵 **BGMの管理**
         if (this.sound.get("bgm")) {
             this.sound.stopByKey("bgm"); // 既存のBGMを止める
         }
@@ -93,7 +92,7 @@ class GameScene extends Phaser.Scene {
                     fontSize: "20px",
                     fill: "#00ff00"
                 }).setOrigin(0.5, 0.5);
-                
+
                 this.startBattle();
             } else {
                 console.log("待機中...");
@@ -104,5 +103,45 @@ class GameScene extends Phaser.Scene {
     startBattle() {
         console.log("バトル開始！");
         this.scene.start("BattleScene", { roomId: this.roomId });
+    }
+}
+
+class BattleScene extends Phaser.Scene {
+    constructor() {
+        super({ key: "BattleScene" });
+    }
+
+    create(data) {
+        this.roomId = data.roomId;
+
+        this.add.text(this.scale.width / 2, this.scale.height / 2, "バトル開始！", {
+            fontSize: "40px",
+            fill: "#ffffff"
+        }).setOrigin(0.5);
+
+        console.log(`バトル開始！ルームID: ${this.roomId}`);
+
+        // 🔹 **10秒後にバトルを終了**
+        this.time.delayedCall(10000, () => {
+            this.endBattle();
+        });
+    }
+
+    async endBattle() {
+        try {
+            let response = await fetch(`${API_URL}/end-battle`, { 
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ matchId: this.roomId })
+            });
+
+            let data = await response.json();
+            console.log(data.message);
+        } catch (error) {
+            console.error("バトル終了エラー:", error);
+        }
+
+        console.log("ホーム画面へ戻ります...");
+        this.scene.start("HomeScene"); // 🔹 ホーム画面へ戻る
     }
 }
