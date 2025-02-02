@@ -32,19 +32,20 @@ class GameScene extends Phaser.Scene {
 
 
 
-    async leaveGame() {
-        if (this.isMatching || this.roomId) {
-            try {
-                await fetch(`${API_URL}/leave`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ playerId: this.playerId, matchId: this.roomId })
-                });
-            } catch (error) {
-                console.error("退出エラー:", error);
-            }
+    async leaveGame() {  // ✅ function を削除
+    if (this.isMatching || this.roomId) {
+        try {
+            await fetch(`${API_URL}/leave`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId, matchId: this.roomId })
+            });
+        } catch (error) {
+            console.error("退出エラー:", error);
         }
     }
+}
+
 
     preload() {
         this.load.image("background2", "assets/村.png");
