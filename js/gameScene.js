@@ -6,7 +6,7 @@ class GameScene extends Phaser.Scene {
         this.isMatching = false;
         this.roomId = null;
         this.matchingStartTime = null;
-        this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        this.playerId = `player_${crypto.randomUUID()}`;
 
         document.addEventListener("visibilitychange", async () => {
             if (document.visibilityState === "hidden") {
@@ -25,41 +25,20 @@ class GameScene extends Phaser.Scene {
     }
 
     async cleanupOldData() {
-    let retries = 3; // 最大3回リトライ
-    for (let i = 0; i < retries; i++) {
+        console.log(`🧹 cleanupOldData 実行: ${this.playerId}`);
         try {
-            console.log(`🧹 cleanupOldData 実行 (試行 ${i + 1}) : ${this.playerId}`);
-
             let response = await fetch(`${API_URL}/cleanup`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ playerId: this.playerId })
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTPエラー: ${response.status}`);
-            }
-
-            let data;
-            try {
-                data = await response.json();
-            } catch (jsonError) {
-                throw new Error("❌ JSON変換エラー: サーバーのレスポンスが不正です");
-            }
-
+            let data = await response.json();
             console.log("🗑️ cleanupOldData 結果:", data);
-            return; // 成功したら終了
         } catch (error) {
-            console.error(`❌ cleanupOldData エラー (試行 ${i + 1}):`, error);
-            if (i === retries - 1) {
-                console.error("🚨 cleanupOldData のリトライ失敗: サーバーに問題がある可能性があります");
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機してリトライ
+            console.error("❌ cleanupOldData エラー:", error);
         }
     }
-}
-
-
 
     preload() {
         this.load.image("background2", "assets/村.png");
@@ -69,105 +48,65 @@ class GameScene extends Phaser.Scene {
 
     create() {
         this.cameras.main.setBackgroundColor("#000000");
-        this.children.removeAll();
-
-        let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
-        let scaleX = this.scale.width / bg.width;
-        let scaleY = this.scale.height / bg.height;
-        let scale = Math.max(scaleX, scaleY);
-        bg.setScale(scale).setScrollFactor(0).setDepth(-5);
-
-        this.add.text(this.scale.width / 2, 100, "ゲーム画面", {
-            fontSize: "40px",
-            fill: "#ffffff"
-        }).setOrigin(0.5, 0.5).setDepth(1);
-
-        if (this.sound.get("bgm")) {
-            this.sound.stopByKey("bgm");
-        }
-        if (!this.sound.get("newBgm")) {
-            this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
-            this.newBgm.play();
-        }
+        let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2")
+            .setScale(Math.max(this.scale.width / bg.width, this.scale.height / bg.height))
+            .setDepth(-5);
 
         this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
             .setInteractive()
-            .setDepth(2)
             .setScale(0.5);
 
         this.matchingButton.on("pointerdown", async () => {
-            if (this.isMatching) {
-                console.log("すでにマッチング中です...");
-                return;
-            }
+            if (this.isMatching) return;
             this.isMatching = true;
             console.log(`🚀 マッチング開始 (Player ID: ${this.playerId})`);
             await this.matchPlayer();
         });
 
-        this.waitingText = this.add.text(this.scale.width / 2, 450, "", {
-            fontSize: "20px",
-            fill: "#ffffff"
-        }).setOrigin(0.5, 0.5);
+        this.waitingText = this.add.text(this.scale.width / 2, 450, "", { fontSize: "20px", fill: "#ffffff" }).setOrigin(0.5);
     }
 
     async matchPlayer() {
-    try {
-        console.log("🧹 先に古いデータを削除");
-        await this.cleanupOldData(); // 削除処理が完了するのを待つ
+        try {
+            console.log("🧹 先に古いデータを削除");
+            await this.cleanupOldData();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // ✅ 1秒待機
 
-        // ✅ ここで1秒待機して、サーバーがデータ削除を反映する時間を確保
-        await new Promise(resolve => setTimeout(resolve, 1000));
+            let response = await fetch(`${API_URL}/match`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId })
+            });
 
-        let response = await fetch(`${API_URL}/match`, { 
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ playerId: this.playerId })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTPエラー: ${response.status}`);
-        }
-
-        let data = await response.json();
-        console.log(`✅ マッチング結果:`, data);
-
-        if (data.matchId) {
-            console.log(`✅ マッチング成功！ 部屋ID: ${data.matchId}`);
-            this.roomId = data.matchId;
-            this.checkRoomStatus();
-        } else {
-            console.log("⏳ マッチング待機中...");
-            setTimeout(() => {
+            let data = await response.json();
+            if (data.matchId) {
+                this.roomId = data.matchId;
                 this.checkRoomStatus();
-            }, 2000);
+            } else {
+                console.log("⏳ マッチング待機中...");
+            }
+        } catch (error) {
+            console.error("❌ マッチングエラー:", error);
+            this.isMatching = false;
         }
-    } catch (error) {
-        console.error("❌ マッチングエラー:", error);
-        this.isMatching = false;
     }
-}
-
 
     async checkRoomStatus() {
         if (!this.roomId) return;
 
-        this.matchingStartTime = Date.now();
         let interval = setInterval(async () => {
             try {
                 let response = await fetch(`${API_URL}/room/${this.roomId}`);
                 let roomData = await response.json();
 
-                let elapsedSeconds = Math.floor((Date.now() - this.matchingStartTime) / 1000);
-                this.waitingText.setText(`待機時間: ${elapsedSeconds}秒`);
+                console.log(`🏠 ルームデータ:`, roomData);
 
-                if (roomData.status === "ready") {
+                if (roomData.status === "ready" && roomData.players.length >= 2) {
                     clearInterval(interval);
-                    console.log("全員揃いました！");
-                    this.waitingText.setText("全員揃いました！");
+                    console.log("✅ 全員揃いました！");
                     this.startBattle();
                 } else {
-                    console.log(`待機中... (${elapsedSeconds}秒経過)`);
+                    console.log(`待機中... (現在のプレイヤー数: ${roomData.players.length || 0})`);
                 }
             } catch (error) {
                 console.error("ルーム確認エラー:", error);
@@ -180,7 +119,5 @@ class GameScene extends Phaser.Scene {
         this.scene.start("BattleScene", { roomId: this.roomId });
     }
 }
-
-
 
 
