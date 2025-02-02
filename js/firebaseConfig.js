@@ -1,5 +1,5 @@
 
-// ✅ Firebase が正しくロードされたか確認
+// ✅ Firebase のロード確認
 if (typeof firebase === "undefined") {
     console.error("🔥 Firebase SDK がロードされていません！");
 } else {
@@ -21,6 +21,7 @@ const firebaseConfig = {
 if (typeof firebase !== "undefined") {
     firebase.initializeApp(firebaseConfig);
     window.db = firebase.database(); // `db` をグローバル変数に設定
+    console.log("✅ Firebase 初期化成功");
 } else {
     console.error("🔥 Firebase の初期化に失敗しました！");
 }
