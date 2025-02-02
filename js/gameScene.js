@@ -88,36 +88,37 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5, 0.5);
     }
 
-    async matchPlayer() {
-        try {
-            await this.cleanupOldData(); // 🔹 修正済み
+   async matchPlayer() {
+    try {
+        console.log("🚀 マッチング開始: 古いデータ削除を実行");
+        await this.cleanupOldData();  // 確実に実行
 
-            let response = await fetch(`${API_URL}/match`, { 
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ playerId: this.playerId })
-            });
+        let response = await fetch(`${API_URL}/match`, { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playerId: this.playerId })
+        });
 
-            if (!response.ok) {
-                throw new Error(`HTTPエラー: ${response.status}`);
-            }
-
-            let data = await response.json();
-            if (data.matchId) {
-                console.log(`マッチング成功！ 部屋ID: ${data.matchId}`);
-                this.roomId = data.matchId;
-                this.checkRoomStatus();
-            } else {
-                console.log("マッチング待機中...");
-                setTimeout(() => {
-                    this.checkRoomStatus();
-                }, 2000);
-            }
-        } catch (error) {
-            console.error("マッチングエラー:", error);
-            this.isMatching = false;
+        if (!response.ok) {
+            throw new Error(`HTTPエラー: ${response.status}`);
         }
+
+        let data = await response.json();
+        if (data.matchId) {
+            console.log(`✅ マッチング成功！ 部屋ID: ${data.matchId}`);
+            this.roomId = data.matchId;
+            this.checkRoomStatus();
+        } else {
+            console.log("⏳ マッチング待機中...");
+            setTimeout(() => {
+                this.checkRoomStatus();
+            }, 2000);
+        }
+    } catch (error) {
+        console.error("❌ マッチングエラー:", error);
+        this.isMatching = false;
     }
+}
 
     async checkRoomStatus() {
         if (!this.roomId) return;
