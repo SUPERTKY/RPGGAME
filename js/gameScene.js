@@ -1,4 +1,4 @@
-const API_URL = "https://mute-hall-fe0f.6hk7hzcfqs.workers.dev";  // Cloudflare Workers の URL
+const API_URL = "https://mute-hall-fe0f.6hk7hzcfqs.workers.dev";  // Cloudflare Workers のURL
 
 class GameScene extends Phaser.Scene {
     constructor() {
@@ -6,9 +6,9 @@ class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("background2", "assets/村.png"); // 🎨 背景画像
-        this.load.image("matchingButton", "assets/MATCHINGBUTTON.png"); // 🔘 マッチングボタン
-        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3"); // 🎵 BGM
+        this.load.image("background2", "assets/村.png");
+        this.load.image("matchingButton", "assets/MATCHINGBUTTON.png");
+        this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
     }
 
     create() {
@@ -31,14 +31,6 @@ class GameScene extends Phaser.Scene {
             .setDepth(2)
             .setScale(0.5);
 
-        if (this.sound.get("bgm")) {
-            this.sound.stopByKey("bgm");
-        }
-        if (!this.sound.get("newBgm")) {
-            this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
-            this.newBgm.play();
-        }
-
         this.matchingButton.on("pointerdown", () => {
             console.log("マッチングボタンが押されました");
             this.matchPlayer();
@@ -47,16 +39,18 @@ class GameScene extends Phaser.Scene {
 
     async matchPlayer() {
         try {
-            let response = await fetch(`${API_URL}/match`, { method: "POST" });
-            let data = await response.json();
+            let response = await fetch(`${API_URL}/match`, { 
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            });
 
+            if (!response.ok) {
+                throw new Error(`HTTPエラー: ${response.status}`);
+            }
+
+            let data = await response.json();
             if (data.matchId) {
                 console.log(`マッチング成功！ 部屋ID: ${data.matchId}`);
-                this.add.text(this.scale.width / 2, 450, `ルームID: ${data.matchId}`, {
-                    fontSize: "20px",
-                    fill: "#ffffff"
-                }).setOrigin(0.5, 0.5);
-                
                 this.roomId = data.matchId;
                 this.checkRoomStatus();
             } else {
@@ -83,13 +77,15 @@ class GameScene extends Phaser.Scene {
                 }).setOrigin(0.5, 0.5);
                 
                 this.startBattle();
+            } else {
+                console.log("待機中...");
             }
         }, 2000);
     }
 
     startBattle() {
         console.log("バトル開始！");
-        // ここでバトルシーンに移行する処理を入れる
         this.scene.start("BattleScene", { roomId: this.roomId });
     }
 }
+
