@@ -112,38 +112,42 @@ class GameScene extends Phaser.Scene {
     }
 
     async matchPlayer() {
-        try {
-            console.log("🧹 先に古いデータを削除");
-            await this.cleanupOldData();
+    try {
+        console.log("🧹 先に古いデータを削除");
+        await this.cleanupOldData(); // 削除処理が完了するのを待つ
 
-            let response = await fetch(`${API_URL}/match`, { 
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ playerId: this.playerId })
-            });
+        // ✅ ここで1秒待機して、サーバーがデータ削除を反映する時間を確保
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-            if (!response.ok) {
-                throw new Error(`HTTPエラー: ${response.status}`);
-            }
+        let response = await fetch(`${API_URL}/match`, { 
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playerId: this.playerId })
+        });
 
-            let data = await response.json();
-            console.log(`✅ マッチング結果:`, data);
-
-            if (data.matchId) {
-                console.log(`✅ マッチング成功！ 部屋ID: ${data.matchId}`);
-                this.roomId = data.matchId;
-                this.checkRoomStatus();
-            } else {
-                console.log("⏳ マッチング待機中...");
-                setTimeout(() => {
-                    this.checkRoomStatus();
-                }, 2000);
-            }
-        } catch (error) {
-            console.error("❌ マッチングエラー:", error);
-            this.isMatching = false;
+        if (!response.ok) {
+            throw new Error(`HTTPエラー: ${response.status}`);
         }
+
+        let data = await response.json();
+        console.log(`✅ マッチング結果:`, data);
+
+        if (data.matchId) {
+            console.log(`✅ マッチング成功！ 部屋ID: ${data.matchId}`);
+            this.roomId = data.matchId;
+            this.checkRoomStatus();
+        } else {
+            console.log("⏳ マッチング待機中...");
+            setTimeout(() => {
+                this.checkRoomStatus();
+            }, 2000);
+        }
+    } catch (error) {
+        console.error("❌ マッチングエラー:", error);
+        this.isMatching = false;
     }
+}
+
 
     async checkRoomStatus() {
         if (!this.roomId) return;
