@@ -1,4 +1,4 @@
-const API_URL = "https://your-worker-name.workers.dev";  // Cloudflare Workers の URL
+const API_URL = "mute-hall-fe0f.6hk7hzcfqs.workers.dev";  // Cloudflare Workers の URL
 
 class GameScene extends Phaser.Scene {
     constructor() {
