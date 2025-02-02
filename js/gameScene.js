@@ -6,10 +6,25 @@ class GameScene extends Phaser.Scene {
         this.isMatching = false;
         this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
-        // 🔹 ページが閉じられたら強制的に退出
+        // 🔹 ページが閉じたり更新されたら、強制的に待機リストから削除
         window.addEventListener("beforeunload", () => {
             this.leaveGame();
         });
+
+        // 🔹 ゲーム開始時に「古いデータを削除」
+        this.cleanupOldData();
+    }
+
+    async cleanupOldData() {
+        try {
+            await fetch(`${API_URL}/cleanup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId })
+            });
+        } catch (error) {
+            console.error("古いデータの削除エラー:", error);
+        }
     }
 
     async leaveGame() {
