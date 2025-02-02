@@ -4,46 +4,24 @@ class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: "GameScene" });
         this.isMatching = false;
-        this.matchingStartTime = null;
         this.roomId = null;
+        this.matchingStartTime = null;
         this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
         window.addEventListener("beforeunload", this.leaveGame.bind(this));
     }
 
-   async function cleanupOldData(request, env) {
-    let body = await request.json();
-    let playerId = body.playerId;
-
-    // 🔹 既存の待機プレイヤーデータを取得
-    let waitingData = await env.MATCH_STORAGE.get("waiting");
-    if (waitingData) {
-        let waitingPlayer = JSON.parse(waitingData);
-
-        // 🔹 **もし自分のデータなら削除**
-        if (waitingPlayer.playerId === playerId) {
-            await env.MATCH_STORAGE.delete("waiting");
-            console.log(`古い待機データを削除: ${playerId}`);
+    async cleanupOldData() {
+        try {
+            await fetch(`${API_URL}/cleanup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId })
+            });
+        } catch (error) {
+            console.error("古いデータの削除エラー:", error);
         }
     }
-
-    // 🔹 **自分が過去にマッチした部屋がある場合、削除**
-    let matchKeys = await env.MATCH_STORAGE.list(); // すべてのキーを取得
-    for (let key of matchKeys.keys) {
-        let roomData = await env.MATCH_STORAGE.get(key.name);
-        if (roomData) {
-            let room = JSON.parse(roomData);
-            if (room.players && room.players.includes(playerId)) {
-                await env.MATCH_STORAGE.delete(key.name);
-                console.log(`古いマッチングルーム削除: ${key.name}`);
-            }
-        }
-    }
-
-    return new Response(JSON.stringify({ message: "古いデータを削除しました" }), {
-        headers: getCORSHeaders()
-    });
-}
 
     async leaveGame() {
         if (this.isMatching || this.roomId) {
@@ -66,7 +44,7 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        this.cleanupOldData(); // ゲーム開始時に古いデータを削除
+        this.cleanupOldData(); // 🔹 クラス内のメソッドとして呼び出し
         this.cameras.main.setBackgroundColor("#000000");
         this.children.removeAll();
 
@@ -94,14 +72,14 @@ class GameScene extends Phaser.Scene {
             .setDepth(2)
             .setScale(0.5);
 
-        this.matchingButton.on("pointerdown", () => {
+        this.matchingButton.on("pointerdown", async () => {
             if (this.isMatching) {
                 console.log("すでにマッチング中です...");
                 return;
             }
             this.isMatching = true;
             console.log(`マッチング開始 (Player ID: ${this.playerId})`);
-            this.matchPlayer();
+            await this.matchPlayer();
         });
 
         this.waitingText = this.add.text(this.scale.width / 2, 450, "", {
@@ -111,48 +89,45 @@ class GameScene extends Phaser.Scene {
     }
 
     async matchPlayer() {
-    try {
-        // 🔹 過去の自分のデータを確実に削除
-        await this.cleanupOldData();
+        try {
+            await this.cleanupOldData(); // 🔹 修正済み
 
-        let response = await fetch(`${API_URL}/match`, { 
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ playerId: this.playerId })
-        });
+            let response = await fetch(`${API_URL}/match`, { 
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId })
+            });
 
-        if (!response.ok) {
-            throw new Error(`HTTPエラー: ${response.status}`);
-        }
+            if (!response.ok) {
+                throw new Error(`HTTPエラー: ${response.status}`);
+            }
 
-        let data = await response.json();
-        if (data.matchId) {
-            console.log(`マッチング成功！ 部屋ID: ${data.matchId}`);
-            this.roomId = data.matchId;
-            this.checkRoomStatus();
-        } else {
-            console.log("マッチング待機中...");
-            setTimeout(() => {
+            let data = await response.json();
+            if (data.matchId) {
+                console.log(`マッチング成功！ 部屋ID: ${data.matchId}`);
+                this.roomId = data.matchId;
                 this.checkRoomStatus();
-            }, 2000);
+            } else {
+                console.log("マッチング待機中...");
+                setTimeout(() => {
+                    this.checkRoomStatus();
+                }, 2000);
+            }
+        } catch (error) {
+            console.error("マッチングエラー:", error);
+            this.isMatching = false;
         }
-    } catch (error) {
-        console.error("マッチングエラー:", error);
-        this.isMatching = false;
     }
-}
-
 
     async checkRoomStatus() {
         if (!this.roomId) return;
 
-        this.matchingStartTime = Date.now(); // マッチング開始時間を記録
+        this.matchingStartTime = Date.now();
         let interval = setInterval(async () => {
             try {
                 let response = await fetch(`${API_URL}/room/${this.roomId}`);
                 let roomData = await response.json();
 
-                // 待機時間を更新
                 let elapsedSeconds = Math.floor((Date.now() - this.matchingStartTime) / 1000);
                 this.waitingText.setText(`待機時間: ${elapsedSeconds}秒`);
 
@@ -167,7 +142,7 @@ class GameScene extends Phaser.Scene {
             } catch (error) {
                 console.error("ルーム確認エラー:", error);
             }
-        }, 1000); // 1秒ごとに更新
+        }, 1000);
     }
 
     startBattle() {
@@ -176,4 +151,5 @@ class GameScene extends Phaser.Scene {
     }
 }
 
+export default GameScene;
 
