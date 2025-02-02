@@ -46,25 +46,20 @@ class GameScene extends Phaser.Scene {
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
     }
 
-    create() {
-        this.cameras.main.setBackgroundColor("#000000");
-        let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2")
-            .setScale(Math.max(this.scale.width / bg.width, this.scale.height / bg.height))
-            .setDepth(-5);
+   create() {
+    this.cameras.main.setBackgroundColor("#000000");
 
-        this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
-            .setInteractive()
-            .setScale(0.5);
+    // ✅ 先に `bg` を定義する
+    let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
 
-        this.matchingButton.on("pointerdown", async () => {
-            if (this.isMatching) return;
-            this.isMatching = true;
-            console.log(`🚀 マッチング開始 (Player ID: ${this.playerId})`);
-            await this.matchPlayer();
-        });
+    // ✅ `bg` の width と height を参照
+    let scaleX = this.scale.width / bg.width;
+    let scaleY = this.scale.height / bg.height;
+    let scale = Math.max(scaleX, scaleY);
 
-        this.waitingText = this.add.text(this.scale.width / 2, 450, "", { fontSize: "20px", fill: "#ffffff" }).setOrigin(0.5);
-    }
+    bg.setScale(scale).setDepth(-5);
+}
+
 
     async matchPlayer() {
         try {
