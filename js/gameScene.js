@@ -8,7 +8,6 @@ class GameScene extends Phaser.Scene {
         this.matchingStartTime = null;
         this.playerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
-        // 🔹 リロード時でも確実にデータ削除するために visibilitychange を使用
         document.addEventListener("visibilitychange", async () => {
             if (document.visibilityState === "hidden") {
                 await this.leaveGame();
@@ -20,8 +19,25 @@ class GameScene extends Phaser.Scene {
         if (this.isMatching || this.roomId) {
             const payload = JSON.stringify({ playerId: this.playerId, matchId: this.roomId });
             const blob = new Blob([payload], { type: "application/json" });
-            navigator.sendBeacon(`${API_URL}/leave`, blob);  // 🔹 `fetch()` の代わりに `sendBeacon()` を使用
+            navigator.sendBeacon(`${API_URL}/leave`, blob);
             console.log("✅ ページ離脱時に `leaveGame()` を実行");
+        }
+    }
+
+    async cleanupOldData() {
+        try {
+            console.log(`🧹 cleanupOldData 実行: ${this.playerId}`);
+
+            let response = await fetch(`${API_URL}/cleanup`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ playerId: this.playerId })
+            });
+
+            let data = await response.json();
+            console.log("🗑️ cleanupOldData 結果:", data);
+        } catch (error) {
+            console.error("古いデータの削除エラー:", error);
         }
     }
 
@@ -47,7 +63,7 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0.5, 0.5).setDepth(1);
 
         if (this.sound.get("bgm")) {
-            this.sound.stopByKey("bgm"); // 既存のBGMを止める
+            this.sound.stopByKey("bgm");
         }
         if (!this.sound.get("newBgm")) {
             this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
@@ -91,6 +107,8 @@ class GameScene extends Phaser.Scene {
             }
 
             let data = await response.json();
+            console.log(`✅ マッチング結果:`, data);
+
             if (data.matchId) {
                 console.log(`✅ マッチング成功！ 部屋ID: ${data.matchId}`);
                 this.roomId = data.matchId;
@@ -137,42 +155,9 @@ class GameScene extends Phaser.Scene {
         console.log("🎮 バトル開始！");
         this.scene.start("BattleScene", { roomId: this.roomId });
     }
-
-async function cleanupOldData(request, env) {
-    let body = await request.json();
-    let playerId = body.playerId;
-
-    console.log(`🧹 cleanupOldData 実行: ${playerId}`);
-
-    // 1. 待機リストのデータを取得
-    let waitingData = await env.MATCH_STORAGE.get("waiting");
-    if (waitingData) {
-        let waitingPlayer = JSON.parse(waitingData);
-        if (waitingPlayer.playerId === playerId) {
-            await env.MATCH_STORAGE.delete("waiting");
-            console.log(`🗑️ 削除: プレイヤー ${playerId} の待機データ`);
-        }
-    }
-
-    // 2. 過去のルームを全て削除
-    let matchKeys = await env.MATCH_STORAGE.list(); 
-    for (let key of matchKeys.keys) {
-        let roomData = await env.MATCH_STORAGE.get(key.name);
-        if (roomData) {
-            let room = JSON.parse(roomData);
-            if (room.players && room.players.includes(playerId)) {
-                await env.MATCH_STORAGE.delete(key.name);
-                console.log(`🗑️ ルーム削除: ${key.name}`);
-            }
-        }
-    }
-
-    return new Response(JSON.stringify({ message: "古いデータを削除しました" }), {
-        headers: getCORSHeaders()
-    });
 }
 
-}
+export default GameScene;
 
 
 
