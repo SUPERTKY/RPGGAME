@@ -95,18 +95,19 @@ class GameScene extends Phaser.Scene {
 
 
     monitorPlayers() {
-        this.roomRef.on("value", snapshot => {
-            let players = snapshot.val() || {};
-            let playerCount = Object.keys(players).length;
+    this.roomRef.on("value", snapshot => {
+        let players = snapshot.val() || {};
+        let playerCount = Object.keys(players).length;
 
-            console.log(`現在のプレイヤー数: ${playerCount}`);
+        console.log(`現在のプレイヤー数: ${playerCount}`);
 
-            if (playerCount >= 3) {
-                console.log("マッチング完了！ゲーム開始！");
-                this.startGame();
-            }
-        });
-    }
+        if (playerCount >= 3) {
+            console.log("✅ マッチング完了！ゲーム開始！");
+            this.startGame();
+        }
+    });
+}
+
     joinRoom() {
     this.roomRef.once("value").then(snapshot => {
         let players = snapshot.val() || {};
