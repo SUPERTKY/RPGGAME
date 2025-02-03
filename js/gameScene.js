@@ -85,9 +85,14 @@ class GameScene extends Phaser.Scene {
                     playerRef.remove();
                 });
 
-                // 🔥 **ネット切断や電源OFFでも自動削除**
-                playerRef.onDisconnect().remove()
-                    .then(() => console.log("✅ オフライン時に自動削除が設定されました"));
+                // 🔥 **確実に Firebase に接続してから onDisconnect() を設定**
+                firebase.database().ref(".info/connected").on("value", (snapshot) => {
+                    if (snapshot.val() === true) {
+                        playerRef.onDisconnect().remove()
+                            .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
+                            .catch(error => console.error("🔥 onDisconnect() 設定エラー:", error));
+                    }
+                });
 
                 this.monitorPlayers();
             });
@@ -97,6 +102,7 @@ class GameScene extends Phaser.Scene {
         }
     });
 }
+
 
 
 
