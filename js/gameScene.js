@@ -60,35 +60,41 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-   startMatching() {
-    // ゲームルームの親リファレンス
-    let roomsRef = window.db.ref("gameRooms");
+  startMatching() {
+    this.roomRef.once("value").then(snapshot => {
+        let players = snapshot.val() || {};
+        let playerCount = Object.keys(players).length;
 
-    roomsRef.once("value").then(snapshot => {
-        let rooms = snapshot.val() || {};
-        let selectedRoom = null;
-
-        // 空いている部屋を探す
-        Object.keys(rooms).forEach(roomId => {
-            let players = rooms[roomId].players || {};
-            let playerCount = Object.keys(players).length;
-
-            if (playerCount < 3) { // 3人未満ならこの部屋を使う
-                selectedRoom = roomId;
-            }
-        });
-
-        // 空いている部屋がなければ、新しい部屋を作る
-        if (!selectedRoom) {
-            selectedRoom = "room" + (Object.keys(rooms).length + 1);
-            roomsRef.child(selectedRoom).set({ players: {} });
+        if (players[this.playerId]) {
+            console.log("すでに登録済みのため、再登録しません:", this.playerId);
+            return;
         }
 
-        // 選ばれた部屋の参照をセット
-        this.roomRef = roomsRef.child(selectedRoom).child("players");
+        if (playerCount < 3) {
+            let playerRef = this.roomRef.child(this.playerId);
 
-        // 選ばれた部屋に参加
-        this.joinRoom();
+            // 🎯 プレイヤー登録
+            playerRef.set({
+                id: this.playerId,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
+
+                // 🔥 ページ離脱時に削除
+                window.addEventListener("beforeunload", () => {
+                    playerRef.remove();
+                });
+
+                // 🔥 **ネット切断や電源OFFでも自動削除**
+                playerRef.onDisconnect().remove()
+                    .then(() => console.log("✅ オフライン時に自動削除が設定されました"));
+
+                this.monitorPlayers();
+            });
+        } else {
+            console.log("部屋が満員です！他の部屋を探します。");
+            this.startMatching(); // 新しい部屋を探す
+        }
     });
 }
 
