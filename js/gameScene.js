@@ -73,7 +73,7 @@ class GameScene extends Phaser.Scene {
         if (playerCount < 3) {
             let playerRef = this.roomRef.child(this.playerId);
 
-            // 🎯 Firebase との接続が確認された後に `onDisconnect()` を設定
+            // 🔥 Firebase に接続が確認された後に `onDisconnect()` を設定
             firebase.database().ref(".info/connected").on("value", (snapshot) => {
                 if (snapshot.val() === true) {
                     console.log("🔌 Firebase に接続成功！onDisconnect を設定");
@@ -99,10 +99,15 @@ class GameScene extends Phaser.Scene {
             });
         } else {
             console.log("部屋が満員です！他の部屋を探します。");
-            this.startMatching(); // 新しい部屋を探す
+            
+            // 🔥 **連続リクエストを防ぐために、1秒待ってから再試行**
+            setTimeout(() => {
+                this.startMatching();
+            }, 1000);
         }
     });
 }
+
 
 
  monitorPlayers() {
