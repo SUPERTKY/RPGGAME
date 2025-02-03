@@ -73,6 +73,15 @@ class GameScene extends Phaser.Scene {
         if (playerCount < 3) {
             let playerRef = this.roomRef.child(this.playerId);
 
+            // 🔥 **Firebase に接続してから `onDisconnect()` を適用**
+            firebase.database().ref(".info/connected").on("value", (snapshot) => {
+                if (snapshot.val() === true) {
+                    playerRef.onDisconnect().remove()
+                        .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
+                        .catch(error => console.error("🔥 onDisconnect() 設定エラー:", error));
+                }
+            });
+
             // 🎯 プレイヤー登録
             playerRef.set({
                 id: this.playerId,
@@ -80,18 +89,9 @@ class GameScene extends Phaser.Scene {
             }).then(() => {
                 console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
 
-                // 🔥 ページ離脱時に削除
+                // 🔥 ページ離脱時にも削除
                 window.addEventListener("beforeunload", () => {
                     playerRef.remove();
-                });
-
-                // 🔥 **確実に Firebase に接続してから onDisconnect() を設定**
-                firebase.database().ref(".info/connected").on("value", (snapshot) => {
-                    if (snapshot.val() === true) {
-                        playerRef.onDisconnect().remove()
-                            .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
-                            .catch(error => console.error("🔥 onDisconnect() 設定エラー:", error));
-                    }
                 });
 
                 this.monitorPlayers();
@@ -103,10 +103,7 @@ class GameScene extends Phaser.Scene {
     });
 }
 
-
-
-
-    monitorPlayers() {
+ monitorPlayers() {
     this.roomRef.on("value", snapshot => {
         let players = snapshot.val() || {};
         let playerCount = Object.keys(players).length;
