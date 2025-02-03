@@ -21,3 +21,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 window.db = firebase.database(); // `db` をグローバル変数に設定
 console.log("✅ Firebase 初期化成功");
+window.addEventListener("beforeunload", function() {
+    if (window.db && localStorage.getItem('userId')) {
+        let userId = localStorage.getItem('userId');
+        let roomRef = window.db.ref("gameRooms/room1/players/" + userId);
+
+        // Firebase からプレイヤーを削除
+        roomRef.remove().then(() => {
+            console.log("🔥 プレイヤーデータ削除: ", userId);
+        }).catch(error => {
+            console.error("🔥 データ削除失敗:", error);
+        });
+    }
+});
