@@ -134,7 +134,7 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
-        if (playerCount < 2) {
+        if (playerCount < 6) {
             this.roomRef.child(this.playerId).set({
                 id: this.playerId,
                 joinedAt: firebase.database.ServerValue.TIMESTAMP
