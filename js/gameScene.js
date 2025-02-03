@@ -60,29 +60,36 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    startMatching() {
-        this.roomRef.once("value").then(snapshot => {
-            let players = snapshot.val() || {};
-            let playerCount = Object.keys(players).length;
+   startMatching() {
+    this.roomRef.once("value").then(snapshot => {
+        let players = snapshot.val() || {};
+        let playerCount = Object.keys(players).length;
 
-            if (players[this.playerId]) {
-                console.log("すでに登録済みのため、再登録しません:", this.playerId);
-                return;
-            }
+        if (players[this.playerId]) {
+            console.log("すでに登録済みのため、再登録しません:", this.playerId);
+            return;
+        }
 
-            if (playerCount < 6) {
-                this.roomRef.child(this.playerId).set({
-                    id: this.playerId,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP
-                }).then(() => {
-                    console.log("マッチング成功:", this.playerId);
-                    this.monitorPlayers();
+        if (playerCount < 6) {
+            this.roomRef.child(this.playerId).set({
+                id: this.playerId,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                console.log("マッチング成功:", this.playerId);
+
+                // ❗ ページ離脱時の自動削除処理を追加
+                window.addEventListener("beforeunload", () => {
+                    this.roomRef.child(this.playerId).remove();
                 });
-            } else {
-                console.log("部屋が満員です！マッチング不可");
-            }
-        });
-    }
+
+                this.monitorPlayers();
+            });
+        } else {
+            console.log("部屋が満員です！マッチング不可");
+        }
+    });
+}
+
 
     monitorPlayers() {
         this.roomRef.on("value", snapshot => {
