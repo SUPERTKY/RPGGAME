@@ -61,34 +61,37 @@ class GameScene extends Phaser.Scene {
     }
 
    startMatching() {
-    this.roomRef.once("value").then(snapshot => {
-        let players = snapshot.val() || {};
-        let playerCount = Object.keys(players).length;
+    // ゲームルームの親リファレンス
+    let roomsRef = window.db.ref("gameRooms");
 
-        if (players[this.playerId]) {
-            console.log("すでに登録済みのため、再登録しません:", this.playerId);
-            return;
+    roomsRef.once("value").then(snapshot => {
+        let rooms = snapshot.val() || {};
+        let selectedRoom = null;
+
+        // 空いている部屋を探す
+        Object.keys(rooms).forEach(roomId => {
+            let players = rooms[roomId].players || {};
+            let playerCount = Object.keys(players).length;
+
+            if (playerCount < 3) { // 3人未満ならこの部屋を使う
+                selectedRoom = roomId;
+            }
+        });
+
+        // 空いている部屋がなければ、新しい部屋を作る
+        if (!selectedRoom) {
+            selectedRoom = "room" + (Object.keys(rooms).length + 1);
+            roomsRef.child(selectedRoom).set({ players: {} });
         }
 
-        if (playerCount < 6) {
-            this.roomRef.child(this.playerId).set({
-                id: this.playerId,
-                joinedAt: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                console.log("マッチング成功:", this.playerId);
+        // 選ばれた部屋の参照をセット
+        this.roomRef = roomsRef.child(selectedRoom).child("players");
 
-                // ❗ ページ離脱時の自動削除処理を追加
-                window.addEventListener("beforeunload", () => {
-                    this.roomRef.child(this.playerId).remove();
-                });
-
-                this.monitorPlayers();
-            });
-        } else {
-            console.log("部屋が満員です！マッチング不可");
-        }
+        // 選ばれた部屋に参加
+        this.joinRoom();
     });
 }
+
 
 
     monitorPlayers() {
