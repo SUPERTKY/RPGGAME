@@ -107,6 +107,36 @@ class GameScene extends Phaser.Scene {
             }
         });
     }
+    joinRoom() {
+    this.roomRef.once("value").then(snapshot => {
+        let players = snapshot.val() || {};
+        let playerCount = Object.keys(players).length;
+
+        if (players[this.playerId]) {
+            console.log("すでに登録済みのため、再登録しません:", this.playerId);
+            return;
+        }
+
+        if (playerCount < 3) {
+            this.roomRef.child(this.playerId).set({
+                id: this.playerId,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
+
+                // ページ離脱時に削除
+                window.addEventListener("beforeunload", () => {
+                    this.roomRef.child(this.playerId).remove();
+                });
+
+                this.monitorPlayers();
+            });
+        } else {
+            console.log("部屋が満員です！他の部屋を探します。");
+            this.startMatching(); // 再度マッチング処理を実行
+        }
+    });
+}
 
     startGame() {
         this.roomRef.off();
