@@ -69,7 +69,7 @@ class GameScene extends Phaser.Scene {
                 return;
             }
 
-            if (playerCount < 6) {
+            if (playerCount < 4) {
                 let playerRef = this.roomRef.child(this.playerId);
 
                 firebase.database().ref(".info/connected").on("value", (snapshot) => {
@@ -114,7 +114,7 @@ class GameScene extends Phaser.Scene {
 
         console.log(`現在のプレイヤー数: ${playerCount}`);
 
-        if (playerCount >= 6) {
+        if (playerCount >= 4) {
             console.log("✅ マッチング完了！ゲーム開始！");
             this.startGame();
         }
