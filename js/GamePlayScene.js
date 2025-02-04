@@ -21,10 +21,8 @@ class GamePlayScene extends Phaser.Scene {
         let scale = Math.max(scaleX, scaleY);
         bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-        // 以前の BGM を停止
+        // 以前の BGM を停止して新しい BGM を再生
         this.sound.stopAll();
-
-        // 新しい BGM を再生
         this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
         this.bgm.play();
 
@@ -33,28 +31,39 @@ class GamePlayScene extends Phaser.Scene {
         this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
         Phaser.Utils.Array.Shuffle(this.roles);
         
+        // ルーレットの回転（時間を計算）
+        let totalSpins = this.roles.length * 3; // 役職リストを3周させる
+        let spinTime = totalSpins * 500; // 500msごとに切り替えるので、全体の時間を計算
+
         this.time.addEvent({
             delay: 500,
-            repeat: this.roles.length * 3,
+            repeat: totalSpins,
             callback: () => {
                 this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
                 this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
             }
         });
 
-        this.time.delayedCall(3000, () => {
+        // 🎵 **ルーレットが完全に止まった直後に決定音を再生**
+        this.time.delayedCall(spinTime, () => {
             this.finalizeRole();
         });
     }
 
     finalizeRole() {
+        let finalRole = this.roles[this.currentRoleIndex];
+
+        // **決定音を再生**
         let decisionSound = this.sound.add("decisionSound", { volume: 1 });
         decisionSound.play();
-        
-        let finalRole = this.roles[this.currentRoleIndex];
-        this.roleDisplay.setTexture(finalRole);
 
-        this.time.delayedCall(10000, () => {
+        // 🎯 **決定音の再生が終わるタイミングで画像を固定**
+        decisionSound.once("complete", () => {
+            this.roleDisplay.setTexture(finalRole);
+        });
+
+        // ルーレット停止後の待機時間（決定音終了後にVS画面に移行）
+        this.time.delayedCall(3000, () => {
             this.showVsScreen();
         });
     }
@@ -62,19 +71,8 @@ class GamePlayScene extends Phaser.Scene {
     showVsScreen() {
         let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7);
         
-        this.time.delayedCall(10000, () => {
+        this.time.delayedCall(3000, () => {
             this.scene.start("BattleScene");
         });
     }
 }
-
-class BattleScene extends Phaser.Scene {
-    constructor() {
-        super({ key: "BattleScene" });
-    }
-
-    create() {
-        console.log("バトルシーンに移動しました。");
-    }
-}
-
