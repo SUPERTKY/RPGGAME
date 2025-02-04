@@ -125,17 +125,14 @@ class GameScene extends Phaser.Scene {
 startGame() {
     console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
 
-    this.scene.start("GamePlayScene");
-    console.log("📌 GamePlayScene へ遷移処理を実行しました。");
+    if (!this.scene.manager.keys["GamePlayScene"]) {  // 🔥 シーンが存在しない場合のみ追加
+        console.log("📌 GamePlayScene を動的に追加します");
+        this.scene.add("GamePlayScene", GamePlayScene); // 🔥 後からシーンを追加
+    }
 
-    this.time.delayedCall(1000, () => {
-        if (this.scene.isActive("GamePlayScene")) {
-            console.log("✅ GamePlayScene へ遷移成功！");
-        } else {
-            console.error("❌ GamePlayScene への遷移に失敗！");
-        }
-    });
+    this.scene.start("GamePlayScene");
 }
+
 
 }
 
