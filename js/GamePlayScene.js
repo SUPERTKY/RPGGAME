@@ -32,13 +32,17 @@ class GamePlayScene extends Phaser.Scene {
         this.players = JSON.parse(localStorage.getItem("players")) || ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4", "プレイヤー5", "プレイヤー6"];
 
         this.currentRoleIndex = 0;
-        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1);
+        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
 
-        let totalSpins = this.roles.length * 3;
-        let spinTime = totalSpins * 500;
+        let totalSpins = this.roles.length * 5;
+        let spinTime = totalSpins * 700;
+
+        this.time.delayedCall(500, () => {
+            this.roleDisplay.setAlpha(1);
+        });
 
         this.time.addEvent({
-            delay: 500,
+            delay: 700,
             repeat: totalSpins,
             callback: () => {
                 this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
@@ -46,7 +50,7 @@ class GamePlayScene extends Phaser.Scene {
             }
         });
 
-        this.time.delayedCall(spinTime + 500, () => {
+        this.time.delayedCall(spinTime + 1000, () => {
             this.finalizeRole();
         });
     }
@@ -56,11 +60,11 @@ class GamePlayScene extends Phaser.Scene {
         let decisionSound = this.sound.add("decisionSound", { volume: 1 });
         decisionSound.play();
 
-        this.time.delayedCall(500, () => {
+        this.time.delayedCall(700, () => {
             this.roleDisplay.setTexture(finalRole);
         });
 
-        this.time.delayedCall(3000, () => {
+        this.time.delayedCall(4000, () => {
             this.showVsScreen();
         });
     }
@@ -69,7 +73,7 @@ class GamePlayScene extends Phaser.Scene {
         let vsSound = this.sound.add("vsSound", { volume: 1 });
         vsSound.play();
 
-        this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
+        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
         let leftTeam = this.players.slice(0, 3);
         let rightTeam = this.players.slice(3, 6);
@@ -86,7 +90,8 @@ class GamePlayScene extends Phaser.Scene {
             }).setOrigin(0.5);
         });
 
-        this.time.delayedCall(3000, () => {
+        this.time.delayedCall(5000, () => {
+            vsImage.setAlpha(0);
             this.scene.start("BattleScene");
         });
     }
@@ -96,6 +101,11 @@ class BattleScene extends Phaser.Scene {
     constructor() {
         super({ key: "BattleScene" });
     }
+
+    create() {
+        console.log("バトルシーンに移動しました。");
+    }
+}
 
     create() {
         console.log("バトルシーンに移動しました。");
