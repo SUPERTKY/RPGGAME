@@ -73,7 +73,7 @@ class GameScene extends Phaser.Scene {
         if (playerCount < 3) {
             let playerRef = this.roomRef.child(this.playerId);
 
-            // 🔥 Firebase に接続が確認された後に `onDisconnect()` を設定
+            // 🔥 Firebase に接続が確認された後に onDisconnect() を設定
             firebase.database().ref(".info/connected").on("value", (snapshot) => {
                 if (snapshot.val() === true) {
                     console.log("🔌 Firebase に接続成功！onDisconnect を設定");
@@ -88,7 +88,7 @@ class GameScene extends Phaser.Scene {
                 id: this.playerId,
                 joinedAt: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
+                console.log(✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key}));
 
                 // 🔥 ページを閉じたら削除
                 window.addEventListener("beforeunload", () => {
@@ -115,7 +115,7 @@ class GameScene extends Phaser.Scene {
         let players = snapshot.val() || {};
         let playerCount = Object.keys(players).length;
 
-        console.log(`現在のプレイヤー数: ${playerCount}`);
+        console.log(現在のプレイヤー数: ${playerCount});
 
         if (playerCount >= 3) {
             console.log("✅ マッチング完了！ゲーム開始！");
@@ -139,7 +139,7 @@ class GameScene extends Phaser.Scene {
                 id: this.playerId,
                 joinedAt: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
+                console.log(✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key}));
 
                 // ページ離脱時に削除
                 window.addEventListener("beforeunload", () => {
@@ -155,28 +155,8 @@ class GameScene extends Phaser.Scene {
     });
 }
 
-    import RoleAssignmentScene from "./RoleAssignmentScene.js"; // 役割発表シーンを読み込む
-
-const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    scene: [GameScene, RoleAssignmentScene, GamePlayScene], // `RoleAssignmentScene` を追加
-    physics: {
-        default: "arcade",
-        arcade: {
-            debug: false
-        }
+    startGame() {
+        this.roomRef.off();
+        this.scene.start("GamePlayScene");
     }
-};
-
-const game = new Phaser.Game(config);
-
-// ✅ GameScene の `startGame()` を修正
-startGame() {
-    this.roomRef.off();
-    this.scene.start("RoleAssignmentScene"); // ✅ まず役割発表シーンへ移動
-}
-
-}
-
+} 
