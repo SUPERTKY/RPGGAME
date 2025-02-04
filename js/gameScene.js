@@ -125,6 +125,7 @@ class GameScene extends Phaser.Scene {
     startGame() {
         this.roomRef.off();
         this.scene.start("GamePlayScene");
+        console.log("🎮 GamePlayScene が開始されました。");
     }
 }
 
