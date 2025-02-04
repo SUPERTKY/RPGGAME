@@ -155,9 +155,28 @@ class GameScene extends Phaser.Scene {
     });
 }
 
-    startGame() {
-        this.roomRef.off();
-        this.scene.start("GamePlayScene");
+    import RoleAssignmentScene from "./RoleAssignmentScene.js"; // 役割発表シーンを読み込む
+
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    scene: [GameScene, RoleAssignmentScene, GamePlayScene], // `RoleAssignmentScene` を追加
+    physics: {
+        default: "arcade",
+        arcade: {
+            debug: false
+        }
     }
+};
+
+const game = new Phaser.Game(config);
+
+// ✅ GameScene の `startGame()` を修正
+startGame() {
+    this.roomRef.off();
+    this.scene.start("RoleAssignmentScene"); // ✅ まず役割発表シーンへ移動
+}
+
 }
 
