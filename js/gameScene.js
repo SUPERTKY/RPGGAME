@@ -69,7 +69,7 @@ class GameScene extends Phaser.Scene {
                 return;
             }
 
-            if (playerCount < 3) {
+            if (playerCount < 6) {
                 let playerRef = this.roomRef.child(this.playerId);
 
                 firebase.database().ref(".info/connected").on("value", (snapshot) => {
