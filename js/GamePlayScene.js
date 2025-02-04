@@ -21,8 +21,15 @@ class GamePlayScene extends Phaser.Scene {
         let scale = Math.max(scaleX, scaleY);
         bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-        // 以前の BGM を停止して新しい BGM を再生
+        // 🎵 **すでにBGMが再生されていたら停止**
+        if (this.sound.get("bgmRoleReveal")) {
+            this.sound.get("bgmRoleReveal").stop();
+        }
+
+        // 🔇 **全ての音楽を確実に停止**
         this.sound.stopAll();
+
+        // 🎵 **BGMを一度だけ再生**
         this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
         this.bgm.play();
 
@@ -31,9 +38,9 @@ class GamePlayScene extends Phaser.Scene {
         this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
         Phaser.Utils.Array.Shuffle(this.roles);
         
-        // ルーレットの回転（時間を計算）
-        let totalSpins = this.roles.length * 3; // 役職リストを3周させる
-        let spinTime = totalSpins * 500; // 500msごとに切り替えるので、全体の時間を計算
+        // ルーレットの回転時間を計算
+        let totalSpins = this.roles.length * 3;
+        let spinTime = totalSpins * 500; // 500msごとに切り替え → 合計時間計算
 
         this.time.addEvent({
             delay: 500,
@@ -53,7 +60,11 @@ class GamePlayScene extends Phaser.Scene {
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
 
-        // **決定音を再生**
+        // 🎵 **決定音が重ならないように確実に停止**
+        if (this.sound.get("decisionSound")) {
+            this.sound.get("decisionSound").stop();
+        }
+
         let decisionSound = this.sound.add("decisionSound", { volume: 1 });
         decisionSound.play();
 
