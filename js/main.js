@@ -2,7 +2,7 @@ const config = {
     type: Phaser.AUTO,
     width: window.innerWidth,
     height: window.innerHeight,
-    scene: [HomeScene, GameScene],
+    scene: [HomeScene, GameScene, GamePlayScene],
     scale: {
         mode: Phaser.Scale.FIT, // 画面サイズに自動調整
         autoCenter: Phaser.Scale.CENTER_BOTH // 中央に配置
