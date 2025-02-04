@@ -21,9 +21,10 @@ class GamePlayScene extends Phaser.Scene {
         let scale = Math.max(scaleX, scaleY);
         bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-        if (this.sound.get("bgmRoleReveal")) {
-            this.sound.stopByKey("bgmRoleReveal");
-        }
+        // 以前の BGM を停止
+        this.sound.stopAll();
+
+        // 新しい BGM を再生
         this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
         this.bgm.play();
 
