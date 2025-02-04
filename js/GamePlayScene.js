@@ -1,4 +1,5 @@
 class GamePlayScene extends Phaser.Scene {
+    console.log("✅ いけたよ");
     constructor() {
         super({ key: "GamePlayScene" });
     }
