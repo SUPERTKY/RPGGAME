@@ -91,7 +91,7 @@ class GamePlayScene extends Phaser.Scene {
         });
 
         this.time.delayedCall(5000, () => {
-            vsImage.setAlpha(0);
+            vsImage.destroy();
             this.scene.start("BattleScene");
         });
     }
@@ -101,11 +101,6 @@ class BattleScene extends Phaser.Scene {
     constructor() {
         super({ key: "BattleScene" });
     }
-
-    create() {
-        console.log("バトルシーンに移動しました。");
-    }
-}
 
     create() {
         console.log("バトルシーンに移動しました。");
