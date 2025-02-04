@@ -27,61 +27,38 @@ class GamePlayScene extends Phaser.Scene {
         this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
         this.bgm.play();
 
-        this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
-        Phaser.Utils.Array.Shuffle(this.roles);
-        this.players = JSON.parse(localStorage.getItem("players")) || ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4", "プレイヤー5", "プレイヤー6"];
+        this.roomRef = window.db.ref("gameRooms/room1/players");
+        this.roomRef.once("value").then(snapshot => {
+            let players = snapshot.val() || {};
+            let playerList = Object.values(players);
 
-        this.currentRoleIndex = 0;
-        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1);
-
-        let totalSpins = this.roles.length * 3;
-        let spinTime = totalSpins * 500;
-
-        this.time.addEvent({
-            delay: 500,
-            repeat: totalSpins,
-            callback: () => {
-                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+            if (playerList.length < 4) {
+                console.error("🚨 プレイヤーが足りません！", playerList);
+                return;
             }
-        });
 
-        this.time.delayedCall(spinTime + 500, () => {
-            this.finalizeRole();
-        });
-    }
+            Phaser.Utils.Array.Shuffle(playerList);
+            let leftTeam = playerList.slice(0, 2);
+            let rightTeam = playerList.slice(2, 4);
 
-    finalizeRole() {
-        let finalRole = this.roles[this.currentRoleIndex];
-        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-        decisionSound.play();
-
-        this.time.delayedCall(500, () => {
-            this.roleDisplay.setTexture(finalRole);
-        });
-
-        this.time.delayedCall(3000, () => {
-            this.showVsScreen();
+            this.showVsScreen(leftTeam, rightTeam);
         });
     }
 
-    showVsScreen() {
+    showVsScreen(leftTeam, rightTeam) {
         let vsSound = this.sound.add("vsSound", { volume: 1 });
         vsSound.play();
 
         this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-        let leftTeam = this.players.slice(0, 3);
-        let rightTeam = this.players.slice(3, 6);
-
-        leftTeam.forEach((name, index) => {
-            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), name, {
+        leftTeam.forEach((player, index) => {
+            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), player.name, {
                 fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
             }).setOrigin(0.5);
         });
 
-        rightTeam.forEach((name, index) => {
-            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), name, {
+        rightTeam.forEach((player, index) => {
+            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), player.name, {
                 fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
             }).setOrigin(0.5);
         });
