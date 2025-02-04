@@ -125,13 +125,22 @@ class GameScene extends Phaser.Scene {
 startGame() {
     console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
 
-    if (!this.scene.manager.keys["GamePlayScene"]) {  // 🔥 シーンが存在しない場合のみ追加
+    // 🔥 プレイヤーの名前も Firebase に保存
+    let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
+
+    let playerRef = this.roomRef.child(this.playerId);
+    playerRef.update({ name: playerName })
+        .then(() => console.log("✅ プレイヤー名を Firebase に保存:", playerName))
+        .catch(error => console.error("🔥 プレイヤー名保存エラー:", error));
+
+    if (!this.scene.manager.keys["GamePlayScene"]) {
         console.log("📌 GamePlayScene を動的に追加します");
-        this.scene.add("GamePlayScene", GamePlayScene); // 🔥 後からシーンを追加
+        this.scene.add("GamePlayScene", GamePlayScene);
     }
 
     this.scene.start("GamePlayScene");
 }
+
 
 
 }
