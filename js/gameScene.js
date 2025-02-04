@@ -110,7 +110,7 @@ class GameScene extends Phaser.Scene {
 
             console.log(`現在のプレイヤー数: ${playerCount}`);
 
-            if (playerCount >= 1) {
+            if (playerCount >= 6) {
                 console.log("✅ マッチング完了！ゲーム開始！");
                 this.startGame();
             }
