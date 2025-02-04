@@ -84,8 +84,9 @@ class RoleAssignmentScene extends Phaser.Scene {
 
     startGame() {
         this.roomRef.off();
-        this.scene.start("GamePlayScene"); // 次のシーンへ
+        this.scene.start("GamePlayScene"); // ✅ 役割発表後、ゲームプレイへ
     }
 }
 
 export default RoleAssignmentScene;
+
