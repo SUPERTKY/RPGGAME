@@ -4,7 +4,7 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("background3", "assets/戦場.png"); 
+        this.load.image("background3", "assets/role_scene.png"); 
         this.load.image("vsImage", "assets/VS.png");
         this.load.image("swordsman", "assets/剣士.png");
         this.load.image("mage", "assets/魔法使い.png");
