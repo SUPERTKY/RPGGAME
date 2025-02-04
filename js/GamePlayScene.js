@@ -26,31 +26,32 @@ class GamePlayScene extends Phaser.Scene {
         }
         this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
         this.bgm.play();
+
+        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.8);
+        this.currentRoleIndex = 0;
+        this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
+        Phaser.Utils.Array.Shuffle(this.roles);
         
+        this.time.addEvent({
+            delay: 500,
+            repeat: this.roles.length * 3,
+            callback: () => {
+                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+            }
+        });
+
         this.time.delayedCall(3000, () => {
-            this.showRoleResults();
+            this.finalizeRole();
         });
     }
 
-    showRoleResults() {
+    finalizeRole() {
         let decisionSound = this.sound.add("decisionSound", { volume: 1 });
         decisionSound.play();
-
-        let roles = ["priest", "priest", "mage", "mage", "swordsman", "swordsman"];
-        Phaser.Utils.Array.Shuffle(roles);
         
-        let positions = [
-            { x: this.scale.width / 4, y: this.scale.height / 3 },
-            { x: this.scale.width * 3 / 4, y: this.scale.height / 3 },
-            { x: this.scale.width / 4, y: this.scale.height / 2 },
-            { x: this.scale.width * 3 / 4, y: this.scale.height / 2 },
-            { x: this.scale.width / 4, y: this.scale.height * 2 / 3 },
-            { x: this.scale.width * 3 / 4, y: this.scale.height * 2 / 3 }
-        ];
-        
-        for (let i = 0; i < roles.length; i++) {
-            this.add.image(positions[i].x, positions[i].y, roles[i]).setScale(0.5);
-        }
+        let finalRole = this.roles[this.currentRoleIndex];
+        this.roleDisplay.setTexture(finalRole);
 
         this.time.delayedCall(10000, () => {
             this.showVsScreen();
@@ -75,3 +76,4 @@ class BattleScene extends Phaser.Scene {
         console.log("バトルシーンに移動しました。");
     }
 }
+
