@@ -13,7 +13,6 @@ class GameScene extends Phaser.Scene {
     create() {
         this.cameras.main.setBackgroundColor("#000000");
         
-
         let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
         let scaleX = this.scale.width / bg.width;
         let scaleY = this.scale.height / bg.height;
@@ -60,103 +59,68 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-  startMatching() {
-    this.roomRef.once("value").then(snapshot => {
-        let players = snapshot.val() || {};
-        let playerCount = Object.keys(players).length;
+    startMatching() {
+        this.roomRef.once("value").then(snapshot => {
+            let players = snapshot.val() || {};
+            let playerCount = Object.keys(players).length;
 
-        if (players[this.playerId]) {
-            console.log("すでに登録済みのため、再登録しません:", this.playerId);
-            return;
-        }
+            if (players[this.playerId]) {
+                console.log("すでに登録済みのため、再登録しません:", this.playerId);
+                return;
+            }
 
-        if (playerCount < 3) {
-            let playerRef = this.roomRef.child(this.playerId);
+            if (playerCount < 3) {
+                let playerRef = this.roomRef.child(this.playerId);
 
-            // 🔥 Firebase に接続が確認された後に onDisconnect() を設定
-            firebase.database().ref(".info/connected").on("value", (snapshot) => {
-                if (snapshot.val() === true) {
-                    console.log("🔌 Firebase に接続成功！onDisconnect を設定");
-                    playerRef.onDisconnect().remove()
-                        .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
-                        .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
-                }
-            });
-
-            // 🎯 プレイヤーを登録
-            playerRef.set({
-                id: this.playerId,
-                joinedAt: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                console.log(✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key}));
-
-                // 🔥 ページを閉じたら削除
-                window.addEventListener("beforeunload", () => {
-                    playerRef.remove();
+                firebase.database().ref(".info/connected").on("value", (snapshot) => {
+                    if (snapshot.val() === true) {
+                        console.log("🔌 Firebase に接続成功！onDisconnect を設定");
+                        playerRef.onDisconnect().remove()
+                            .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
+                            .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
+                    }
                 });
 
-                this.monitorPlayers();
-            });
-        } else {
-            console.log("部屋が満員です！他の部屋を探します。");
-            
-            // 🔥 **連続リクエストを防ぐために、1秒待ってから再試行**
-            setTimeout(() => {
-                this.startMatching();
-            }, 1000);
-        }
-    });
-}
+                playerRef.set({
+                    id: this.playerId,
+                    joinedAt: firebase.database.ServerValue.TIMESTAMP
+                }).then(() => {
+                    console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
 
+                    window.addEventListener("beforeunload", () => {
+                        playerRef.remove();
+                    });
 
-
- monitorPlayers() {
-    this.roomRef.on("value", snapshot => {
-        let players = snapshot.val() || {};
-        let playerCount = Object.keys(players).length;
-
-        console.log(現在のプレイヤー数: ${playerCount});
-
-        if (playerCount >= 3) {
-            console.log("✅ マッチング完了！ゲーム開始！");
-            this.startGame();
-        }
-    });
-}
-
-    joinRoom() {
-    this.roomRef.once("value").then(snapshot => {
-        let players = snapshot.val() || {};
-        let playerCount = Object.keys(players).length;
-
-        if (players[this.playerId]) {
-            console.log("すでに登録済みのため、再登録しません:", this.playerId);
-            return;
-        }
-
-        if (playerCount < 6) {
-            this.roomRef.child(this.playerId).set({
-                id: this.playerId,
-                joinedAt: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                console.log(✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key}));
-
-                // ページ離脱時に削除
-                window.addEventListener("beforeunload", () => {
-                    this.roomRef.child(this.playerId).remove();
+                    this.monitorPlayers();
                 });
+            } else {
+                console.log("部屋が満員です！他の部屋を探します。");
+                
+                setTimeout(() => {
+                    this.startMatching();
+                }, 1000);
+            }
+        });
+    }
 
-                this.monitorPlayers();
-            });
-        } else {
-            console.log("部屋が満員です！他の部屋を探します。");
-            this.startMatching(); // 再度マッチング処理を実行
-        }
-    });
-}
+    monitorPlayers() {
+        this.roomRef.on("value", snapshot => {
+            let players = snapshot.val() || {};
+            let playerCount = Object.keys(players).length;
+
+            console.log(`現在のプレイヤー数: ${playerCount}`);
+
+            if (playerCount >= 3) {
+                console.log("✅ マッチング完了！ゲーム開始！");
+                this.startGame();
+            }
+        });
+    }
 
     startGame() {
         this.roomRef.off();
         this.scene.start("GamePlayScene");
     }
-} 
+}
+
+export default GameScene;
