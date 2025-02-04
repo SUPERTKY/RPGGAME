@@ -13,8 +13,7 @@ class GamePlayScene extends Phaser.Scene {
 
     preload() {
         this.load.image("background", "assets/背景.png"); // 🏞️ 背景画像
-        this.load.audio("rouletteSound", "assets/ルーレット音.mp3"); // 🎵 ルーレット音
-        this.load.audio("decisionSound", "assets/決定音.mp3"); // 🎵 役職決定音
+        this.load.audio("decisionSound", "assets/決定音.mp3"); // 🎵 決定音
     }
 
     create() {
@@ -26,8 +25,7 @@ class GamePlayScene extends Phaser.Scene {
 
         this.add.text(100, 50, "役職を決定中...", { fontSize: "32px", fill: "#fff" });
 
-        // 🎵 ルーレット効果音
-        this.rouletteSound = this.sound.add("rouletteSound");
+        // 🎵 決定音
         this.decisionSound = this.sound.add("decisionSound");
 
         // 🌀 ルーレットテキスト
@@ -54,7 +52,6 @@ class GamePlayScene extends Phaser.Scene {
 
     startRoleRoulette() {
         this.rouletteActive = true;
-        this.rouletteSound.play({ loop: true });
 
         this.rouletteTimer = this.time.addEvent({
             delay: 100,
@@ -73,12 +70,13 @@ class GamePlayScene extends Phaser.Scene {
 
     stopRoleRoulette() {
         this.rouletteActive = false;
-        this.rouletteSound.stop();
         this.rouletteTimer.remove();
 
         this.role = this.roles[this.rouletteIndex];
         this.roleText.setText(this.role);
-        this.decisionSound.play(); // 🎵 決定音
+
+        // 🎵 決定音を鳴らす（ルーレット中の音はなし）
+        this.decisionSound.play(); 
 
         console.log(`✅ 役職決定: ${this.role}`);
 
@@ -139,5 +137,6 @@ class GamePlayScene extends Phaser.Scene {
         this.teamBText.setText("Team B:\n" + teamB.join("\n"));
     }
 }
+
 
 
