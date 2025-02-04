@@ -2,6 +2,7 @@ class HomeScene extends Phaser.Scene {
     constructor() {
         super({ key: "HomeScene" });
         this.firstClick = false; // 初回クリックを管理
+        this.playerName = localStorage.getItem("playerName") || ""; // 名前を取得
     }
 
     preload() {
@@ -13,49 +14,73 @@ class HomeScene extends Phaser.Scene {
     create() {
         let bg = this.add.image(0, 0, "background").setOrigin(0, 0);
         bg.setDisplaySize(this.scale.width, this.scale.height);
-        bg.setInteractive(); // **背景をクリック可能にする**
+        bg.setInteractive();
 
-        // 🎵 BGMの準備
         this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
 
-        // **ボタンの設定（最初は押せないが、表示されている）**
         let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.4);
-        button.setInteractive(); // **最初からインタラクティブにするが…**
-        button.setAlpha(1); // **最初は半透明にして押せない状態を視覚化**
-        button.setDepth(2); // Z軸中央
+        button.setInteractive();
+        button.setAlpha(1);
+        button.setDepth(2);
+        button.setVisible(false); // 初回はボタンを非表示
 
-        // **袋文字のテキスト（中央配置）**
         let text = this.add.text(this.scale.width / 2, this.scale.height / 2, "勇者達の戦い", {
-            fontSize: "64px", // 文字を大きく
-            fill: "#ffffff", // 文字の色
-            stroke: "#000000", // 袋文字の色（黒）
-            strokeThickness: 10, // 枠の太さ
+            fontSize: "64px",
+            fill: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 10,
             fontStyle: "bold",
             align: "center"
         }).setOrigin(0.5, 0.5).setDepth(2);
 
-        // **背景クリックを確実に機能させる**
+        if (!this.playerName) {
+            this.showNameInput(button);
+        } else {
+            button.setVisible(true); // 名前がある場合はボタンを表示
+        }
+
         bg.once("pointerdown", () => {
             console.log("背景がクリックされた - BGM再生");
-
             if (!this.firstClick) {
-                this.bgm.play(); // **BGM再生**
-                button.setAlpha(1); // **ボタンを通常の状態にする**
+                this.bgm.play();
                 this.firstClick = true;
             }
         });
 
-        // **ボタンのクリック処理（2回目以降）**
         button.on("pointerdown", () => {
-            if (this.firstClick) {
+            if (this.firstClick && this.playerName) {
                 console.log("ボタンが押された - ゲーム開始");
                 this.scene.start("GameScene");
             }
         });
 
-        // **デバッグ用：どこをクリックしたかを確認**
         this.input.on("pointerdown", (pointer) => {
             console.log(`クリック位置: x=${pointer.x}, y=${pointer.y}`);
         });
     }
+
+    showNameInput(button) {
+        let inputElement = document.createElement("input");
+        inputElement.type = "text";
+        inputElement.placeholder = "名前を入力";
+        inputElement.style.position = "absolute";
+        inputElement.style.top = "50%";
+        inputElement.style.left = "50%";
+        inputElement.style.transform = "translate(-50%, -50%)";
+        inputElement.style.fontSize = "24px";
+        inputElement.style.padding = "10px";
+
+        document.body.appendChild(inputElement);
+        inputElement.focus();
+
+        inputElement.addEventListener("keypress", (event) => {
+            if (event.key === "Enter" && inputElement.value.trim() !== "") {
+                this.playerName = inputElement.value.trim();
+                localStorage.setItem("playerName", this.playerName);
+                document.body.removeChild(inputElement);
+                button.setVisible(true); // ボタンを表示
+            }
+        });
+    }
 }
+
