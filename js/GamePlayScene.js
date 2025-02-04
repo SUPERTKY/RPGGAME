@@ -12,7 +12,7 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("background", "assets/背景.png"); // 🏞️ 背景画像
+        this.load.image("background", "assets/role_scene.png"); // 🏞️ 背景画像
         this.load.audio("decisionSound", "assets/決定音.mp3"); // 🎵 決定音
     }
 
