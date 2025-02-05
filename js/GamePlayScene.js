@@ -29,7 +29,10 @@ class GamePlayScene extends Phaser.Scene {
 
         this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
         Phaser.Utils.Array.Shuffle(this.roles);
+
+        // ✅ プレイヤー名がちゃんと取得されているか確認
         this.players = JSON.parse(localStorage.getItem("players")) || ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4", "プレイヤー5", "プレイヤー6"];
+        console.log("取得したプレイヤー名:", this.players);
 
         this.currentRoleIndex = 0;
         this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
@@ -78,6 +81,9 @@ class GamePlayScene extends Phaser.Scene {
         let leftTeam = this.players.slice(0, 3);
         let rightTeam = this.players.slice(3, 6);
 
+        console.log("左チーム:", leftTeam);
+        console.log("右チーム:", rightTeam);
+
         leftTeam.forEach((name, index) => {
             this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), name, {
                 fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
@@ -90,7 +96,8 @@ class GamePlayScene extends Phaser.Scene {
             }).setOrigin(0.5);
         });
 
-        this.time.delayedCall(5000, () => {
+        // ✅ VS画面の表示時間を長くする（8秒）
+        this.time.delayedCall(8000, () => {
             vsImage.destroy();
             this.scene.start("BattleScene");
         });
