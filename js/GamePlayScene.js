@@ -64,7 +64,7 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     async getPlayersFromFirebase() {
-        let snapshot = await firebase.database().ref("/players").once("value");
+        let snapshot = await firebase.database().ref("name").once("value");
         let data = snapshot.val();
         if (data) {
             return Object.values(data); // Firebase のデータを配列化
