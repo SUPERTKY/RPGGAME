@@ -74,11 +74,16 @@ class GamePlayScene extends Phaser.Scene {
     let data = snapshot.val();
 
     if (data) {
-        return Object.values(data).map(player => player.name);
+        console.log("🔥 取得したプレイヤーデータ:", data); // 🔍 デバッグ用
+
+        // `name` ではなく、適切なキーを使う（ここを変更！）
+        return Object.values(data).map(player => player.プレイヤー名キー); 
     } else {
-        
+        console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
+        return ["エラー: データなし"];
     }
 }
+
 
 
     finalizeRole() {
