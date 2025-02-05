@@ -141,6 +141,7 @@ class GameScene extends Phaser.Scene {
     startGame() {
         console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
 
+        // 🔥 プレイヤーの名前を Firebase に保存
         let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
         let playerRef = this.roomRef.child(this.playerId);
 
@@ -156,4 +157,3 @@ class GameScene extends Phaser.Scene {
         this.scene.start("GamePlayScene");
     }
 }
-
