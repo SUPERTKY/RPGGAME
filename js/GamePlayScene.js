@@ -76,7 +76,7 @@ class GamePlayScene extends Phaser.Scene {
     if (data) {
         return Object.values(data).map(player => player.name);
     } else {
-        return ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4"];
+        
     }
 }
 
