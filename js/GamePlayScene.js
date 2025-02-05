@@ -73,16 +73,16 @@ class GamePlayScene extends Phaser.Scene {
     let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
     let data = snapshot.val();
 
-    if (data) {
-        console.log("🔥 取得したプレイヤーデータ:", data); // 🔍 デバッグ用
+    console.log("🔥 Firebase から取得したデータ:", data); // デバッグ用
 
-        // `name` ではなく、適切なキーを使う（ここを変更！）
-        return Object.values(data).map(player => player.プレイヤー名キー); 
+    if (data) {
+        return Object.values(data).map(player => player.name || "名前なし");
     } else {
         console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
         return ["エラー: データなし"];
     }
 }
+
 
 
 
