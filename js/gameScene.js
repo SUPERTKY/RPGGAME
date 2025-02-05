@@ -40,8 +40,9 @@ class GameScene extends Phaser.Scene {
             .setScale(0.5);
 
         this.matchingButton.on("pointerdown", () => {
-            this.startMatching();
-        });
+    this.checkExistingPlayer(); // ✅ 修正
+});
+
 
         this.checkExistingPlayer();
     }
