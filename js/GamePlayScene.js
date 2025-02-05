@@ -31,7 +31,7 @@ class GamePlayScene extends Phaser.Scene {
         Phaser.Utils.Array.Shuffle(this.roles);
 
         // ✅ プレイヤー名がちゃんと取得されているか確認
-        this.players = JSON.parse(localStorage.getItem("players")) || ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4", "プレイヤー5", "プレイヤー6"];
+        this.players = JSON.parse(localStorage.getItem("players"));
         console.log("取得したプレイヤー名:", this.players);
 
         this.currentRoleIndex = 0;
