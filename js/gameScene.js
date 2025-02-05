@@ -12,7 +12,7 @@ class GameScene extends Phaser.Scene {
 
     create() {
         this.cameras.main.setBackgroundColor("#000000");
-        
+
         let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
         let scaleX = this.scale.width / bg.width;
         let scaleY = this.scale.height / bg.height;
@@ -33,10 +33,7 @@ class GameScene extends Phaser.Scene {
             console.error("🔥 Firebase Database が未定義です！ ゲームを開始できません！");
             return;
         }
-        
-        this.roomRef = window.db.ref("gameRooms/room1/players");
 
-        // ✅ マッチングボタンを追加
         this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
             .setInteractive()
             .setDepth(2)
@@ -50,105 +47,121 @@ class GameScene extends Phaser.Scene {
     }
 
     checkExistingPlayer() {
-        this.roomRef.once("value").then(snapshot => {
-            let players = snapshot.val() || {};
-            if (players[this.playerId]) {
-                console.log("すでにマッチング済み:", this.playerId);
+        let gameRoomsRef = window.db.ref("gameRooms");
+
+        gameRoomsRef.once("value").then(snapshot => {
+            let rooms = snapshot.val() || {};
+            let assignedRoom = null;
+
+            Object.keys(rooms).forEach(roomId => {
+                let players = rooms[roomId].players || {};
+                if (players[this.playerId]) {
+                    assignedRoom = roomId;
+                }
+            });
+
+            if (assignedRoom) {
+                console.log(`✅ 既存の部屋を利用: ${assignedRoom}`);
+                localStorage.setItem("roomId", assignedRoom); // 🔥 ここでルームIDを保存
+                this.roomRef = window.db.ref(`gameRooms/${assignedRoom}/players`);
                 this.monitorPlayers();
+            } else {
+                this.createNewRoom(); // ✅ 新しい部屋を作成
             }
         });
     }
 
-    startMatching() {
-        this.roomRef.once("value").then(snapshot => {
-            let players = snapshot.val() || {};
-            let playerCount = Object.keys(players).length;
+    createNewRoom() {
+        let gameRoomsRef = window.db.ref("gameRooms");
 
-            if (players[this.playerId]) {
-                console.log("すでに登録済みのため、再登録しません:", this.playerId);
-                return;
+        gameRoomsRef.once("value").then(snapshot => {
+            let rooms = snapshot.val() || {};
+            let newRoomId = `room${Object.keys(rooms).length + 1}`;
+
+            console.log(`🆕 新しい部屋を作成します: ${newRoomId}`);
+
+            // 🔥 ルームIDを `localStorage` に保存
+            localStorage.setItem("roomId", newRoomId);
+            console.log("✅ ルームIDを保存:", newRoomId);
+
+            // Firebase に新しい部屋を作成
+            gameRoomsRef.child(newRoomId).set({
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                this.roomRef = gameRoomsRef.child(newRoomId).child("players");
+                this.addPlayerToRoom();
+            }).catch(error => console.error("🔥 ルーム作成エラー:", error));
+        });
+    }
+
+    addPlayerToRoom() {
+        let playerRef = this.roomRef.child(this.playerId);
+        let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
+
+        firebase.database().ref(".info/connected").on("value", snapshot => {
+            if (snapshot.val() === true) {
+                console.log("🔌 Firebase に接続成功！onDisconnect を設定");
+                playerRef.onDisconnect().remove()
+                    .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
+                    .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
             }
+        });
 
-            if (playerCount < 4) {
-                let playerRef = this.roomRef.child(this.playerId);
+        playerRef.set({
+            id: this.playerId,
+            name: playerName,
+            joinedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${localStorage.getItem("roomId")})`);
 
-                firebase.database().ref(".info/connected").on("value", (snapshot) => {
-                    if (snapshot.val() === true) {
-                        console.log("🔌 Firebase に接続成功！onDisconnect を設定");
-                        playerRef.onDisconnect().remove()
-                            .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
-                            .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
-                    }
-                });
+            window.addEventListener("beforeunload", () => {
+                playerRef.remove();
+            });
 
-                playerRef.set({
-    id: this.playerId,
-    joinedAt: firebase.database.ServerValue.TIMESTAMP
-}).then(() => {
-    console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
-
-    window.addEventListener("beforeunload", () => {
-        playerRef.remove();
-    });
-
-    this.monitorPlayers();
-}).catch(error => {
-    console.error("🔥 プレイヤー登録エラー:", error);
-});
-
-            } else {
-                console.log("部屋が満員です！他の部屋を探します。");
-                
-                setTimeout(() => {
-                    this.startMatching();
-                }, 1000);
-            }
+            this.monitorPlayers();
+        }).catch(error => {
+            console.error("🔥 プレイヤー登録エラー:", error);
         });
     }
 
     monitorPlayers() {
-    this.roomRef.on("value", snapshot => {
-        let players = snapshot.val() || {};
-        console.log("現在のプレイヤーデータ:", players); // ← プレイヤーデータを表示
-        let playerCount = Object.keys(players).length;
+        this.roomRef.on("value", snapshot => {
+            let players = snapshot.val() || {};
+            console.log("現在のプレイヤーデータ:", players);
+            let playerCount = Object.keys(players).length;
 
-        console.log(`現在のプレイヤー数: ${playerCount}`);
+            console.log(`現在のプレイヤー数: ${playerCount}`);
 
-        if (playerCount >= 4) {
-            console.log("✅ マッチング完了！ゲーム開始！");
-            this.startGame();
+            if (playerCount >= 4) {
+                console.log("✅ マッチング完了！ゲーム開始！");
+                this.startGame();
+            }
+        });
+    }
+
+    startGame() {
+        let roomId = localStorage.getItem("roomId");
+        console.log("🎮 startGame() が呼ばれました。ルームID:", roomId);
+
+        if (!roomId) {
+            console.error("⚠️ ルームIDが `localStorage` にありません！");
+            return;
         }
-    });
-}
 
+        let playerRef = this.roomRef.child(this.playerId);
+        let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
 
-startGame() {
-    let roomId = localStorage.getItem("roomId");
-    console.log("🎮 startGame() が呼ばれました。ルームID:", roomId);
+        playerRef.update({ name: playerName })
+            .then(() => console.log("✅ プレイヤー名を Firebase に保存:", playerName))
+            .catch(error => console.error("🔥 プレイヤー名保存エラー:", error));
 
-    if (!roomId) {
-        console.error("⚠️ ルームIDが `localStorage` にありません！");
-        return;
+        if (!this.scene.manager.keys["GamePlayScene"]) {
+            console.log("📌 GamePlayScene を動的に追加します");
+            this.scene.add("GamePlayScene", GamePlayScene);
+        }
+
+        this.scene.start("GamePlayScene");
     }
-
-    let playerRef = this.roomRef.child(this.playerId);
-    let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
-
-    playerRef.update({ name: playerName })
-        .then(() => console.log("✅ プレイヤー名を Firebase に保存:", playerName))
-        .catch(error => console.error("🔥 プレイヤー名保存エラー:", error));
-
-    if (!this.scene.manager.keys["GamePlayScene"]) {
-        console.log("📌 GamePlayScene を動的に追加します");
-        this.scene.add("GamePlayScene", GamePlayScene);
-    }
-
-    this.scene.start("GamePlayScene");
-}
-
-
-
-
 }
 
 
