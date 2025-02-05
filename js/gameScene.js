@@ -47,30 +47,35 @@ class GameScene extends Phaser.Scene {
         this.checkExistingPlayer();
     }
 
-    checkExistingPlayer() {
-        let gameRoomsRef = window.db.ref("gameRooms");
+   checkExistingPlayer() {
+    let gameRoomsRef = window.db.ref("gameRooms");
 
-        gameRoomsRef.once("value").then(snapshot => {
-            let rooms = snapshot.val() || {};
-            let assignedRoom = null;
+    gameRoomsRef.once("value").then(snapshot => {
+        let rooms = snapshot.val() || {};
+        let assignedRoom = null;
 
-            Object.keys(rooms).forEach(roomId => {
-                let players = rooms[roomId].players || {};
-                if (players[this.playerId]) {
-                    assignedRoom = roomId;
-                }
-            });
+        for (let roomId in rooms) {
+            let players = rooms[roomId].players || {};
+            let playerCount = Object.keys(players).length;
 
-            if (assignedRoom) {
-                console.log(`✅ 既存の部屋を利用: ${assignedRoom}`);
-                localStorage.setItem("roomId", assignedRoom); // 🔥 ここでルームIDを保存
-                this.roomRef = window.db.ref(`gameRooms/${assignedRoom}/players`);
-                this.monitorPlayers();
-            } else {
-                this.createNewRoom(); // ✅ 新しい部屋を作成
+            // 🔍 プレイヤーがすでに部屋にいるか確認
+            if (players[this.playerId]) {
+                assignedRoom = roomId;
+                break; // すでに部屋が見つかったらループ終了
             }
-        });
-    }
+        }
+
+        if (assignedRoom) {
+            console.log(`✅ 既存の部屋を利用: ${assignedRoom}`);
+            localStorage.setItem("roomId", assignedRoom);
+            this.roomRef = window.db.ref(`gameRooms/${assignedRoom}/players`);
+            this.monitorPlayers();
+        } else {
+            this.createNewRoom(); // ✅ 既存の部屋がない場合のみ、新しい部屋を作成
+        }
+    });
+}
+
 
     createNewRoom() {
         let gameRoomsRef = window.db.ref("gameRooms");
