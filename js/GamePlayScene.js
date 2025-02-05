@@ -64,14 +64,22 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     async getPlayersFromFirebase() {
-        let snapshot = await firebase.database().ref("/name").once("value");
-        let data = snapshot.val();
-        if (data) {
-            return Object.values(data); // Firebase のデータを配列化
-        } else {
-            return ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4", "プレイヤー5", "プレイヤー6"];
-        }
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.error("⚠️ ルームIDが見つかりません。");
+        return ["エラー: ルーム不明"];
     }
+
+    let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+    let data = snapshot.val();
+
+    if (data) {
+        return Object.values(data).map(player => player.name);
+    } else {
+        return ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4"];
+    }
+}
+
 
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
