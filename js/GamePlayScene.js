@@ -30,9 +30,14 @@ class GamePlayScene extends Phaser.Scene {
         this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
         Phaser.Utils.Array.Shuffle(this.roles);
 
-        // ✅ プレイヤー名がちゃんと取得されているか確認
-        this.players = JSON.parse(localStorage.getItem("players"));
-        console.log("取得したプレイヤー名:", this.players);
+        // Firebase からプレイヤー名を取得
+        this.getPlayersFromFirebase().then(players => {
+            this.players = players;
+            console.log("取得したプレイヤー名:", this.players);
+            this.showVsScreen();
+        }).catch(error => {
+            console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
+        });
 
         this.currentRoleIndex = 0;
         this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
@@ -58,6 +63,16 @@ class GamePlayScene extends Phaser.Scene {
         });
     }
 
+    async getPlayersFromFirebase() {
+        let snapshot = await firebase.database().ref("/players").once("value");
+        let data = snapshot.val();
+        if (data) {
+            return Object.values(data); // Firebase のデータを配列化
+        } else {
+            return ["プレイヤー1", "プレイヤー2", "プレイヤー3", "プレイヤー4", "プレイヤー5", "プレイヤー6"];
+        }
+    }
+
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
         let decisionSound = this.sound.add("decisionSound", { volume: 1 });
@@ -68,7 +83,9 @@ class GamePlayScene extends Phaser.Scene {
         });
 
         this.time.delayedCall(4000, () => {
-            this.showVsScreen();
+            if (this.players) {
+                this.showVsScreen();
+            }
         });
     }
 
@@ -96,7 +113,6 @@ class GamePlayScene extends Phaser.Scene {
             }).setOrigin(0.5);
         });
 
-        // ✅ VS画面の表示時間を長くする（8秒）
         this.time.delayedCall(8000, () => {
             vsImage.destroy();
             this.scene.start("BattleScene");
@@ -113,3 +129,4 @@ class BattleScene extends Phaser.Scene {
         console.log("バトルシーンに移動しました。");
     }
 }
+
