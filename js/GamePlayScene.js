@@ -40,31 +40,33 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     startRoulette() {
-        this.currentRoleIndex = 0;
-        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
+    this.currentRoleIndex = 0;
+    this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
 
-        // 4秒遅延後にルーレットを開始
-        this.time.delayedCall(4000, () => {
-            let totalSpins = this.roles.length * 3; // 合計スピン数を調整
-            let spinDuration = 500; // スピン間隔を500ミリ秒に変更
+    // 4秒遅延後にルーレットを開始
+    this.time.delayedCall(4000, () => {
+        let totalSpins = this.roles.length * 3; // 合計スピン数を調整
+        let spinDuration = 500; // スピン間隔を500ミリ秒に変更
 
-            this.roleDisplay.setAlpha(1);
-            this.time.addEvent({
-                delay: spinDuration,
-                repeat: totalSpins - 1,
-                callback: () => {
-                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-                }
-            });
-
-            // ルーレット終了後5秒でVS画面表示
-            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-                this.finalizeRole();
-                this.showVsScreen();
-            });
+        this.roleDisplay.setAlpha(1);
+        this.time.addEvent({
+            delay: spinDuration,
+            repeat: totalSpins - 1,
+            callback: () => {
+                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+            },
+            callbackScope: this
         });
-    }
+
+        // ルーレット終了後5秒でVS画面表示
+        this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+            this.finalizeRole();
+            this.showVsScreen();
+        });
+    });
+}
+
 
     async getPlayersFromFirebase() {
     let roomId = localStorage.getItem("roomId");
