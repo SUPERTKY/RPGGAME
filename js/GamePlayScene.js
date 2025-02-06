@@ -116,34 +116,40 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     showVsScreen() {
-        let vsSound = this.sound.add("vsSound", { volume: 1 });
-        vsSound.play();
-
-        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
-
-        let leftTeam = this.players.slice(0, 3);
-        let rightTeam = this.players.slice(3, 6);
-
-        console.log("左チーム:", leftTeam);
-        console.log("右チーム:", rightTeam);
-
-        leftTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), player.name, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5);
-        });
-
-        rightTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), player.name, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5);
-        });
-
-        this.time.delayedCall(8000, () => {
-            vsImage.destroy();
-            this.scene.start("BattleScene");
-        });
+    if (!this.players || this.players.length === 0) {
+        console.error("⚠️ プレイヤーデータがありません。VS画面を表示できません。");
+        return;
     }
+
+    let vsSound = this.sound.add("vsSound", { volume: 1 });
+    vsSound.play();
+
+    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
+
+    let leftTeam = this.players.slice(0, 3);
+    let rightTeam = this.players.slice(3, 6);
+
+    console.log("左チーム:", leftTeam);
+    console.log("右チーム:", rightTeam);
+
+    leftTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5);
+    });
+
+    rightTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5);
+    });
+
+    this.time.delayedCall(8000, () => {
+        vsImage.destroy();
+        this.scene.start("BattleScene");
+    });
+}
+
 }
 
 class BattleScene extends Phaser.Scene {
