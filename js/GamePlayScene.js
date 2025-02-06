@@ -35,10 +35,13 @@ class GamePlayScene extends Phaser.Scene {
 
     console.log("✅ プレイヤーデータ取得成功:", this.players);
 
+    if (this.players.length === 0) {
+        console.error("⚠️ プレイヤーデータがないため、処理を中断します。");
+        return;
+    }
+
     this.startRoulette();
 }
-
-
 
 
     startRoulette() {
@@ -72,7 +75,7 @@ class GamePlayScene extends Phaser.Scene {
 
     async getPlayersFromFirebase() {
     let roomId = localStorage.getItem("roomId");
-    console.log("🟢 取得したルームID:", roomId); // デバッグログ
+    console.log("🟢 取得したルームID:", roomId);
 
     if (!roomId) {
         console.warn("⚠️ ルームIDが見つかりません。ダミーデータを使用します。");
@@ -86,25 +89,26 @@ class GamePlayScene extends Phaser.Scene {
         let snapshot = await firebase.database().ref(refPath).once("value");
         let data = snapshot.val();
 
+        console.log("✅ Firebaseから取得したデータ:", data);
+
         if (!data) {
-            console.warn("⚠️ Firebase からプレイヤーデータが取得できませんでした。ダミーデータを使用します。");
+            console.warn("⚠️ データが見つかりませんでした。ダミーデータを使用します。");
             return this.createDummyPlayers();
         }
 
-        let players = Object.keys(data).map(key => ({
+        let players = Object.entries(data).map(([key, player]) => ({
             id: key,
-            name: data[key].name || "名前なし",
-            team: data[key].team || "チーム未定",
-            role: data[key].role || "役職未定"
+            name: player.name || "名前なし"
         }));
 
         console.log("✅ 取得したプレイヤーデータ:", players);
         return players;
     } catch (error) {
-        console.error("❌ Firebase からのデータ取得中にエラーが発生しました:", error);
+        console.error("❌ Firebaseからのデータ取得中にエラーが発生しました:", error);
         return this.createDummyPlayers();
     }
 }
+
 
 
     finalizeRole() {
@@ -126,8 +130,8 @@ class GamePlayScene extends Phaser.Scene {
 
     let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-    let leftTeam = this.players.slice(0, 3);
-    let rightTeam = this.players.slice(3, 6);
+    let leftTeam = this.players.slice(0, 2);
+    let rightTeam = this.players.slice(2, 4);
 
     console.log("左チーム:", leftTeam);
     console.log("右チーム:", rightTeam);
@@ -149,6 +153,7 @@ class GamePlayScene extends Phaser.Scene {
         this.scene.start("BattleScene");
     });
 }
+
 
 
 
