@@ -4,7 +4,7 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("background3", "assets/background3.png"); 
+        this.load.image("background3", "assets/background3.png");
         this.load.image("vsImage", "assets/VS.png");
         this.load.image("swordsman", "assets/剣士.png");
         this.load.image("mage", "assets/魔法使い.png");
@@ -33,17 +33,20 @@ class GamePlayScene extends Phaser.Scene {
         this.getPlayersFromFirebase().then(players => {
             this.players = players;
             console.log("取得したプレイヤー名:", this.players);
+            this.startRoulette();
         }).catch(error => {
             console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
         });
+    }
 
+    startRoulette() {
         this.currentRoleIndex = 0;
         this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
 
         // 4秒遅延後にルーレットを開始
         this.time.delayedCall(4000, () => {
             let totalSpins = this.roles.length * 3; // 合計スピン数を調整
-            let spinDuration = 200; // 各スピンの間隔
+            let spinDuration = 500; // スピン間隔を500ミリ秒に変更
 
             this.roleDisplay.setAlpha(1);
             this.time.addEvent({
@@ -131,5 +134,3 @@ class BattleScene extends Phaser.Scene {
         console.log("バトルシーンに移動しました。");
     }
 }
-
-
