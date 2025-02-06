@@ -127,7 +127,7 @@ class GamePlayScene extends Phaser.Scene {
 
         this.roleDisplay.setTexture(finalRole);
     }
-async function findPlayerRoom(playerId) {
+async findPlayerRoom(playerId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
         let rooms = snapshot.val();
