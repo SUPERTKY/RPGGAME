@@ -35,12 +35,19 @@ class GamePlayScene extends Phaser.Scene {
 
     if (this.players.length === 0) {
         console.error("⚠️ プレイヤーデータが空です。ゲームを開始できません。");
+        this.add.text(this.scale.width / 2, this.scale.height / 2, "⚠️ プレイヤーデータが見つかりません", {
+            fontSize: "32px",
+            fill: "#ff0000",
+            stroke: "#000000",
+            strokeThickness: 5
+        }).setOrigin(0.5);
         return;
     }
 
     console.log("✅ プレイヤーデータ取得成功:", this.players);
     this.startRoulette();
 }
+
 
     startRoulette() {
         this.currentRoleIndex = 0;
@@ -76,7 +83,7 @@ class GamePlayScene extends Phaser.Scene {
     console.log("🟢 取得したルームID:", roomId);
 
     if (!roomId) {
-        console.error("⚠️ ルームIDが見つかりません。プレイヤーデータを取得できません。");
+        console.error("⚠️ ルームIDが見つかりません。");
         return [];
     }
 
@@ -87,15 +94,20 @@ class GamePlayScene extends Phaser.Scene {
         let snapshot = await firebase.database().ref(refPath).once("value");
         let data = snapshot.val();
 
-        if (!data) {
-            console.warn("⚠️ プレイヤーデータが見つかりませんでした。");
+        console.log("📡 Firebaseから取得したデータ:", data);
+
+        if (!data || Object.keys(data).length === 0) {
+            console.warn("⚠️ Firebase にプレイヤーデータがありません。");
             return [];
         }
 
-        let players = Object.keys(data).map(key => ({
-            id: key,
-            name: data[key].name || "名前なし"
-        }));
+        let players = Object.entries(data).map(([key, player]) => {
+            console.log(`📝 取得したプレイヤー: ID=${key}, name=${player.name || "名前なし"}`);
+            return {
+                id: key,
+                name: player.name || "名前なし"
+            };
+        });
 
         console.log("✅ 取得したプレイヤーデータ:", players);
         return players;
@@ -104,9 +116,6 @@ class GamePlayScene extends Phaser.Scene {
         return [];
     }
 }
-
-
-
 
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
