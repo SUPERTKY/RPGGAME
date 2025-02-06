@@ -94,6 +94,7 @@ class GamePlayScene extends Phaser.Scene {
 }
 
 
+
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
         let decisionSound = this.sound.add("decisionSound", { volume: 1 });
