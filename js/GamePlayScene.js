@@ -40,66 +40,60 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     startRoulette() {
-    this.currentRoleIndex = 0;
-    this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
+        this.currentRoleIndex = 0;
+        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
 
-    // 4秒遅延後にルーレットを開始
-    this.time.delayedCall(4000, () => {
-        let totalSpins = this.roles.length * 3; // 合計スピン数を調整
-        let spinDuration = 500; // スピン間隔を500ミリ秒に変更
+        this.time.delayedCall(4000, () => {
+            let totalSpins = this.roles.length * 3;
+            let spinDuration = 500;
 
-        this.roleDisplay.setAlpha(1);
-        this.time.addEvent({
-            delay: spinDuration,
-            repeat: totalSpins - 1,
-            callback: () => {
-                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-            },
-            callbackScope: this
+            this.roleDisplay.setAlpha(1);
+            this.time.addEvent({
+                delay: spinDuration,
+                repeat: totalSpins - 1,
+                callback: () => {
+                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+                },
+                callbackScope: this
+            });
+
+            this.time.delayedCall(spinDuration * totalSpins, () => {
+                this.finalizeRole();
+            });
+
+            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+                this.showVsScreen();
+            });
         });
-
-        // ルーレット終了後に時間を置いてVS画面を表示
-this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-    this.finalizeRole();
-    // 少し時間を置いてからVS画面の音を再生
-    this.time.delayedCall(1000, () => { // 1000ミリ秒後にVS画面を表示
-        this.showVsScreen();
-    });
-});
-
-    });
-}
-
+    }
 
     async getPlayersFromFirebase() {
-    let roomId = localStorage.getItem("roomId");
-    if (!roomId) {
-        console.error("⚠️ ルームIDが見つかりません。");
-        return ["エラー: ルーム不明"];
-    }
-
-    try {
-        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
-        let data = snapshot.val();
-
-        if (data) {
-            return Object.values(data).map(player => ({
-                name: player.name || "名前なし",
-                team: player.team || "チーム未定",
-                role: player.role || "役職未定"
-            }));
-        } else {
-            console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
-            return ["エラー: データなし"];
+        let roomId = localStorage.getItem("roomId");
+        if (!roomId) {
+            console.error("⚠️ ルームIDが見つかりません。");
+            return ["エラー: ルーム不明"];
         }
-    } catch (error) {
-        console.error("Firebaseからのデータ取得中にエラーが発生しました:", error);
-        return ["エラー: 例外発生"];
+
+        try {
+            let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+            let data = snapshot.val();
+
+            if (data) {
+                return Object.values(data).map(player => ({
+                    name: player.name || "名前なし",
+                    team: player.team || "チーム未定",
+                    role: player.role || "役職未定"
+                }));
+            } else {
+                console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
+                return ["エラー: データなし"];
+            }
+        } catch (error) {
+            console.error("Firebaseからのデータ取得中にエラーが発生しました:", error);
+            return ["エラー: 例外発生"];
+        }
     }
-}
-
-
 
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
@@ -121,14 +115,14 @@ this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
         console.log("左チーム:", leftTeam);
         console.log("右チーム:", rightTeam);
 
-        leftTeam.forEach((name, index) => {
-            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), name, {
+        leftTeam.forEach((player, index) => {
+            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), player.name, {
                 fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
             }).setOrigin(0.5);
         });
 
-        rightTeam.forEach((name, index) => {
-            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), name, {
+        rightTeam.forEach((player, index) => {
+            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), player.name, {
                 fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
             }).setOrigin(0.5);
         });
@@ -138,14 +132,6 @@ this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
             this.scene.start("BattleScene");
         });
     }
-}
-async function registerPlayer(roomId, playerName, team, role) {
-    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
-    await playerRef.set({
-        joinedAt: Date.now(),
-        team: team,
-        role: role
-    });
 }
 
 class BattleScene extends Phaser.Scene {
