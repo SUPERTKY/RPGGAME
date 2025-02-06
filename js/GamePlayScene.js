@@ -14,111 +14,92 @@ class GamePlayScene extends Phaser.Scene {
         this.load.audio("vsSound", "assets/VS効果音.mp3");
     }
 
-    async create() {
-    this.cameras.main.setBackgroundColor("#000000");
+    create() {
+        this.cameras.main.setBackgroundColor("#000000");
 
-    this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
-    let scaleX = this.scale.width / this.bg.width;
-    let scaleY = this.scale.height / this.bg.height;
-    let scale = Math.max(scaleX, scaleY);
-    this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
+        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
+        let scaleX = this.scale.width / this.bg.width;
+        let scaleY = this.scale.height / this.bg.height;
+        let scale = Math.max(scaleX, scaleY);
+        this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-    this.sound.stopAll();
-    this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
-    this.bgm.play();
+        this.sound.stopAll();
+        this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
+        this.bgm.play();
 
-    this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
-    Phaser.Utils.Array.Shuffle(this.roles);
+        this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
+        Phaser.Utils.Array.Shuffle(this.roles);
 
-    console.log("🟢 プレイヤーデータ取得開始...");
-    this.players = await this.getPlayersFromFirebase();
-
-    if (this.players.length === 0) {
-        console.error("⚠️ プレイヤーデータが空です。ゲームを開始できません。");
-        this.add.text(this.scale.width / 2, this.scale.height / 2, "⚠️ プレイヤーデータが見つかりません", {
-            fontSize: "32px",
-            fill: "#ff0000",
-            stroke: "#000000",
-            strokeThickness: 5
-        }).setOrigin(0.5);
-        return;
-    }
-
-    console.log("✅ プレイヤーデータ取得成功:", this.players);
-    this.startRoulette();
-}
-
-
-    startRoulette() {
-        this.currentRoleIndex = 0;
-        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
-
-        this.time.delayedCall(4000, () => {
-            let totalSpins = this.roles.length * 3;
-            let spinDuration = 500;
-
-            this.roleDisplay.setAlpha(1);
-            this.time.addEvent({
-                delay: spinDuration,
-                repeat: totalSpins - 1,
-                callback: () => {
-                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-                },
-                callbackScope: this
-            });
-
-            this.time.delayedCall(spinDuration * totalSpins, () => {
-                this.finalizeRole();
-            });
-
-            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-                this.showVsScreen();
-            });
+        this.getPlayersFromFirebase().then(players => {
+            this.players = players;
+            console.log("取得したプレイヤー名:", this.players);
+            this.startRoulette();
+        }).catch(error => {
+            console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
         });
     }
 
+    startRoulette() {
+    this.currentRoleIndex = 0;
+    this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
+
+    // 4秒遅延後にルーレットを開始
+    this.time.delayedCall(4000, () => {
+        let totalSpins = this.roles.length * 3; // 合計スピン数を調整
+        let spinDuration = 500; // スピン間隔を500ミリ秒に変更
+
+        this.roleDisplay.setAlpha(1);
+        this.time.addEvent({
+            delay: spinDuration,
+            repeat: totalSpins - 1,
+            callback: () => {
+                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+            },
+            callbackScope: this
+        });
+
+        // ルーレット終了後に時間を置いてVS画面を表示
+this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+    this.finalizeRole();
+    // 少し時間を置いてからVS画面の音を再生
+    this.time.delayedCall(1000, () => { // 1000ミリ秒後にVS画面を表示
+        this.showVsScreen();
+    });
+});
+
+    });
+}
+
+
     async getPlayersFromFirebase() {
-    let playerId = localStorage.getItem("playerId"); // 現在のプレイヤーIDを取得
-    if (!playerId) {
-        console.error("⚠️ プレイヤーIDが取得できませんでした。");
-        return [];
-    }
-
-    let roomId = await findPlayerRoom(playerId);
+    let roomId = localStorage.getItem("roomId");
     if (!roomId) {
-        console.error("⚠️ プレイヤーが所属するルームIDが見つかりませんでした。");
-        return [];
+        console.error("⚠️ ルームIDが見つかりません。");
+        return ["エラー: ルーム不明"];
     }
-
-    console.log("🟢 取得した正しいルームID:", roomId);
 
     try {
-        let refPath = `gameRooms/${roomId}/players`;
-        console.log("🔍 Firebase 取得パス:", refPath);
-
-        let snapshot = await firebase.database().ref(refPath).once("value");
+        let snapshot = await firebase.database().ref(gameRooms/${roomId}/players).once("value");
         let data = snapshot.val();
 
-        console.log("📡 Firebaseから取得したデータ:", data);
-
-        if (!data || Object.keys(data).length === 0) {
-            console.warn("⚠️ Firebase にプレイヤーデータがありません。");
-            return [];
+        if (data) {
+            return Object.values(data).map(player => ({
+                name: player.name || "名前なし",
+                team: player.team || "チーム未定",
+                role: player.role || "役職未定"
+            }));
+        } else {
+            console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
+            return ["エラー: データなし"];
         }
-
-        let players = Object.entries(data).map(([key, player]) => ({
-            id: key,
-            name: player.name || "名前なし"
-        }));
-
-        console.log("✅ 取得したプレイヤーデータ:", players);
-        return players;
     } catch (error) {
-        console.error("❌ Firebaseからのデータ取得中にエラーが発生しました:", error);
-        return [];
+        console.error("Firebaseからのデータ取得中にエラーが発生しました:", error);
+        return ["エラー: 例外発生"];
     }
 }
+
+
 
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
@@ -127,66 +108,44 @@ class GamePlayScene extends Phaser.Scene {
 
         this.roleDisplay.setTexture(finalRole);
     }
-async findPlayerRoom(playerId) {
-    try {
-        let snapshot = await firebase.database().ref("gameRooms").once("value");
-        let rooms = snapshot.val();
 
-        if (!rooms) {
-            console.error("⚠️ ルームデータが見つかりません。");
-            return null;
-        }
+    showVsScreen() {
+        let vsSound = this.sound.add("vsSound", { volume: 1 });
+        vsSound.play();
 
-        for (let roomId in rooms) {
-            if (rooms[roomId].players && rooms[roomId].players[playerId]) {
-                console.log(`✅ プレイヤー ${playerId} が所属している部屋: ${roomId}`);
-                return roomId;
-            }
-        }
+        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-        console.warn(`⚠️ プレイヤー ${playerId} の所属する部屋が見つかりませんでした。`);
-        return null;
-    } catch (error) {
-        console.error("❌ ルームIDの検索中にエラー:", error);
-        return null;
+        let leftTeam = this.players.slice(0, 3);
+        let rightTeam = this.players.slice(3, 6);
+
+        console.log("左チーム:", leftTeam);
+        console.log("右チーム:", rightTeam);
+
+        leftTeam.forEach((name, index) => {
+            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), name, {
+                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+            }).setOrigin(0.5);
+        });
+
+        rightTeam.forEach((name, index) => {
+            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), name, {
+                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+            }).setOrigin(0.5);
+        });
+
+        this.time.delayedCall(8000, () => {
+            vsImage.destroy();
+            this.scene.start("BattleScene");
+        });
     }
 }
-
-showVsScreen() {
-    if (!this.players || this.players.length === 0) {
-        console.error("⚠️ プレイヤーデータがありません。VS画面を表示できません。");
-        return;
-    }
-
-    let vsSound = this.sound.add("vsSound", { volume: 1 });
-    vsSound.play();
-
-    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
-
-    let leftTeam = this.players.slice(0, 2);
-    let rightTeam = this.players.slice(2, 4);
-
-    console.log("左チーム:", leftTeam);
-    console.log("右チーム:", rightTeam);
-
-    leftTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), player.name, {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5);
+async function registerPlayer(roomId, playerName, team, role) {
+    let playerRef = firebase.database().ref(gameRooms/${roomId}/players).push();
+    await playerRef.set({
+        joinedAt: Date.now(),
+        team: team,
+        role: role
     });
-
-    rightTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), player.name, {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5);
-    });
-
-    this.time.delayedCall(8000, () => {
-        vsImage.destroy();
-        this.scene.start("BattleScene");
-    });
-}
-
 }
 
 class BattleScene extends Phaser.Scene {
@@ -197,4 +156,4 @@ class BattleScene extends Phaser.Scene {
     create() {
         console.log("バトルシーンに移動しました。");
     }
-}
+}　
