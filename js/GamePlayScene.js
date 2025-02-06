@@ -14,30 +14,37 @@ class GamePlayScene extends Phaser.Scene {
         this.load.audio("vsSound", "assets/VS効果音.mp3");
     }
 
-    create() {
-        this.cameras.main.setBackgroundColor("#000000");
+    async create() {
+    this.cameras.main.setBackgroundColor("#000000");
 
-        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
-        let scaleX = this.scale.width / this.bg.width;
-        let scaleY = this.scale.height / this.bg.height;
-        let scale = Math.max(scaleX, scaleY);
-        this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
+    this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
+    let scaleX = this.scale.width / this.bg.width;
+    let scaleY = this.scale.height / this.bg.height;
+    let scale = Math.max(scaleX, scaleY);
+    this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-        this.sound.stopAll();
-        this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
-        this.bgm.play();
+    this.sound.stopAll();
+    this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
+    this.bgm.play();
 
-        this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
-        Phaser.Utils.Array.Shuffle(this.roles);
+    this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
+    Phaser.Utils.Array.Shuffle(this.roles);
 
-        this.getPlayersFromFirebase().then(players => {
-            this.players = players;
-            console.log("取得したプレイヤー名:", this.players);
-            this.startRoulette();
-        }).catch(error => {
-            console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
-        });
+    try {
+        this.players = await this.getPlayersFromFirebase();
+        console.log("✅ プレイヤーデータ取得成功:", this.players);
+
+        if (!this.players || this.players.length === 0) {
+            console.error("⚠️ プレイヤーが取得できませんでした。");
+            return;
+        }
+
+        this.startRoulette();
+    } catch (error) {
+        console.error("Firebaseからプレイヤー情報を取得できませんでした:", error);
     }
+}
+
 
     startRoulette() {
         this.currentRoleIndex = 0;
