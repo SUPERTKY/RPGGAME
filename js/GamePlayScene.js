@@ -78,22 +78,31 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     try {
-        async function registerPlayer(roomId, playerName, team, role) {
-    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
-    await playerRef.set({
-        id: playerRef.key,
-        name: playerName,
-        team: team || "チーム未定",
-        role: role || "役職未定",
-        joinedAt: Date.now()
-    });
-}
+        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+        let data = snapshot.val();
 
+        console.log("Firebaseから取得したデータ:", data); // 🔍 デバッグ用
+
+        if (data) {
+            let players = Object.keys(data).map(key => ({
+                id: key,
+                name: data[key].name || "名前なし",
+                team: data[key].team || "チーム未定",
+                role: data[key].role || "役職未定"
+            }));
+
+            console.log("処理後のプレイヤーデータ:", players); // 🔍 デバッグ用
+            return players;
+        } else {
+            console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
+            return [];
+        }
     } catch (error) {
         console.error("Firebaseからのデータ取得中にエラーが発生しました:", error);
         return [];
     }
 }
+
 
 
 
