@@ -1,155 +1,318 @@
+// 定数の定義
+const GameConfig = {
+    SCENE_KEY: "GamePlayScene",
+    TIMING: {
+        ROULETTE_START_DELAY: 4000,
+        SPIN_DURATION: 500,
+        VS_SCREEN_DURATION: 8000,
+        ROLE_FINALIZATION_DELAY: 5000
+    },
+    AUDIO: {
+        BGM_VOLUME: 0.5,
+        DECISION_SOUND_VOLUME: 1.0,
+        VS_SOUND_VOLUME: 1.0
+    },
+    SCALING: {
+        ROLE_DISPLAY: 0.6,
+        VS_IMAGE: 0.7
+    },
+    ASSETS: {
+        IMAGES: {
+            BACKGROUND: { key: "background3", path: "assets/background3.png" },
+            VS: { key: "vsImage", path: "assets/VS.png" },
+            SWORDSMAN: { key: "swordsman", path: "assets/剣士.png" },
+            MAGE: { key: "mage", path: "assets/魔法使い.png" },
+            PRIEST: { key: "priest", path: "assets/僧侶.png" }
+        },
+        AUDIO: {
+            BGM: { key: "bgmRoleReveal", path: "assets/役職発表音楽.mp3" },
+            DECISION: { key: "decisionSound", path: "assets/決定音.mp3" },
+            VS: { key: "vsSound", path: "assets/VS効果音.mp3" }
+        }
+    },
+    STYLES: {
+        ERROR_TEXT: {
+            fontSize: "32px",
+            fill: "#ff0000",
+            stroke: "#000000",
+            strokeThickness: 5
+        },
+        PLAYER_NAME: {
+            fontSize: "32px",
+            fill: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 5
+        }
+    }
+};
+
 class GamePlayScene extends Phaser.Scene {
     constructor() {
-        super({ key: "GamePlayScene" });
+        super({ key: GameConfig.SCENE_KEY });
+        this.isSceneActive = false;
+        this.currentRoleIndex = 0;
     }
 
     preload() {
-        this.load.image("background3", "assets/background3.png");
-        this.load.image("vsImage", "assets/VS.png");
-        this.load.image("swordsman", "assets/剣士.png");
-        this.load.image("mage", "assets/魔法使い.png");
-        this.load.image("priest", "assets/僧侶.png");
-        this.load.audio("bgmRoleReveal", "assets/役職発表音楽.mp3");
-        this.load.audio("decisionSound", "assets/決定音.mp3");
-        this.load.audio("vsSound", "assets/VS効果音.mp3");
+        // イメージのロード
+        Object.values(GameConfig.ASSETS.IMAGES).forEach(({ key, path }) => {
+            this.load.image(key, path);
+        });
+
+        // オーディオのロード
+        Object.values(GameConfig.ASSETS.AUDIO).forEach(({ key, path }) => {
+            this.load.audio(key, path);
+        });
     }
 
-    create() {
-        this.cameras.main.setBackgroundColor("#000000");
+    async create() {
+        this.isSceneActive = true;
+        this.setupBackground();
+        this.setupAudio();
+        this.roles = this.generateRoles();
 
-        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
-        let scaleX = this.scale.width / this.bg.width;
-        let scaleY = this.scale.height / this.bg.height;
-        let scale = Math.max(scaleX, scaleY);
-        this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
-
-        this.sound.stopAll();
-        this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
-        this.bgm.play();
-
-        this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
-        Phaser.Utils.Array.Shuffle(this.roles);
-
-        this.getPlayersFromFirebase().then(players => {
-            this.players = players;
-            console.log("取得したプレイヤー名:", this.players);
+        try {
+            this.players = await this.getPlayersFromFirebase();
+            if (this.players.length === 0) {
+                this.handleNoPlayersError();
+                return;
+            }
             this.startRoulette();
-        }).catch(error => {
-            console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
-        });
+        } catch (error) {
+            this.handleFirebaseError(error);
+        }
     }
 
-    startRoulette() {
-        this.currentRoleIndex = 0;
-        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
+    setupBackground() {
+        this.cameras.main.setBackgroundColor("#000000");
+        this.bg = this.add.image(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            GameConfig.ASSETS.IMAGES.BACKGROUND.key
+        );
+        this.updateBackgroundScale();
+        this.scale.on('resize', this.handleResize, this);
+    }
 
-        this.time.delayedCall(4000, () => {
-            let totalSpins = this.roles.length * 3;
-            let spinDuration = 500;
+    handleResize() {
+        if (this.bg) {
+            this.updateBackgroundScale();
+        }
+    }
 
-            this.roleDisplay.setAlpha(1);
-            this.time.addEvent({
-                delay: spinDuration,
-                repeat: totalSpins - 1,
-                callback: () => {
-                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-                },
-                callbackScope: this
-            });
+    updateBackgroundScale() {
+        const scaleX = this.scale.width / this.bg.width;
+        const scaleY = this.scale.height / this.bg.height;
+        const scale = Math.max(scaleX, scaleY);
+        this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
+    }
 
-            this.time.delayedCall(spinDuration * totalSpins, () => {
-                this.finalizeRole();
-            });
-
-            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-                this.showVsScreen();
-            });
+    setupAudio() {
+        this.sound.stopAll();
+        this.bgm = this.sound.add(GameConfig.ASSETS.AUDIO.BGM.key, {
+            loop: true,
+            volume: GameConfig.AUDIO.BGM_VOLUME
         });
+        this.bgm.play();
+    }
+
+    generateRoles() {
+        const baseRoles = [
+            GameConfig.ASSETS.IMAGES.PRIEST.key,
+            GameConfig.ASSETS.IMAGES.MAGE.key,
+            GameConfig.ASSETS.IMAGES.SWORDSMAN.key,
+            GameConfig.ASSETS.IMAGES.PRIEST.key,
+            GameConfig.ASSETS.IMAGES.MAGE.key,
+            GameConfig.ASSETS.IMAGES.SWORDSMAN.key
+        ];
+        return Phaser.Utils.Array.Shuffle([...baseRoles]);
     }
 
     async getPlayersFromFirebase() {
-        let roomId = localStorage.getItem("roomId");
+        const playerId = localStorage.getItem("playerId");
+        if (!playerId) {
+            throw new Error("プレイヤーIDが取得できませんでした。");
+        }
+
+        const roomId = await this.findPlayerRoom(playerId);
         if (!roomId) {
-            console.error("⚠️ ルームIDが見つかりません。");
-            return ["エラー: ルーム不明"];
+            throw new Error("プレイヤーが所属するルームIDが見つかりませんでした。");
         }
 
-        try {
-            let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
-            let data = snapshot.val();
-
-            if (data) {
-                return Object.values(data).map(player => ({
-                    name: player.name || "名前なし",
-                    team: player.team || "チーム未定",
-                    role: player.role || "役職未定"
-                }));
-            } else {
-                console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
-                return ["エラー: データなし"];
-            }
-        } catch (error) {
-            console.error("Firebaseからのデータ取得中にエラーが発生しました:", error);
-            return ["エラー: 例外発生"];
+        const refPath = `gameRooms/${roomId}/players`;
+        const snapshot = await firebase.database()
+            .ref(refPath)
+            .orderByChild("joinedAt")
+            .once("value");
+        
+        const data = snapshot.val();
+        if (!data || Object.keys(data).length === 0) {
+            throw new Error("Firebaseにプレイヤーデータがありません。");
         }
+
+        return Object.entries(data).map(([key, player]) => ({
+            id: key,
+            name: player.name || "名前なし",
+            joinedAt: player.joinedAt || 0
+        }));
+    }
+
+    async findPlayerRoom(playerId) {
+        const snapshot = await firebase.database()
+            .ref("gameRooms")
+            .orderByChild(`players/${playerId}/exists`)
+            .equalTo(true)
+            .once("value");
+
+        const rooms = snapshot.val();
+        if (!rooms) {
+            throw new Error("ルームデータが見つかりません。");
+        }
+
+        const roomId = Object.keys(rooms)[0];
+        if (!roomId) {
+            throw new Error(`プレイヤー ${playerId} の所属する部屋が見つかりませんでした。`);
+        }
+
+        return roomId;
+    }
+
+    handleNoPlayersError() {
+        this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            "⚠️ プレイヤーデータが見つかりません",
+            GameConfig.STYLES.ERROR_TEXT
+        ).setOrigin(0.5);
+    }
+
+    handleFirebaseError(error) {
+        console.error("Firebaseエラー:", error);
+        this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            `⚠️ ${error.message}`,
+            GameConfig.STYLES.ERROR_TEXT
+        ).setOrigin(0.5);
+    }
+
+    startRoulette() {
+        if (!this.isSceneActive) return;
+
+        this.roleDisplay = this.add.image(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            GameConfig.ASSETS.IMAGES.PRIEST.key
+        )
+        .setScale(GameConfig.SCALING.ROLE_DISPLAY)
+        .setDepth(1)
+        .setAlpha(0);
+
+        this.time.delayedCall(GameConfig.TIMING.ROULETTE_START_DELAY, () => {
+            this.startRouletteAnimation();
+        });
+    }
+
+    startRouletteAnimation() {
+        if (!this.isSceneActive) return;
+
+        const totalSpins = this.roles.length * 3;
+        this.roleDisplay.setAlpha(1);
+
+        const spinTimer = this.time.addEvent({
+            delay: GameConfig.TIMING.SPIN_DURATION,
+            repeat: totalSpins - 1,
+            callback: this.updateRoleDisplay,
+            callbackScope: this
+        });
+
+        this.time.delayedCall(
+            GameConfig.TIMING.SPIN_DURATION * totalSpins,
+            this.finalizeRole,
+            [],
+            this
+        );
+
+        this.time.delayedCall(
+            GameConfig.TIMING.SPIN_DURATION * totalSpins + GameConfig.TIMING.ROLE_FINALIZATION_DELAY,
+            this.showVsScreen,
+            [],
+            this
+        );
+    }
+
+    updateRoleDisplay() {
+        if (!this.isSceneActive) return;
+        
+        this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+        this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
     }
 
     finalizeRole() {
-        let finalRole = this.roles[this.currentRoleIndex];
-        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-        decisionSound.play();
+        if (!this.isSceneActive) return;
 
+        const finalRole = this.roles[this.currentRoleIndex];
+        const decisionSound = this.sound.add(
+            GameConfig.ASSETS.AUDIO.DECISION.key,
+            { volume: GameConfig.AUDIO.DECISION_SOUND_VOLUME }
+        );
+        decisionSound.play();
         this.roleDisplay.setTexture(finalRole);
     }
 
     showVsScreen() {
-        let vsSound = this.sound.add("vsSound", { volume: 1 });
+        if (!this.isSceneActive || !this.players || this.players.length === 0) {
+            console.error("プレイヤーデータがありません。VS画面を表示できません。");
+            return;
+        }
+
+        const vsSound = this.sound.add(
+            GameConfig.ASSETS.AUDIO.VS.key,
+            { volume: GameConfig.AUDIO.VS_SOUND_VOLUME }
+        );
         vsSound.play();
 
-        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
+        const vsImage = this.add.image(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            GameConfig.ASSETS.IMAGES.VS.key
+        )
+        .setScale(GameConfig.SCALING.VS_IMAGE)
+        .setDepth(2);
 
-        let leftTeam = this.players.slice(0, 3);
-        let rightTeam = this.players.slice(3, 6);
+        this.displayTeam(this.players.slice(0, 2), 0.25);
+        this.displayTeam(this.players.slice(2, 4), 0.75);
 
-        console.log("左チーム:", leftTeam);
-        console.log("右チーム:", rightTeam);
-
-        leftTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), player.name, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5);
-        });
-
-        rightTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), player.name, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5);
-        });
-
-        this.time.delayedCall(8000, () => {
-            vsImage.destroy();
-            this.scene.start("BattleScene");
+        this.time.delayedCall(GameConfig.TIMING.VS_SCREEN_DURATION, () => {
+            if (this.isSceneActive) {
+                vsImage.destroy();
+                this.scene.start("BattleScene");
+            }
         });
     }
-}
 
-async function registerPlayer(roomId, playerName, team, role) {
-    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
-    await playerRef.set({
-        joinedAt: Date.now(),
-        team: team,
-        role: role
-    });
-}
-
-class BattleScene extends Phaser.Scene {
-    constructor() {
-        super({ key: "BattleScene" });
+    displayTeam(team, xPosition) {
+        team.forEach((player, index) => {
+            this.add.text(
+                this.scale.width * xPosition,
+                this.scale.height * (0.4 + index * 0.1),
+                player.name,
+                GameConfig.STYLES.PLAYER_NAME
+            ).setOrigin(0.5);
+        });
     }
 
-    create() {
-        console.log("バトルシーンに移動しました。");
+    shutdown() {
+        this.isSceneActive = false;
+        this.sound.stopAll();
+        this.scale.off('resize', this.handleResize, this);
+        
+        if (this.bgm) {
+            this.bgm.destroy();
+        }
+        
+        if (this.roleDisplay) {
+            this.roleDisplay.destroy();
+        }
     }
 }
-
