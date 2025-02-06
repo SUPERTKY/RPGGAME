@@ -33,16 +33,14 @@ class GamePlayScene extends Phaser.Scene {
     console.log("🟢 プレイヤーデータ取得開始...");
     this.players = await this.getPlayersFromFirebase();
 
-    console.log("✅ プレイヤーデータ取得成功:", this.players);
-
     if (this.players.length === 0) {
-        console.error("⚠️ プレイヤーデータがないため、処理を中断します。");
+        console.error("⚠️ プレイヤーデータが空です。ゲームを開始できません。");
         return;
     }
 
+    console.log("✅ プレイヤーデータ取得成功:", this.players);
     this.startRoulette();
 }
-
 
     startRoulette() {
         this.currentRoleIndex = 0;
@@ -78,8 +76,8 @@ class GamePlayScene extends Phaser.Scene {
     console.log("🟢 取得したルームID:", roomId);
 
     if (!roomId) {
-        console.warn("⚠️ ルームIDが見つかりません。ダミーデータを使用します。");
-        return this.createDummyPlayers();
+        console.error("⚠️ ルームIDが見つかりません。プレイヤーデータを取得できません。");
+        return [];
     }
 
     try {
@@ -89,25 +87,24 @@ class GamePlayScene extends Phaser.Scene {
         let snapshot = await firebase.database().ref(refPath).once("value");
         let data = snapshot.val();
 
-        console.log("✅ Firebaseから取得したデータ:", data);
-
         if (!data) {
-            console.warn("⚠️ データが見つかりませんでした。ダミーデータを使用します。");
-            return this.createDummyPlayers();
+            console.warn("⚠️ プレイヤーデータが見つかりませんでした。");
+            return [];
         }
 
-        let players = Object.entries(data).map(([key, player]) => ({
+        let players = Object.keys(data).map(key => ({
             id: key,
-            name: player.name || "名前なし"
+            name: data[key].name || "名前なし"
         }));
 
         console.log("✅ 取得したプレイヤーデータ:", players);
         return players;
     } catch (error) {
         console.error("❌ Firebaseからのデータ取得中にエラーが発生しました:", error);
-        return this.createDummyPlayers();
+        return [];
     }
 }
+
 
 
 
@@ -119,7 +116,7 @@ class GamePlayScene extends Phaser.Scene {
         this.roleDisplay.setTexture(finalRole);
     }
 
-    showVsScreen() {
+showVsScreen() {
     if (!this.players || this.players.length === 0) {
         console.error("⚠️ プレイヤーデータがありません。VS画面を表示できません。");
         return;
@@ -153,9 +150,6 @@ class GamePlayScene extends Phaser.Scene {
         this.scene.start("BattleScene");
     });
 }
-
-
-
 
 }
 
