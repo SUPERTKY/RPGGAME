@@ -90,38 +90,46 @@ class GameScene extends Phaser.Scene {
     }
 
     startMatching() {
-        this.roomRef.once("value").then(snapshot => {
-            let players = snapshot.val() || {};
-            if (players[this.playerId]) {
-                console.log("すでに登録済み:", this.playerId);
-                return;
+    this.roomRef.once("value").then(snapshot => {
+        let players = snapshot.val() || {};
+        if (players[this.playerId]) {
+            console.log("すでに登録済み:", this.playerId);
+            return;
+        }
+
+        let playerRef = this.roomRef.child(this.playerId);
+        let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
+
+        // Firebase への接続監視
+        firebase.database().ref(".info/connected").on("value", (snapshot) => {
+            if (snapshot.val() === true) {
+                playerRef.onDisconnect().remove()
+                    .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
+                    .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
             }
-
-            let playerRef = this.roomRef.child(this.playerId);
-            firebase.database().ref(".info/connected").on("value", (snapshot) => {
-                if (snapshot.val() === true) {
-                    playerRef.onDisconnect().remove()
-                        .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
-                        .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
-                }
-            });
-
-            playerRef.set({
-                id: this.playerId,
-                joinedAt: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
-
-                window.addEventListener("beforeunload", () => {
-                    playerRef.remove();
-                });
-
-                this.monitorPlayers();
-            }).catch(error => {
-                console.error("🔥 プレイヤー登録エラー:", error);
-            });
         });
-    }
+
+        // 名前を含めたプレイヤーデータを Firebase に登録
+        playerRef.set({
+            id: this.playerId,
+            name: playerName, // 追加
+            joinedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
+            console.log(`📝 プレイヤー名を Firebase に送信: ${playerName}`);
+
+            // ウィンドウを閉じる際にプレイヤーデータを削除
+            window.addEventListener("beforeunload", () => {
+                playerRef.remove();
+            });
+
+            this.monitorPlayers();
+        }).catch(error => {
+            console.error("🔥 プレイヤー登録エラー:", error);
+        });
+    });
+}
+
 
     monitorPlayers() {
         this.roomRef.on("value", snapshot => {
