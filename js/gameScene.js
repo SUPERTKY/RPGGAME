@@ -71,8 +71,7 @@ class GameScene extends Phaser.Scene {
                 if (playerCount < 4) {
                     this.roomRef = window.db.ref(`gameRooms/${roomKey}/players`);
                     foundRoom = true;
-                    this.sendPlayerName(); // 🔥 名前を即送信
-                    this.startMatching();
+                    this.registerPlayer(); // プレイヤーを即登録
                     break;
                 }
             }
@@ -87,48 +86,52 @@ class GameScene extends Phaser.Scene {
         let newRoomKey = window.db.ref("gameRooms").push().key;
         this.roomRef = window.db.ref(`gameRooms/${newRoomKey}/players`);
         console.log("🆕 新しい部屋を作成:", newRoomKey);
-
-        this.sendPlayerName(); // 🔥 新しい部屋作成時にも名前を即送信
-        this.startMatching();
+        this.registerPlayer(); // 新しい部屋でも即登録
     }
 
-    sendPlayerName() {
+    registerPlayer() {
         if (!this.roomRef) {
-            console.error("🔥 部屋の参照が未定義です！名前を送信できません！");
+            console.error("🔥 部屋の参照が未定義です！プレイヤーを登録できません！");
             return;
         }
 
         let playerRef = this.roomRef.child(this.playerId);
         let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
 
+        // プレイヤー情報を Firebase に即座に送信
         playerRef.set({
             id: this.playerId,
-            name: playerName, // 🔥 名前を即 Firebase に送る
+            name: playerName,
             joinedAt: firebase.database.ServerValue.TIMESTAMP
         }).then(() => {
             console.log(`📝 プレイヤー名を即時 Firebase に送信: ${playerName}`);
+            this.startMatching();
         }).catch(error => {
-            console.error("🔥 プレイヤー名送信エラー:", error);
+            console.error("🔥 プレイヤー登録エラー:", error);
+        });
+
+        // Firebase への接続監視（プレイヤーが抜けたら自動削除）
+        firebase.database().ref(".info/connected").on("value", (snapshot) => {
+            if (snapshot.val() === true) {
+                playerRef.onDisconnect().remove()
+                    .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
+                    .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
+            }
+        });
+
+        // ウィンドウを閉じたときに Firebase からプレイヤーを削除
+        window.addEventListener("beforeunload", () => {
+            playerRef.remove();
         });
     }
 
     startMatching() {
         this.roomRef.once("value").then(snapshot => {
             let players = snapshot.val() || {};
-            if (players[this.playerId]) {
-                console.log("すでに登録済み:", this.playerId);
+            if (!players[this.playerId]) {
+                console.error("🔥 プレイヤーが登録されていません！");
                 return;
             }
-
-            let playerRef = this.roomRef.child(this.playerId);
-
-            firebase.database().ref(".info/connected").on("value", (snapshot) => {
-                if (snapshot.val() === true) {
-                    playerRef.onDisconnect().remove()
-                        .then(() => console.log("✅ オフライン時に自動削除が設定されました"))
-                        .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
-                }
-            });
 
             this.monitorPlayers();
         });
