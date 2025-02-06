@@ -59,11 +59,17 @@ class GamePlayScene extends Phaser.Scene {
             callbackScope: this
         });
 
-        // ルーレット終了後5秒でVS画面表示
-        this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-            this.finalizeRole();
-            this.showVsScreen();
-        });
+        // ルーレット終了後に時間を置いてVS画面を表示
+this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+    this.finalizeRole();
+    // ルーレットの音を停止
+    this.sound.stopAll();
+    // 少し時間を置いてからVS画面の音を再生
+    this.time.delayedCall(1000, () => { // 1000ミリ秒後にVS画面を表示
+        this.showVsScreen();
+    });
+});
+
     });
 }
 
