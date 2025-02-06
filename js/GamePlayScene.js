@@ -46,6 +46,7 @@ class GamePlayScene extends Phaser.Scene {
 }
 
 
+
     startRoulette() {
         this.currentRoleIndex = 0;
         this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
@@ -152,6 +153,7 @@ class GamePlayScene extends Phaser.Scene {
         this.scene.start("BattleScene");
     });
 }
+
 
 
 }
