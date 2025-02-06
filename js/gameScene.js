@@ -98,6 +98,8 @@ class GameScene extends Phaser.Scene {
             }
 
             let playerRef = this.roomRef.child(this.playerId);
+            let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
+
             firebase.database().ref(".info/connected").on("value", (snapshot) => {
                 if (snapshot.val() === true) {
                     playerRef.onDisconnect().remove()
@@ -108,6 +110,7 @@ class GameScene extends Phaser.Scene {
 
             playerRef.set({
                 id: this.playerId,
+                name: playerName,
                 joinedAt: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
                 console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
@@ -140,14 +143,6 @@ class GameScene extends Phaser.Scene {
 
     startGame() {
         console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
-
-        // 🔥 プレイヤーの名前を Firebase に保存
-        let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
-        let playerRef = this.roomRef.child(this.playerId);
-
-        playerRef.update({ name: playerName })
-            .then(() => console.log("✅ プレイヤー名を Firebase に保存:", playerName))
-            .catch(error => console.error("🔥 プレイヤー名保存エラー:", error));
 
         if (!this.scene.manager.keys["GamePlayScene"]) {
             console.log("📌 GamePlayScene を動的に追加します");
