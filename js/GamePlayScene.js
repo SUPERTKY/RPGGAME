@@ -132,6 +132,14 @@ class GamePlayScene extends Phaser.Scene {
         });
     }
 }
+async function registerPlayer(roomId, playerName, team, role) {
+    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
+    await playerRef.set({
+        joinedAt: Date.now(),
+        team: team,
+        role: role
+    });
+}
 
 class BattleScene extends Phaser.Scene {
     constructor() {
