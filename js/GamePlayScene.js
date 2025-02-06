@@ -84,10 +84,11 @@ class GamePlayScene extends Phaser.Scene {
         console.log("Firebaseから取得したデータ:", data); // 🔍 デバッグ用
 
         if (data) {
-            let players = Object.entries(data).map(([key, player]) => ({
+            let players = Object.keys(data).map(key => ({
                 id: key,
-                team: player.team || "チーム未定",  // teamキーがない場合のデフォルト値
-                role: player.role || "役職未定"     // roleキーがない場合のデフォルト値
+                name: data[key].name || "名前なし",
+                team: data[key].team || "チーム未定",
+                role: data[key].role || "役職未定"
             }));
 
             console.log("処理後のプレイヤーデータ:", players); // 🔍 デバッグ用
@@ -101,6 +102,7 @@ class GamePlayScene extends Phaser.Scene {
         return [];
     }
 }
+
 
 
 
