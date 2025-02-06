@@ -78,7 +78,7 @@ class GamePlayScene extends Phaser.Scene {
         });
     }
 
-    async function getPlayersFromFirebase() {
+    async getPlayersFromFirebase() {
     let playerId = localStorage.getItem("playerId"); // 現在のプレイヤーIDを取得
     if (!playerId) {
         console.error("⚠️ プレイヤーIDが取得できませんでした。");
