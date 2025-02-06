@@ -30,20 +30,14 @@ class GamePlayScene extends Phaser.Scene {
     this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
     Phaser.Utils.Array.Shuffle(this.roles);
 
-    try {
-        this.players = await this.getPlayersFromFirebase();
-        console.log("✅ プレイヤーデータ取得成功:", this.players);
+    console.log("🟢 プレイヤーデータ取得開始...");
+    this.players = await this.getPlayersFromFirebase();
 
-        if (!this.players || this.players.length === 0) {
-            console.error("⚠️ プレイヤーが取得できませんでした。");
-            return;
-        }
+    console.log("✅ プレイヤーデータ取得成功:", this.players);
 
-        this.startRoulette();
-    } catch (error) {
-        console.error("Firebaseからプレイヤー情報を取得できませんでした:", error);
-    }
+    this.startRoulette();
 }
+
 
 
 
@@ -78,38 +72,40 @@ class GamePlayScene extends Phaser.Scene {
 
     async getPlayersFromFirebase() {
     let roomId = localStorage.getItem("roomId");
-    console.log("取得したルームID:", roomId); // 🔍 デバッグ用
+    console.log("🟢 取得したルームID:", roomId); // デバッグログ
 
     if (!roomId) {
-        console.error("⚠️ ルームIDが見つかりません。");
-        return [];
+        console.warn("⚠️ ルームIDが見つかりません。ダミーデータを使用します。");
+        return this.createDummyPlayers();
     }
 
     try {
-        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+        let refPath = `gameRooms/${roomId}/players`;
+        console.log("🔍 Firebase 取得パス:", refPath);
+
+        let snapshot = await firebase.database().ref(refPath).once("value");
         let data = snapshot.val();
 
-        console.log("Firebaseから取得したデータ:", data); // 🔍 デバッグ用
-
-        if (data) {
-            let players = Object.keys(data).map(key => ({
-                id: key,
-                name: data[key].name || "名前なし",
-                team: data[key].team || "チーム未定",
-                role: data[key].role || "役職未定"
-            }));
-
-            console.log("処理後のプレイヤーデータ:", players); // 🔍 デバッグ用
-            return players;
-        } else {
-            console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
-            return [];
+        if (!data) {
+            console.warn("⚠️ Firebase からプレイヤーデータが取得できませんでした。ダミーデータを使用します。");
+            return this.createDummyPlayers();
         }
+
+        let players = Object.keys(data).map(key => ({
+            id: key,
+            name: data[key].name || "名前なし",
+            team: data[key].team || "チーム未定",
+            role: data[key].role || "役職未定"
+        }));
+
+        console.log("✅ 取得したプレイヤーデータ:", players);
+        return players;
     } catch (error) {
-        console.error("Firebaseからのデータ取得中にエラーが発生しました:", error);
-        return [];
+        console.error("❌ Firebase からのデータ取得中にエラーが発生しました:", error);
+        return this.createDummyPlayers();
     }
 }
+
 
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
