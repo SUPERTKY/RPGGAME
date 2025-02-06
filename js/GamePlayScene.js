@@ -101,13 +101,10 @@ class GamePlayScene extends Phaser.Scene {
             return [];
         }
 
-        let players = Object.entries(data).map(([key, player]) => {
-            console.log(`📝 取得したプレイヤー: ID=${key}, name=${player.name || "名前なし"}`);
-            return {
-                id: key,
-                name: player.name || "名前なし"
-            };
-        });
+        let players = Object.entries(data).map(([key, player]) => ({
+            id: key,
+            name: player.name || "名前なし"
+        }));
 
         console.log("✅ 取得したプレイヤーデータ:", players);
         return players;
@@ -116,6 +113,8 @@ class GamePlayScene extends Phaser.Scene {
         return [];
     }
 }
+
+
 
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
