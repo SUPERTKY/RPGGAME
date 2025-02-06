@@ -30,11 +30,9 @@ class GamePlayScene extends Phaser.Scene {
         this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
         Phaser.Utils.Array.Shuffle(this.roles);
 
-        // Firebase からプレイヤー名を取得
         this.getPlayersFromFirebase().then(players => {
             this.players = players;
             console.log("取得したプレイヤー名:", this.players);
-            this.showVsScreen();
         }).catch(error => {
             console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
         });
@@ -42,64 +40,55 @@ class GamePlayScene extends Phaser.Scene {
         this.currentRoleIndex = 0;
         this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
 
-        let totalSpins = this.roles.length * 5;
-        let spinTime = totalSpins * 700;
+        // 4秒遅延後にルーレットを開始
+        this.time.delayedCall(4000, () => {
+            let totalSpins = this.roles.length * 3; // 合計スピン数を調整
+            let spinDuration = 200; // 各スピンの間隔
 
-        this.time.delayedCall(500, () => {
             this.roleDisplay.setAlpha(1);
-        });
+            this.time.addEvent({
+                delay: spinDuration,
+                repeat: totalSpins - 1,
+                callback: () => {
+                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+                }
+            });
 
-        this.time.addEvent({
-            delay: 700,
-            repeat: totalSpins,
-            callback: () => {
-                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-            }
-        });
-
-        this.time.delayedCall(spinTime + 1000, () => {
-            this.finalizeRole();
+            // ルーレット終了後5秒でVS画面表示
+            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+                this.finalizeRole();
+                this.showVsScreen();
+            });
         });
     }
 
     async getPlayersFromFirebase() {
-    let roomId = localStorage.getItem("roomId");
-    if (!roomId) {
-        console.error("⚠️ ルームIDが見つかりません。");
-        return ["エラー: ルーム不明"];
+        let roomId = localStorage.getItem("roomId");
+        if (!roomId) {
+            console.error("⚠️ ルームIDが見つかりません。");
+            return ["エラー: ルーム不明"];
+        }
+
+        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+        let data = snapshot.val();
+
+        console.log("🔥 Firebase から取得したデータ:", data); // デバッグ用
+
+        if (data) {
+            return Object.values(data).map(player => player.name || "名前なし");
+        } else {
+            console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
+            return ["エラー: データなし"];
+        }
     }
-
-    let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
-    let data = snapshot.val();
-
-    console.log("🔥 Firebase から取得したデータ:", data); // デバッグ用
-
-    if (data) {
-        return Object.values(data).map(player => player.name || "名前なし");
-    } else {
-        console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
-        return ["エラー: データなし"];
-    }
-}
-
-
-
 
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
         let decisionSound = this.sound.add("decisionSound", { volume: 1 });
         decisionSound.play();
 
-        this.time.delayedCall(700, () => {
-            this.roleDisplay.setTexture(finalRole);
-        });
-
-        this.time.delayedCall(4000, () => {
-            if (this.players) {
-                this.showVsScreen();
-            }
-        });
+        this.roleDisplay.setTexture(finalRole);
     }
 
     showVsScreen() {
@@ -142,4 +131,5 @@ class BattleScene extends Phaser.Scene {
         console.log("バトルシーンに移動しました。");
     }
 }
+
 
