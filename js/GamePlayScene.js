@@ -291,7 +291,7 @@ finalizeTeamNames() {
 }
 
 async function registerPlayer(roomId, playerName, team, role) {
-    let playerRef = firebase.database().ref(gameRooms/${roomId}/players).push();
+    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
     await playerRef.set({
         joinedAt: Date.now(),
         team: team,
