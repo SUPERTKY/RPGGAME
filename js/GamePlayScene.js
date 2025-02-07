@@ -108,9 +108,9 @@ class GamePlayScene extends Phaser.Scene {
         .setDepth(1)
         .setAlpha(0);
 
-    this.time.delayedCall(10000, () => { // ルーレット開始までの時間を少し延長
-        let totalSpins = this.roles.length * 4; // ルーレット回転時間を増やす
-        let spinDuration = 600; // 一回の回転時間を長くする
+    this.time.delayedCall(5000, () => {
+        let totalSpins = this.roles.length * 4;
+        let spinDuration = 600;
 
         this.roleDisplay.setAlpha(1);
         let spinEvent = this.time.addEvent({
@@ -123,7 +123,7 @@ class GamePlayScene extends Phaser.Scene {
             callbackScope: this
         });
 
-        // ルーレット終了後にフェードアウト
+        // 🔹 ルーレット終了後にフェードアウト
         this.time.delayedCall(spinDuration * totalSpins, () => {
             this.finalizeRole();
         });
@@ -132,12 +132,13 @@ class GamePlayScene extends Phaser.Scene {
             this.tweens.add({
                 targets: this.roleDisplay,
                 alpha: 0,
-                duration: 2000, // 徐々に消えていく時間
+                duration: 2000,
                 onComplete: () => this.showVsScreen()
             });
         });
     });
 }
+
 
 　　async findRoomByUserId(userId) {
     try {
@@ -215,13 +216,15 @@ class GamePlayScene extends Phaser.Scene {
 
 
     async finalizeRole() {
+    if (this.finalized) return; // ✅ すでに実行済みならスキップ
+    this.finalized = true;
+
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
 
     this.roleDisplay.setTexture(finalRole);
 
-    // ✅ Firebase に役職とチームを保存
     try {
         let userId = firebase.auth().currentUser?.uid;
         if (!userId) {
@@ -239,10 +242,21 @@ class GamePlayScene extends Phaser.Scene {
             }
         }
 
-        // ✅ ユーザーのチームを決定（左チーム or 右チーム）
+        // ✅ すでに役職が登録されているか確認
+        let playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${userId}`);
+        let snapshot = await playerRef.once("value");
+        let playerData = snapshot.val();
+
+        if (playerData && playerData.role) {
+            console.log("✅ 役職はすでに Firebase に登録済み:", playerData.role);
+            return; // すでに登録済みなら処理をスキップ
+        }
+
+        // ✅ ユーザーのチームを決定
         let team = this.players.find(p => p.id === userId)?.team || (this.players.length % 2 === 0 ? "Blue" : "Red");
 
-        await firebase.database().ref(`gameRooms/${roomId}/players/${userId}`).update({
+        // ✅ Firebase に役職とチームを保存
+        await playerRef.update({
             role: finalRole,
             team: team
         });
@@ -252,6 +266,7 @@ class GamePlayScene extends Phaser.Scene {
         console.error("❌ Firebase に役職を保存中にエラー:", error);
     }
 }
+
 
     
     showVsScreen() {
