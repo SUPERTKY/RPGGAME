@@ -93,14 +93,17 @@ class GameScene extends Phaser.Scene {
     }
 
     startMatching() {
-        this.roomRef.once("value").then(snapshot => {
-            let players = snapshot.val() || {};
-            if (players[this.playerId]) {
-                console.log("すでに登録済み:", this.playerId);
-                return;
-            }
+    this.roomRef.once("value").then(snapshot => {
+        let players = snapshot.val() || {};
+        if (players[this.playerId]) {
+            console.log("すでに登録済み:", this.playerId);
+            return;
+        }
 
-            let playerRef = this.roomRef.child(this.playerId);
+        let playerRef = this.roomRef.child(this.playerId);
+
+        // ✅ onDisconnect().remove() を確実に設定
+        setTimeout(() => { 
             firebase.database().ref(".info/connected").on("value", (snapshot) => {
                 if (snapshot.val() === true) {
                     playerRef.onDisconnect().remove()
@@ -108,38 +111,57 @@ class GameScene extends Phaser.Scene {
                         .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
                 }
             });
+        }, 1000); // 🔹 1秒遅らせて設定
 
-            playerRef.set({
-                id: this.playerId,
-                joinedAt: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
+        playerRef.set({
+            id: this.playerId,
+            joinedAt: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
 
-                window.addEventListener("beforeunload", () => {
-                    playerRef.remove();
+            window.addEventListener("beforeunload", () => {
+                playerRef.remove().then(() => {
+                    this.checkAndDeleteRoom(); // ✅ ルームが空になったら削除
                 });
-
-                this.monitorPlayers();
-            }).catch(error => {
-                console.error("🔥 プレイヤー登録エラー:", error);
             });
+
+            this.monitorPlayers();
+        }).catch(error => {
+            console.error("🔥 プレイヤー登録エラー:", error);
         });
-    }
+    });
+}
+
 
     monitorPlayers() {
-        this.roomRef.on("value", snapshot => {
-            let players = snapshot.val() || {};
-            console.log("現在のプレイヤーデータ:", players);
-            let playerCount = Object.keys(players).length;
+    this.roomRef.on("value", snapshot => {
+        let players = snapshot.val() || {};
+        console.log("現在のプレイヤーデータ:", players);
+        let playerCount = Object.keys(players).length;
 
-            console.log(`現在のプレイヤー数: ${playerCount}`);
+        console.log(`現在のプレイヤー数: ${playerCount}`);
 
-            if (playerCount >= 6) {
-                console.log("✅ マッチング完了！ゲーム開始！");
-                this.startGame();
-            }
-        });
-    }
+        if (playerCount >= 6) {
+            console.log("✅ マッチング完了！ゲーム開始を確認中...");
+
+            // 🔹 少し遅らせて、本当に6人が揃っていることを再確認
+            setTimeout(() => {
+                window.db.ref(`gameRooms/${localStorage.getItem("roomId")}/players`).once("value").then(snapshot => {
+                    let updatedPlayers = snapshot.val() || {};
+                    let updatedPlayerCount = Object.keys(updatedPlayers).length;
+                    
+                    if (updatedPlayerCount >= 6) {
+                        console.log("✅ 6人揃ったことを最終確認！ゲーム開始！");
+                        this.startGame();
+                    } else {
+                        console.warn("⚠️ まだ 6 人が確定していないため、ゲーム開始を待機...");
+                    }
+                });
+            }, 2000); // 2秒待ってから最終確認
+        }
+    });
+}
+
 
     startGame() {
         console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
