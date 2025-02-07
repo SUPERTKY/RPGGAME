@@ -17,12 +17,14 @@ class GamePlayScene extends Phaser.Scene {
    async create() {
     this.cameras.main.setBackgroundColor("#000000");
 
+    // 背景画像の設定
     this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
     let scaleX = this.scale.width / this.bg.width;
     let scaleY = this.scale.height / this.bg.height;
     let scale = Math.max(scaleX, scaleY);
     this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
+    // 音楽の再生
     this.sound.stopAll();
     this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
     this.bgm.play();
@@ -30,35 +32,52 @@ class GamePlayScene extends Phaser.Scene {
     this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
     Phaser.Utils.Array.Shuffle(this.roles);
 
-    let userId = firebase.auth().currentUser?.uid;
-    if (!userId) {
-        console.error("⚠️ ユーザーIDが取得できません。");
+    // 🛠️ ユーザーIDの取得（認証完了を待機）
+    let userId;
+    try {
+        userId = await this.getUserId();
+        console.log("✅ ユーザーID取得成功:", userId);
+    } catch (error) {
+        console.error("❌ ユーザーIDの取得に失敗しました:", error);
         return;
     }
 
+    // 🛠️ ルームIDの取得
     let roomId = localStorage.getItem("roomId");
-    
-    // ルームIDがない場合、findRoomByUserId を呼び出す
     if (!roomId) {
-        roomId = await findRoomByUserId(userId);
-        if (roomId) {
-            localStorage.setItem("roomId", roomId);
-            console.log("✅ 取得したルームID:", roomId);
-        } else {
-            console.error("⚠️ ルームIDが取得できませんでした。");
+        console.warn("⚠️ ルームIDが見つかりません。Firebase から検索します...");
+        try {
+            roomId = await this.findRoomByUserId(userId);
+            if (roomId) {
+                localStorage.setItem("roomId", roomId);
+                console.log("✅ 取得したルームID:", roomId);
+            } else {
+                console.error("⚠️ ルームIDが取得できませんでした。");
+                return;
+            }
+        } catch (error) {
+            console.error("❌ Firebase からルームID取得中にエラー:", error);
             return;
         }
     }
 
-    // 取得したルームIDでプレイヤー情報を取得
-    this.getPlayersFromFirebase().then(players => {
-        this.players = players;
-        console.log("取得したプレイヤー名:", this.players);
-        this.startRoulette();
-    }).catch(error => {
-        console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
-    });
+    // 🛠️ プレイヤー情報の取得
+    try {
+        this.players = await this.getPlayersFromFirebase(roomId);
+        console.log("✅ 取得したプレイヤー名:", this.players);
+        if (!this.players || this.players.length === 0) {
+            console.error("⚠️ プレイヤーが取得できませんでした。");
+            return;
+        }
+    } catch (error) {
+        console.error("❌ Firebase からプレイヤー情報を取得中にエラー:", error);
+        return;
+    }
+
+    // 🛠️ ルーレット開始
+    this.startRoulette();
 }
+
 
 
     startRoulette() {
