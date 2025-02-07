@@ -125,7 +125,8 @@ class GamePlayScene extends Phaser.Scene {
 
         // 🔹 ルーレット終了後にフェードアウト
         this.time.delayedCall(spinDuration * totalSpins, () => {
-            this.finalizeRole();
+            console.log("🛠 finalizeRole() を呼び出し");
+            this.finalizeRole(); // 🔹 一度しか実行されないようにする
         });
 
         this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
@@ -133,11 +134,15 @@ class GamePlayScene extends Phaser.Scene {
                 targets: this.roleDisplay,
                 alpha: 0,
                 duration: 2000,
-                onComplete: () => this.showVsScreen()
+                onComplete: () => {
+                    console.log("🛠 showVsScreen() を呼び出し");
+                    this.showVsScreen();
+                }
             });
         });
     });
 }
+
 
 
 　　async findRoomByUserId(userId) {
@@ -216,8 +221,12 @@ class GamePlayScene extends Phaser.Scene {
 
 
     async finalizeRole() {
-    if (this.finalized) return;
-    this.finalized = true;
+    if (this.finalized) {
+        console.warn("⚠️ finalizeRole() がすでに実行済みのため、スキップします");
+        return;
+    }
+    this.finalized = true; // 🔹 ここでフラグを最初に立てることで、多重実行を防ぐ
+    console.log("🔹 finalizeRole() を実行");
 
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
@@ -248,20 +257,19 @@ class GamePlayScene extends Phaser.Scene {
 
         if (playerData && playerData.role && playerData.role !== "未定") {
             console.log("✅ すでに役職が設定されている:", playerData.role);
-            return;
+            return; // 🔹 すでに役職がある場合は処理をスキップ
         }
 
         // ✅ ユーザーのチームを決定
-        let team = (this.players.find(p => p.id === userId)?.team) || 
-                   (Object.keys(this.players).length % 2 === 0 ? "Blue" : "Red");
+        let team = this.players.find(p => p.id === userId)?.team || (Object.keys(this.players).length % 2 === 0 ? "Blue" : "Red");
 
         // ✅ Firebase に役職とチームを保存
         await playerRef.update({
             role: finalRole,
             team: team,
-            id: userId,  // 🔹 ここで ID も確実に更新
-            joinedAt: playerData?.joinedAt || Date.now(),  // 🔹 `joinedAt` がない場合は追加
-            name: playerData?.name || "不明" // 🔹 名前も確実に記録
+            id: userId,
+            joinedAt: playerData?.joinedAt || Date.now(),
+            name: playerData?.name || "不明"
         });
 
         console.log(`✅ Firebase に役職 '${finalRole}' とチーム '${team}' を保存しました`);
@@ -269,6 +277,7 @@ class GamePlayScene extends Phaser.Scene {
         console.error("❌ Firebase に役職を保存中にエラー:", error);
     }
 }
+
   
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
