@@ -102,33 +102,43 @@ class GamePlayScene extends Phaser.Scene {
 
 
     startRoulette() {
-        this.currentRoleIndex = 0;
-        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
+    this.currentRoleIndex = 0;
+    this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
+        .setScale(0.6)
+        .setDepth(1)
+        .setAlpha(0);
 
-        this.time.delayedCall(4000, () => {
-            let totalSpins = this.roles.length * 3;
-            let spinDuration = 500;
+    this.time.delayedCall(5000, () => { // ルーレット開始までの時間を少し延長
+        let totalSpins = this.roles.length * 4; // ルーレット回転時間を増やす
+        let spinDuration = 600; // 一回の回転時間を長くする
 
-            this.roleDisplay.setAlpha(1);
-            this.time.addEvent({
-                delay: spinDuration,
-                repeat: totalSpins - 1,
-                callback: () => {
-                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-                },
-                callbackScope: this
-            });
+        this.roleDisplay.setAlpha(1);
+        let spinEvent = this.time.addEvent({
+            delay: spinDuration,
+            repeat: totalSpins - 1,
+            callback: () => {
+                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+            },
+            callbackScope: this
+        });
 
-            this.time.delayedCall(spinDuration * totalSpins, () => {
-                this.finalizeRole();
-            });
+        // ルーレット終了後にフェードアウト
+        this.time.delayedCall(spinDuration * totalSpins, () => {
+            this.finalizeRole();
+        });
 
-            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-                this.showVsScreen();
+        this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+            this.tweens.add({
+                targets: this.roleDisplay,
+                alpha: 0,
+                duration: 2000, // 徐々に消えていく時間
+                onComplete: () => this.showVsScreen()
             });
         });
-    }
+    });
+}
+
 　　async findRoomByUserId(userId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
@@ -237,11 +247,13 @@ class GamePlayScene extends Phaser.Scene {
         }).setOrigin(0.5).setDepth(3);
     });
 
-    this.time.delayedCall(8000, () => {
+    // VS画像の表示時間を12秒に延長
+    this.time.delayedCall(12000, () => {
         vsImage.destroy();
         this.scene.start("BattleScene");
     });
 }
+
 
 }
 
