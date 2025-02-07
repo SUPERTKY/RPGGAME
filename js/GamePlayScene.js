@@ -69,31 +69,47 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     async getPlayersFromFirebase() {
-        let roomId = localStorage.getItem("roomId");
-        if (!roomId) {
-            console.error("⚠️ ルームIDが見つかりません。");
+    let userId = firebase.auth().currentUser?.uid;
+    if (!userId) {
+        console.error("⚠️ ユーザーIDが取得できませんでした。");
+        return ["エラー: ユーザー不明"];
+    }
+
+    let roomId = localStorage.getItem("roomId");
+
+    // roomId が見つからない場合、findRoomByUserId を使って検索
+    if (!roomId) {
+        console.warn("⚠️ ルームIDが見つかりません。検索します...");
+        roomId = await findRoomByUserId(userId);
+        if (roomId) {
+            localStorage.setItem("roomId", roomId);
+            console.log("✅ 取得したルームIDを保存:", roomId);
+        } else {
+            console.error("⚠️ ルームIDが取得できませんでした。");
             return ["エラー: ルーム不明"];
         }
-
-        try {
-            let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
-            let data = snapshot.val();
-
-            if (data) {
-                return Object.values(data).map(player => ({
-                    name: player.name || "名前なし",
-                    team: player.team || "チーム未定",
-                    role: player.role || "役職未定"
-                }));
-            } else {
-                console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
-                return ["エラー: データなし"];
-            }
-        } catch (error) {
-            console.error("Firebaseからのデータ取得中にエラーが発生しました:", error);
-            return ["エラー: 例外発生"];
-        }
     }
+
+    try {
+        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+        let data = snapshot.val();
+
+        if (data) {
+            return Object.values(data).map(player => ({
+                name: player.name || "名前なし",
+                team: player.team || "チーム未定",
+                role: player.role || "役職未定"
+            }));
+        } else {
+            console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
+            return ["エラー: データなし"];
+        }
+    } catch (error) {
+        console.error("❌ Firebaseからのデータ取得中にエラーが発生:", error);
+        return ["エラー: 例外発生"];
+    }
+}
+
 
     finalizeRole() {
         let finalRole = this.roles[this.currentRoleIndex];
@@ -142,30 +158,7 @@ async function registerPlayer(roomId, playerName, team, role) {
         role: role
     });
 }
-async function findRoomByUserId(userId) {
-    try {
-        let snapshot = await firebase.database().ref("gameRooms").once("value");
-        let rooms = snapshot.val();
 
-        if (!rooms) {
-            console.warn("⚠️ ルームが存在しません。");
-            return null;
-        }
-
-        for (let roomId in rooms) {
-            if (rooms[roomId].players && rooms[roomId].players[userId]) {
-                console.log("✅ プレイヤーが所属しているルームID:", roomId);
-                return roomId;
-            }
-        }
-
-        console.warn("⚠️ プレイヤーの所属するルームが見つかりませんでした。");
-        return null;
-    } catch (error) {
-        console.error("❌ Firebase からルーム検索中にエラーが発生:", error);
-        return null;
-    }
-}
 
 class BattleScene extends Phaser.Scene {
     constructor() {
