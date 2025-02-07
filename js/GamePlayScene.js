@@ -14,30 +14,52 @@ class GamePlayScene extends Phaser.Scene {
         this.load.audio("vsSound", "assets/VS効果音.mp3");
     }
 
-    create() {
-        this.cameras.main.setBackgroundColor("#000000");
+   async create() {
+    this.cameras.main.setBackgroundColor("#000000");
 
-        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
-        let scaleX = this.scale.width / this.bg.width;
-        let scaleY = this.scale.height / this.bg.height;
-        let scale = Math.max(scaleX, scaleY);
-        this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
+    this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
+    let scaleX = this.scale.width / this.bg.width;
+    let scaleY = this.scale.height / this.bg.height;
+    let scale = Math.max(scaleX, scaleY);
+    this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-        this.sound.stopAll();
-        this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
-        this.bgm.play();
+    this.sound.stopAll();
+    this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
+    this.bgm.play();
 
-        this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
-        Phaser.Utils.Array.Shuffle(this.roles);
+    this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
+    Phaser.Utils.Array.Shuffle(this.roles);
 
-        this.getPlayersFromFirebase().then(players => {
-            this.players = players;
-            console.log("取得したプレイヤー名:", this.players);
-            this.startRoulette();
-        }).catch(error => {
-            console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
-        });
+    let userId = firebase.auth().currentUser?.uid;
+    if (!userId) {
+        console.error("⚠️ ユーザーIDが取得できません。");
+        return;
     }
+
+    let roomId = localStorage.getItem("roomId");
+    
+    // ルームIDがない場合、findRoomByUserId を呼び出す
+    if (!roomId) {
+        roomId = await findRoomByUserId(userId);
+        if (roomId) {
+            localStorage.setItem("roomId", roomId);
+            console.log("✅ 取得したルームID:", roomId);
+        } else {
+            console.error("⚠️ ルームIDが取得できませんでした。");
+            return;
+        }
+    }
+
+    // 取得したルームIDでプレイヤー情報を取得
+    this.getPlayersFromFirebase().then(players => {
+        this.players = players;
+        console.log("取得したプレイヤー名:", this.players);
+        this.startRoulette();
+    }).catch(error => {
+        console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
+    });
+}
+
 
     startRoulette() {
         this.currentRoleIndex = 0;
@@ -67,6 +89,30 @@ class GamePlayScene extends Phaser.Scene {
             });
         });
     }
+　　async findRoomByUserId(userId) {
+    try {
+        let snapshot = await firebase.database().ref("gameRooms").once("value");
+        let rooms = snapshot.val();
+
+        if (!rooms) {
+            console.warn("⚠️ ルームが存在しません。");
+            return null;
+        }
+
+        for (let roomId in rooms) {
+            if (rooms[roomId].players && rooms[roomId].players[userId]) {
+                console.log("✅ プレイヤーが所属しているルームID:", roomId);
+                return roomId;
+            }
+        }
+
+        console.warn("⚠️ プレイヤーの所属するルームが見つかりませんでした。");
+        return null;
+    } catch (error) {
+        console.error("❌ Firebase からルーム検索中にエラーが発生:", error);
+        return null;
+    }
+}
 
     async getPlayersFromFirebase() {
     let userId = firebase.auth().currentUser?.uid;
