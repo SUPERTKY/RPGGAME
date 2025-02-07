@@ -54,7 +54,7 @@ class GameScene extends Phaser.Scene {
                 if (rooms[roomKey].players && rooms[roomKey].players[this.playerId]) {
                     console.log("すでにマッチング済み:", this.playerId);
                     localStorage.setItem("roomId", roomKey);
-                    this.roomRef = window.db.ref(gameRooms/${roomKey}/players);
+                    this.roomRef = window.db.ref(`gameRooms/${roomKey}/players`);
                     this.monitorPlayers();
                     return;
                 }
@@ -70,7 +70,7 @@ class GameScene extends Phaser.Scene {
             for (let roomKey in rooms) {
                 let playerCount = Object.keys(rooms[roomKey].players || {}).length;
                 if (playerCount < 6) {
-                    this.roomRef = window.db.ref(gameRooms/${roomKey}/players);
+                    this.roomRef = window.db.ref(`gameRooms/${roomKey}/players`);
                     localStorage.setItem("roomId", roomKey);
                     foundRoom = true;
                     this.startMatching();
@@ -86,7 +86,7 @@ class GameScene extends Phaser.Scene {
 
     createNewRoom() {
         let newRoomKey = window.db.ref("gameRooms").push().key;
-        this.roomRef = window.db.ref(gameRooms/${newRoomKey}/players);
+        this.roomRef = window.db.ref(`gameRooms/${newRoomKey}/players`);
         localStorage.setItem("roomId", newRoomKey);
         console.log("🆕 新しい部屋を作成:", newRoomKey);
         this.startMatching();
@@ -113,7 +113,7 @@ class GameScene extends Phaser.Scene {
                 id: this.playerId,
                 joinedAt: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                console.log(✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key}));
+                console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
 
                 window.addEventListener("beforeunload", () => {
                     playerRef.remove();
@@ -132,7 +132,7 @@ class GameScene extends Phaser.Scene {
             console.log("現在のプレイヤーデータ:", players);
             let playerCount = Object.keys(players).length;
 
-            console.log(現在のプレイヤー数: ${playerCount});
+            console.log(`現在のプレイヤー数: ${playerCount}`);
 
             if (playerCount >= 6) {
                 console.log("✅ マッチング完了！ゲーム開始！");
@@ -147,7 +147,7 @@ class GameScene extends Phaser.Scene {
         let roomId = localStorage.getItem("roomId");
         console.log("📌 保存された roomId:", roomId);
 
-        let playerName = localStorage.getItem("playerName") || プレイヤー${Math.floor(Math.random() * 1000)};
+        let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
         let playerRef = this.roomRef.child(this.playerId);
 
         playerRef.update({ name: playerName })
