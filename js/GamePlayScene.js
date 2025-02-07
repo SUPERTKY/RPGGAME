@@ -205,35 +205,78 @@ class GamePlayScene extends Phaser.Scene {
 
 
     finalizeRole() {
-        let finalRole = this.roles[this.currentRoleIndex];
-        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-        decisionSound.play();
+    let finalRole = this.players[this.currentRoleIndex].role;
+    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+    decisionSound.play();
+    this.roleDisplay.setTexture(finalRole);
 
-        this.roleDisplay.setTexture(finalRole);
-    }
-    
+    // 10秒間チーム名を記入する入力欄を表示
+    this.showTeamNameInput();
+}
+
+    showTeamNameInput() {
+    this.teamNameInputs = { red: [], blue: [] };
+
+    // 入力欄を作成
+    ["red", "blue"].forEach(team => {
+        let inputBox = document.createElement("input");
+        inputBox.type = "text";
+        inputBox.placeholder = team === "red" ? "レッドチーム名入力" : "ブルーチーム名入力";
+        inputBox.style.position = "absolute";
+        inputBox.style.top = team === "red" ? "40%" : "60%";
+        inputBox.style.left = "50%";
+        inputBox.style.transform = "translate(-50%, -50%)";
+        document.body.appendChild(inputBox);
+        this.teamNameInputs[team].push(inputBox);
+    });
+
+    // 10秒後にランダムでチーム名を決定
+    this.time.delayedCall(10000, () => {
+        this.finalizeTeamNames();
+    });
+}
+finalizeTeamNames() {
+    ["red", "blue"].forEach(team => {
+        let names = this.teamNameInputs[team].map(input => input.value).filter(name => name.trim() !== "");
+        let chosenName = names.length > 0 ? Phaser.Utils.Array.GetRandom(names) : (team === "red" ? "レッドチーム" : "ブルーチーム");
+        this.teamNames[team] = chosenName;
+
+        // 入力欄を削除
+        this.teamNameInputs[team].forEach(input => document.body.removeChild(input));
+    });
+
+    // VS画面へ
+    this.showVsScreen();
+}
+
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
 
     let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-    let leftTeam = this.players.slice(0, 3);
-    let rightTeam = this.players.slice(3, 6);
+    let redTeam = this.players.filter(player => player.team === "red");
+    let blueTeam = this.players.filter(player => player.team === "blue");
 
-    console.log("左チーム:", leftTeam);
-    console.log("右チーム:", rightTeam);
+    // チーム名を表示
+    this.add.text(this.scale.width * 0.2, this.scale.height * 0.15, this.teamNames.red, {
+        fontSize: "40px", fill: "#ff0000", stroke: "#000000", strokeThickness: 5
+    }).setOrigin(0.5).setDepth(3);
 
-    // 名前の表示を一番上にし、左右の幅を広げる
-    leftTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5).setDepth(3); // 名前が一番前面になるように
+    this.add.text(this.scale.width * 0.8, this.scale.height * 0.15, this.teamNames.blue, {
+        fontSize: "40px", fill: "#0000ff", stroke: "#000000", strokeThickness: 5
+    }).setOrigin(0.5).setDepth(3);
+
+    // チームメンバー表示
+    redTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), `${player.name} (${player.role})`, {
+            fontSize: "32px", fill: "#ff0000", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3);
     });
 
-    rightTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+    blueTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), `${player.name} (${player.role})`, {
+            fontSize: "32px", fill: "#0000ff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
 
@@ -242,6 +285,7 @@ class GamePlayScene extends Phaser.Scene {
         this.scene.start("BattleScene");
     });
 }
+
 
 }
 
