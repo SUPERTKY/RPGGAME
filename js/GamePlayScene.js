@@ -50,54 +50,14 @@ class GamePlayScene extends Phaser.Scene {
         }
     }
 
-    async getPlayersFromFirebase() {
-    let userId = firebase.auth().currentUser?.uid;
-    if (!userId) {
-        console.error("⚠️ ユーザーIDが取得できませんでした。");
-        return ["エラー: ユーザー不明"];
-    }
-
-    // `roomId` を明示的に取得
-    let roomId = localStorage.getItem("roomId");
-    console.log("現在のルームID:", roomId);  // デバッグ用出力
-
-    if (!roomId) {
-        console.warn("⚠️ ルームIDが見つかりません。検索します...");
-        roomId = await this.findRoomByUserId(userId);
-        if (roomId) {
-            localStorage.setItem("roomId", roomId);
-            console.log("✅ 取得したルームIDを保存:", roomId);
-        } else {
-            console.error("⚠️ ルームIDが取得できませんでした。");
-            return ["エラー: ルーム不明"];
-        }
-    }
-
-    try {
-        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
-        let data = snapshot.val();
-        console.log("取得したデータ:", data);  // デバッグ用出力
-
-        if (data) {
-            let players = Object.keys(data).map(playerId => ({
-                id: playerId,  // IDも含める
-                name: data[playerId].name || "名前なし",
-                team: data[playerId].team || "チーム未定",
-                role: data[playerId].role || "役職未定"
-            }));
-
-            console.log("プレイヤーリスト:", players);
-            return players;
-        } else {
-            console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
-            return ["エラー: データなし"];
-        }
-    } catch (error) {
-        console.error("❌ Firebaseからのデータ取得中にエラーが発生:", error);
-        return ["エラー: 例外発生"];
-    }
-}
-
+    // 取得したルームIDでプレイヤー情報を取得
+    this.getPlayersFromFirebase().then(players => {
+        this.players = players;
+        console.log("取得したプレイヤー名:", this.players);
+        this.startRoulette();
+    }).catch(error => {
+        console.error("Firebaseからプレイヤー名を取得できませんでした:", error);
+    });
 }
 
 
@@ -161,12 +121,13 @@ class GamePlayScene extends Phaser.Scene {
         return ["エラー: ユーザー不明"];
     }
 
+    // `roomId` を明示的に取得
     let roomId = localStorage.getItem("roomId");
+    console.log("現在のルームID:", roomId);  // デバッグ用出力
 
-    // roomId が見つからない場合、findRoomByUserId を使って検索
     if (!roomId) {
         console.warn("⚠️ ルームIDが見つかりません。検索します...");
-        roomId = await findRoomByUserId(userId);
+        roomId = await this.findRoomByUserId(userId);
         if (roomId) {
             localStorage.setItem("roomId", roomId);
             console.log("✅ 取得したルームIDを保存:", roomId);
@@ -179,13 +140,18 @@ class GamePlayScene extends Phaser.Scene {
     try {
         let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
         let data = snapshot.val();
+        console.log("取得したデータ:", data);  // デバッグ用出力
 
         if (data) {
-            return Object.values(data).map(player => ({
-                name: player.name || "名前なし",
-                team: player.team || "チーム未定",
-                role: player.role || "役職未定"
+            let players = Object.keys(data).map(playerId => ({
+                id: playerId,  // IDも含める
+                name: data[playerId].name || "名前なし",
+                team: data[playerId].team || "チーム未定",
+                role: data[playerId].role || "役職未定"
             }));
+
+            console.log("プレイヤーリスト:", players);
+            return players;
         } else {
             console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
             return ["エラー: データなし"];
@@ -195,6 +161,7 @@ class GamePlayScene extends Phaser.Scene {
         return ["エラー: 例外発生"];
     }
 }
+
 
 
     finalizeRole() {
