@@ -102,7 +102,7 @@ class GamePlayScene extends Phaser.Scene {
 
         this.roleDisplay.setTexture(finalRole);
     }
-
+    
     showVsScreen() {
         let vsSound = this.sound.add("vsSound", { volume: 1 });
         vsSound.play();
@@ -141,6 +141,30 @@ async function registerPlayer(roomId, playerName, team, role) {
         team: team,
         role: role
     });
+}
+async function findRoomByUserId(userId) {
+    try {
+        let snapshot = await firebase.database().ref("gameRooms").once("value");
+        let rooms = snapshot.val();
+
+        if (!rooms) {
+            console.warn("⚠️ ルームが存在しません。");
+            return null;
+        }
+
+        for (let roomId in rooms) {
+            if (rooms[roomId].players && rooms[roomId].players[userId]) {
+                console.log("✅ プレイヤーが所属しているルームID:", roomId);
+                return roomId;
+            }
+        }
+
+        console.warn("⚠️ プレイヤーの所属するルームが見つかりませんでした。");
+        return null;
+    } catch (error) {
+        console.error("❌ Firebase からルーム検索中にエラーが発生:", error);
+        return null;
+    }
 }
 
 class BattleScene extends Phaser.Scene {
