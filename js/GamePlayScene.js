@@ -213,34 +213,36 @@ class GamePlayScene extends Phaser.Scene {
     }
     
     showVsScreen() {
-        let vsSound = this.sound.add("vsSound", { volume: 1 });
-        vsSound.play();
+    let vsSound = this.sound.add("vsSound", { volume: 1 });
+    vsSound.play();
 
-        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
+    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-        let leftTeam = this.players.slice(0, 3);
-        let rightTeam = this.players.slice(3, 6);
+    let leftTeam = this.players.slice(0, 3);
+    let rightTeam = this.players.slice(3, 6);
 
-        console.log("左チーム:", leftTeam);
-        console.log("右チーム:", rightTeam);
+    console.log("左チーム:", leftTeam);
+    console.log("右チーム:", rightTeam);
 
-        leftTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), player.name, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5);
-        });
+    // 名前の表示を一番上にし、左右の幅を広げる
+    leftTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3); // 名前が一番前面になるように
+    });
 
-        rightTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), player.name, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5);
-        });
+    rightTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3);
+    });
 
-        this.time.delayedCall(8000, () => {
-            vsImage.destroy();
-            this.scene.start("BattleScene");
-        });
-    }
+    this.time.delayedCall(8000, () => {
+        vsImage.destroy();
+        this.scene.start("BattleScene");
+    });
+}
+
 }
 
 async function registerPlayer(roomId, playerName, team, role) {
