@@ -53,6 +53,7 @@ class GameScene extends Phaser.Scene {
             for (let roomKey in rooms) {
                 if (rooms[roomKey].players && rooms[roomKey].players[this.playerId]) {
                     console.log("すでにマッチング済み:", this.playerId);
+                    localStorage.setItem("roomId", roomKey);
                     this.roomRef = window.db.ref(`gameRooms/${roomKey}/players`);
                     this.monitorPlayers();
                     return;
@@ -70,6 +71,7 @@ class GameScene extends Phaser.Scene {
                 let playerCount = Object.keys(rooms[roomKey].players || {}).length;
                 if (playerCount < 4) {
                     this.roomRef = window.db.ref(`gameRooms/${roomKey}/players`);
+                    localStorage.setItem("roomId", roomKey);
                     foundRoom = true;
                     this.startMatching();
                     break;
@@ -85,6 +87,7 @@ class GameScene extends Phaser.Scene {
     createNewRoom() {
         let newRoomKey = window.db.ref("gameRooms").push().key;
         this.roomRef = window.db.ref(`gameRooms/${newRoomKey}/players`);
+        localStorage.setItem("roomId", newRoomKey);
         console.log("🆕 新しい部屋を作成:", newRoomKey);
         this.startMatching();
     }
@@ -140,6 +143,9 @@ class GameScene extends Phaser.Scene {
 
     startGame() {
         console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
+
+        let roomId = localStorage.getItem("roomId");
+        console.log("📌 保存された roomId:", roomId);
 
         let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
         let playerRef = this.roomRef.child(this.playerId);
