@@ -69,7 +69,7 @@ class GameScene extends Phaser.Scene {
 
             for (let roomKey in rooms) {
                 let playerCount = Object.keys(rooms[roomKey].players || {}).length;
-                if (playerCount < 6) {
+                if (playerCount < 4) {
                     this.roomRef = window.db.ref(`gameRooms/${roomKey}/players`);
                     localStorage.setItem("roomId", roomKey);
                     foundRoom = true;
@@ -134,7 +134,7 @@ class GameScene extends Phaser.Scene {
 
             console.log(`現在のプレイヤー数: ${playerCount}`);
 
-            if (playerCount >= 6) {
+            if (playerCount >= 4) {
                 console.log("✅ マッチング完了！ゲーム開始！");
                 this.startGame();
             }
