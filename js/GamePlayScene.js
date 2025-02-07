@@ -102,43 +102,33 @@ class GamePlayScene extends Phaser.Scene {
 
 
     startRoulette() {
-    if (this.rouletteStarted) {
-        console.warn("⚠️ ルーレットは既に開始されています。");
-        return;
+        this.currentRoleIndex = 0;
+        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
+
+        this.time.delayedCall(4000, () => {
+            let totalSpins = this.roles.length * 3;
+            let spinDuration = 500;
+
+            this.roleDisplay.setAlpha(1);
+            this.time.addEvent({
+                delay: spinDuration,
+                repeat: totalSpins - 1,
+                callback: () => {
+                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+                },
+                callbackScope: this
+            });
+
+            this.time.delayedCall(spinDuration * totalSpins, () => {
+                this.finalizeRole();
+            });
+
+            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+                this.showVsScreen();
+            });
+        });
     }
-    this.rouletteStarted = true; // ✅ 二重実行防止
-
-    this.currentRoleIndex = 0;
-    this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
-        .setScale(0.6)
-        .setDepth(1)
-        .setAlpha(1);
-
-    this.time.delayedCall(3000, () => { // 🔽 開始を 5秒 → 3秒に短縮
-        let totalSpins = this.roles.length * 2; // 🔽 6×4 → 6×2 = 12回に減らす
-        let spinDuration = 500; // 🔽 600ms → 500msでスピーディに
-
-        let spinEvent = this.time.addEvent({
-            delay: spinDuration,
-            repeat: totalSpins - 1,
-            callback: () => {
-                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-            },
-            callbackScope: this
-        });
-
-        this.time.delayedCall(spinDuration * totalSpins, () => {
-            console.log("🛠 finalizeRole() を呼び出し");
-            this.finalizeRole();
-        });
-    });
-}
-
-
-
-
-
 　　async findRoomByUserId(userId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
@@ -171,7 +161,7 @@ class GamePlayScene extends Phaser.Scene {
         return ["エラー: ユーザー不明"];
     }
 
-    // `roomId` を明示的に取得
+    // roomId を明示的に取得
     let roomId = localStorage.getItem("roomId");
     console.log("現在のルームID:", roomId);  // デバッグ用出力
 
@@ -188,7 +178,7 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     try {
-        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+        let snapshot = await firebase.database().ref(gameRooms/${roomId}/players).once("value");
         let data = snapshot.val();
         console.log("取得したデータ:", data);  // デバッグ用出力
 
@@ -211,116 +201,50 @@ class GamePlayScene extends Phaser.Scene {
         return ["エラー: 例外発生"];
     }
 }
-async finalizeRole() {
-    if (this.finalized) {
-        console.warn("⚠️ finalizeRole() はすでに実行済みです。スキップします。");
-        return;
-    }
-    this.finalized = true;
-    console.log("🔹 finalizeRole() を実行");
 
-    let finalRole = this.roles[this.currentRoleIndex];
 
-    if (!this.decisionSoundPlayed) {
+
+    finalizeRole() {
+        let finalRole = this.roles[this.currentRoleIndex];
         let decisionSound = this.sound.add("decisionSound", { volume: 1 });
         decisionSound.play();
-        this.decisionSoundPlayed = true; // ✅ 一度だけ音を鳴らす
+
+        this.roleDisplay.setTexture(finalRole);
     }
+    
+    showVsScreen() {
+        let vsSound = this.sound.add("vsSound", { volume: 1 });
+        vsSound.play();
 
-    this.roleDisplay.setTexture(finalRole);
+        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-    try {
-        let userId = firebase.auth().currentUser?.uid;
-        if (!userId) {
-            console.error("⚠️ ユーザーIDが取得できません。");
-            return;
-        }
+        let leftTeam = this.players.slice(0, 3);
+        let rightTeam = this.players.slice(3, 6);
 
-        let roomId = localStorage.getItem("roomId");
-        if (!roomId) {
-            console.warn("⚠️ ルームIDが見つかりません。検索します...");
-            roomId = await this.findRoomByUserId(userId);
-            if (!roomId) {
-                console.error("⚠️ ルームIDが取得できませんでした。");
-                return;
-            }
-        }
+        console.log("左チーム:", leftTeam);
+        console.log("右チーム:", rightTeam);
 
-        let playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${userId}`);
-        let snapshot = await playerRef.once("value");
-        let playerData = snapshot.val();
-
-        if (playerData && playerData.role && playerData.role !== "未定") {
-            console.log("✅ すでに役職が設定されている:", playerData.role);
-            return;
-        }
-
-        let team = this.players.find(p => p.id === userId)?.team || (Object.keys(this.players).length % 2 === 0 ? "Blue" : "Red");
-
-        await playerRef.update({
-            role: finalRole,
-            team: team,
-            id: userId,
-            joinedAt: playerData?.joinedAt || Date.now(),
-            name: playerData?.name || "不明"
+        leftTeam.forEach((player, index) => {
+            this.add.text(this.scale.width * 0.25, this.scale.height * (0.4 + index * 0.1), player.name, {
+                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+            }).setOrigin(0.5);
         });
 
-        console.log(`✅ Firebase に役職 '${finalRole}' とチーム '${team}' を保存しました`);
-    } catch (error) {
-        console.error("❌ Firebase に役職を保存中にエラー:", error);
+        rightTeam.forEach((player, index) => {
+            this.add.text(this.scale.width * 0.75, this.scale.height * (0.4 + index * 0.1), player.name, {
+                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+            }).setOrigin(0.5);
+        });
+
+        this.time.delayedCall(8000, () => {
+            vsImage.destroy();
+            this.scene.start("BattleScene");
+        });
     }
-
-    // ✅ フェードアウト処理を適切に管理
-    this.tweens.add({
-        targets: this.roleDisplay,
-        alpha: 0,
-        duration: 2000,
-        onComplete: () => {
-            console.log("🛠 showVsScreen() を呼び出し");
-            this.showVsScreen();
-        }
-    });
-}
-
-
-  
-    showVsScreen() {
-    let vsSound = this.sound.add("vsSound", { volume: 1 });
-    vsSound.play();
-
-    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
-
-    let leftTeam = this.players.slice(0, 3);
-    let rightTeam = this.players.slice(3, 6);
-
-    console.log("左チーム:", leftTeam);
-    console.log("右チーム:", rightTeam);
-
-    // 名前の表示を一番上にし、左右の幅を広げる
-    leftTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5).setDepth(3); // 名前が一番前面になるように
-    });
-
-    rightTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5).setDepth(3);
-    });
-
-    // VS画像の表示時間を12秒に延長
-    this.time.delayedCall(24000, () => {
-        vsImage.destroy();
-        this.scene.start("BattleScene");
-    });
-}
-
-
 }
 
 async function registerPlayer(roomId, playerName, team, role) {
-    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
+    let playerRef = firebase.database().ref(gameRooms/${roomId}/players).push();
     await playerRef.set({
         joinedAt: Date.now(),
         team: team,
@@ -337,5 +261,4 @@ class BattleScene extends Phaser.Scene {
     create() {
         console.log("バトルシーンに移動しました。");
     }
-}
-
+} 　
