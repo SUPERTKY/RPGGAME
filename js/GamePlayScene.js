@@ -2,6 +2,27 @@ class GamePlayScene extends Phaser.Scene {
     constructor() {
         super({ key: "GamePlayScene" });
     }
+    async getUserId() {
+    return new Promise((resolve, reject) => {
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                console.log("✅ Firebase 認証成功 ユーザーID:", user.uid);
+                resolve(user.uid);
+            } else {
+                console.warn("⚠️ ユーザーが未ログインです。匿名ログインを試行...");
+                firebase.auth().signInAnonymously()
+                    .then(result => {
+                        console.log("✅ 匿名ログイン成功 ユーザーID:", result.user.uid);
+                        resolve(result.user.uid);
+                    })
+                    .catch(error => {
+                        console.error("❌ ログインエラー:", error);
+                        reject(error);
+                    });
+            }
+        });
+    });
+}
 
     preload() {
         this.load.image("background3", "assets/background3.png");
