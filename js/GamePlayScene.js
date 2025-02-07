@@ -154,58 +154,46 @@ class GamePlayScene extends Phaser.Scene {
     }
 }
 
-    async getPlayersFromFirebase() {
-    let userId = firebase.auth().currentUser?.uid;
-    if (!userId) {
-        console.error("⚠️ ユーザーIDが取得できませんでした。");
-        return ["エラー: ユーザー不明"];
-    }
-
-    // roomId を明示的に取得
-    let roomId = localStorage.getItem("roomId");
-    console.log("現在のルームID:", roomId);  // デバッグ用出力
-
-    if (!roomId) {
-        console.warn("⚠️ ルームIDが見つかりません。検索します...");
-        roomId = await this.findRoomByUserId(userId);
-        if (roomId) {
-            localStorage.setItem("roomId", roomId);
-            console.log("✅ 取得したルームIDを保存:", roomId);
-        } else {
-            console.error("⚠️ ルームIDが取得できませんでした。");
-            return ["エラー: ルーム不明"];
-        }
-    }
-
+    async getPlayersFromFirebase(roomId) {
     try {
         let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
-
         let data = snapshot.val();
-        console.log("取得したデータ:", data);  // デバッグ用出力
+        console.log("取得したプレイヤーデータ:", data); // ✅ デバッグ用ログ
 
         if (data) {
             let players = Object.keys(data).map(playerId => ({
-                id: playerId,  // IDも含める
+                id: playerId,
                 name: data[playerId].name || "名前なし",
                 team: data[playerId].team || "チーム未定",
                 role: data[playerId].role || "役職未定"
             }));
 
-            console.log("プレイヤーリスト:", players);
+            console.log("プレイヤーリスト:", players); // ✅ デバッグ用ログ
             return players;
         } else {
             console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
-            return ["エラー: データなし"];
+            return [];
         }
     } catch (error) {
-        console.error("❌ Firebaseからのデータ取得中にエラーが発生:", error);
-        return ["エラー: 例外発生"];
+        console.error("❌ Firebaseからのデータ取得中にエラー:", error);
+        return [];
     }
 }
 
 
 
+
     finalizeRole() {
+    if (!this.players || this.players.length === 0) {
+        console.error("⚠️ プレイヤーリストが取得できていません。");
+        return;
+    }
+
+    if (this.currentRoleIndex < 0 || this.currentRoleIndex >= this.players.length) {
+        console.error("⚠️ currentRoleIndex が範囲外です:", this.currentRoleIndex);
+        return;
+    }
+
     let finalRole = this.players[this.currentRoleIndex].role;
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
@@ -215,8 +203,9 @@ class GamePlayScene extends Phaser.Scene {
     this.showTeamNameInput();
 }
 
+
     showTeamNameInput() {
-    this.teamNameInputs = { red: [], blue: [] };
+    this.teamNameInputs = { red: null, blue: null };
 
     // 入力欄を作成
     ["red", "blue"].forEach(team => {
@@ -228,7 +217,7 @@ class GamePlayScene extends Phaser.Scene {
         inputBox.style.left = "50%";
         inputBox.style.transform = "translate(-50%, -50%)";
         document.body.appendChild(inputBox);
-        this.teamNameInputs[team].push(inputBox);
+        this.teamNameInputs[team] = inputBox;
     });
 
     // 10秒後にランダムでチーム名を決定
@@ -236,19 +225,24 @@ class GamePlayScene extends Phaser.Scene {
         this.finalizeTeamNames();
     });
 }
-finalizeTeamNames() {
-    ["red", "blue"].forEach(team => {
-        let names = this.teamNameInputs[team].map(input => input.value).filter(name => name.trim() !== "");
-        let chosenName = names.length > 0 ? Phaser.Utils.Array.GetRandom(names) : (team === "red" ? "レッドチーム" : "ブルーチーム");
-        this.teamNames[team] = chosenName;
 
-        // 入力欄を削除
-        this.teamNameInputs[team].forEach(input => document.body.removeChild(input));
+finalizeTeamNames() {
+    this.teamNames = { red: "レッドチーム", blue: "ブルーチーム" }; // デフォルト名
+
+    ["red", "blue"].forEach(team => {
+        if (this.teamNameInputs[team]) {
+            let name = this.teamNameInputs[team].value.trim();
+            if (name) {
+                this.teamNames[team] = name;
+            }
+            document.body.removeChild(this.teamNameInputs[team]);
+        }
     });
 
-    // VS画面へ
+    console.log("決定したチーム名:", this.teamNames);
     this.showVsScreen();
 }
+
 
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
@@ -260,11 +254,11 @@ finalizeTeamNames() {
     let blueTeam = this.players.filter(player => player.team === "blue");
 
     // チーム名を表示
-    this.add.text(this.scale.width * 0.2, this.scale.height * 0.15, this.teamNames.red, {
+    this.add.text(this.scale.width * 0.2, this.scale.height * 0.15, this.teamNames.red || "レッドチーム", {
         fontSize: "40px", fill: "#ff0000", stroke: "#000000", strokeThickness: 5
     }).setOrigin(0.5).setDepth(3);
 
-    this.add.text(this.scale.width * 0.8, this.scale.height * 0.15, this.teamNames.blue, {
+    this.add.text(this.scale.width * 0.8, this.scale.height * 0.15, this.teamNames.blue || "ブルーチーム", {
         fontSize: "40px", fill: "#0000ff", stroke: "#000000", strokeThickness: 5
     }).setOrigin(0.5).setDepth(3);
 
