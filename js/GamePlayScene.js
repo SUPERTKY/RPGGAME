@@ -178,7 +178,8 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     try {
-        let snapshot = await firebase.database().ref(gameRooms/${roomId}/players).once("value");
+        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+
         let data = snapshot.val();
         console.log("取得したデータ:", data);  // デバッグ用出力
 
