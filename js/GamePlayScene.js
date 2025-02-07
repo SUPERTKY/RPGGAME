@@ -154,124 +154,86 @@ class GamePlayScene extends Phaser.Scene {
     }
 }
 
-    async getPlayersFromFirebase(roomId) {
+    async getPlayersFromFirebase() {
+    let userId = firebase.auth().currentUser?.uid;
+    if (!userId) {
+        console.error("⚠️ ユーザーIDが取得できませんでした。");
+        return ["エラー: ユーザー不明"];
+    }
+
+    // roomId を明示的に取得
+    let roomId = localStorage.getItem("roomId");
+    console.log("現在のルームID:", roomId);  // デバッグ用出力
+
+    if (!roomId) {
+        console.warn("⚠️ ルームIDが見つかりません。検索します...");
+        roomId = await this.findRoomByUserId(userId);
+        if (roomId) {
+            localStorage.setItem("roomId", roomId);
+            console.log("✅ 取得したルームIDを保存:", roomId);
+        } else {
+            console.error("⚠️ ルームIDが取得できませんでした。");
+            return ["エラー: ルーム不明"];
+        }
+    }
+
     try {
-        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+        let snapshot = await firebase.database().ref(gameRooms/${roomId}/players).once("value");
         let data = snapshot.val();
-        console.log("取得したプレイヤーデータ:", data); // ✅ デバッグ用ログ
+        console.log("取得したデータ:", data);  // デバッグ用出力
 
         if (data) {
             let players = Object.keys(data).map(playerId => ({
-                id: playerId,
+                id: playerId,  // IDも含める
                 name: data[playerId].name || "名前なし",
                 team: data[playerId].team || "チーム未定",
                 role: data[playerId].role || "役職未定"
             }));
 
-            console.log("プレイヤーリスト:", players); // ✅ デバッグ用ログ
+            console.log("プレイヤーリスト:", players);
             return players;
         } else {
             console.error("⚠️ Firebase からプレイヤー情報を取得できませんでした。");
-            return [];
+            return ["エラー: データなし"];
         }
     } catch (error) {
-        console.error("❌ Firebaseからのデータ取得中にエラー:", error);
-        return [];
+        console.error("❌ Firebaseからのデータ取得中にエラーが発生:", error);
+        return ["エラー: 例外発生"];
     }
 }
-
 
 
 
     finalizeRole() {
-    if (!this.players || this.players.length === 0) {
-        console.error("⚠️ プレイヤーリストが取得できていません。");
-        return;
+        let finalRole = this.roles[this.currentRoleIndex];
+        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+        decisionSound.play();
+
+        this.roleDisplay.setTexture(finalRole);
     }
-
-    if (this.currentRoleIndex < 0 || this.currentRoleIndex >= this.players.length) {
-        console.error("⚠️ currentRoleIndex が範囲外です:", this.currentRoleIndex);
-        return;
-    }
-
-    let finalRole = this.players[this.currentRoleIndex].role;
-    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-    decisionSound.play();
-    this.roleDisplay.setTexture(finalRole);
-
-    // 10秒間チーム名を記入する入力欄を表示
-    this.showTeamNameInput();
-}
-
-
-    showTeamNameInput() {
-    this.teamNameInputs = { red: null, blue: null };
-
-    // 入力欄を作成
-    ["red", "blue"].forEach(team => {
-        let inputBox = document.createElement("input");
-        inputBox.type = "text";
-        inputBox.placeholder = team === "red" ? "レッドチーム名入力" : "ブルーチーム名入力";
-        inputBox.style.position = "absolute";
-        inputBox.style.top = team === "red" ? "40%" : "60%";
-        inputBox.style.left = "50%";
-        inputBox.style.transform = "translate(-50%, -50%)";
-        document.body.appendChild(inputBox);
-        this.teamNameInputs[team] = inputBox;
-    });
-
-    // 10秒後にランダムでチーム名を決定
-    this.time.delayedCall(10000, () => {
-        this.finalizeTeamNames();
-    });
-}
-
-finalizeTeamNames() {
-    this.teamNames = { red: "レッドチーム", blue: "ブルーチーム" }; // デフォルト名
-
-    ["red", "blue"].forEach(team => {
-        if (this.teamNameInputs[team]) {
-            let name = this.teamNameInputs[team].value.trim();
-            if (name) {
-                this.teamNames[team] = name;
-            }
-            document.body.removeChild(this.teamNameInputs[team]);
-        }
-    });
-
-    console.log("決定したチーム名:", this.teamNames);
-    this.showVsScreen();
-}
-
-
+    
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
 
     let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-    let redTeam = this.players.filter(player => player.team === "red");
-    let blueTeam = this.players.filter(player => player.team === "blue");
+    let leftTeam = this.players.slice(0, 3);
+    let rightTeam = this.players.slice(3, 6);
 
-    // チーム名を表示
-    this.add.text(this.scale.width * 0.2, this.scale.height * 0.15, this.teamNames.red || "レッドチーム", {
-        fontSize: "40px", fill: "#ff0000", stroke: "#000000", strokeThickness: 5
-    }).setOrigin(0.5).setDepth(3);
+    console.log("左チーム:", leftTeam);
+    console.log("右チーム:", rightTeam);
 
-    this.add.text(this.scale.width * 0.8, this.scale.height * 0.15, this.teamNames.blue || "ブルーチーム", {
-        fontSize: "40px", fill: "#0000ff", stroke: "#000000", strokeThickness: 5
-    }).setOrigin(0.5).setDepth(3);
-
-    // チームメンバー表示
-    redTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), `${player.name} (${player.role})`, {
-            fontSize: "32px", fill: "#ff0000", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5).setDepth(3);
+    // 名前の表示を一番上にし、左右の幅を広げる
+    leftTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3); // 名前が一番前面になるように
     });
 
-    blueTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), `${player.name} (${player.role})`, {
-            fontSize: "32px", fill: "#0000ff", stroke: "#000000", strokeThickness: 5
+    rightTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
 
@@ -281,11 +243,10 @@ finalizeTeamNames() {
     });
 }
 
-
 }
 
 async function registerPlayer(roomId, playerName, team, role) {
-    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
+    let playerRef = firebase.database().ref(gameRooms/${roomId}/players).push();
     await playerRef.set({
         joinedAt: Date.now(),
         team: team,
