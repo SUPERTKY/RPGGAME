@@ -108,7 +108,7 @@ class GamePlayScene extends Phaser.Scene {
         .setDepth(1)
         .setAlpha(0);
 
-    this.time.delayedCall(5000, () => { // ルーレット開始までの時間を少し延長
+    this.time.delayedCall(10000, () => { // ルーレット開始までの時間を少し延長
         let totalSpins = this.roles.length * 4; // ルーレット回転時間を増やす
         let spinDuration = 600; // 一回の回転時間を長くする
 
@@ -248,7 +248,7 @@ class GamePlayScene extends Phaser.Scene {
     });
 
     // VS画像の表示時間を12秒に延長
-    this.time.delayedCall(12000, () => {
+    this.time.delayedCall(24000, () => {
         vsImage.destroy();
         this.scene.start("BattleScene");
     });
