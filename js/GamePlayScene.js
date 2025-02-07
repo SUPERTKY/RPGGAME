@@ -106,13 +106,12 @@ class GamePlayScene extends Phaser.Scene {
     this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
         .setScale(0.6)
         .setDepth(1)
-        .setAlpha(0);
+        .setAlpha(1);  // ✅ 最初から明示的に表示
 
     this.time.delayedCall(5000, () => {
         let totalSpins = this.roles.length * 4;
         let spinDuration = 600;
 
-        this.roleDisplay.setAlpha(1);
         let spinEvent = this.time.addEvent({
             delay: spinDuration,
             repeat: totalSpins - 1,
@@ -123,25 +122,13 @@ class GamePlayScene extends Phaser.Scene {
             callbackScope: this
         });
 
-        // 🔹 ルーレット終了後にフェードアウト
         this.time.delayedCall(spinDuration * totalSpins, () => {
             console.log("🛠 finalizeRole() を呼び出し");
             this.finalizeRole(); // 🔹 一度しか実行されないようにする
         });
-
-        this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-            this.tweens.add({
-                targets: this.roleDisplay,
-                alpha: 0,
-                duration: 2000,
-                onComplete: () => {
-                    console.log("🛠 showVsScreen() を呼び出し");
-                    this.showVsScreen();
-                }
-            });
-        });
     });
 }
+
 
 
 
@@ -217,20 +204,21 @@ class GamePlayScene extends Phaser.Scene {
         return ["エラー: 例外発生"];
     }
 }
-
-
-
-    async finalizeRole() {
+async finalizeRole() {
     if (this.finalized) {
-        console.warn("⚠️ finalizeRole() がすでに実行済みのため、スキップします");
+        console.warn("⚠️ finalizeRole() はすでに実行済みです。スキップします。");
         return;
     }
-    this.finalized = true; // 🔹 ここでフラグを最初に立てることで、多重実行を防ぐ
+    this.finalized = true;
     console.log("🔹 finalizeRole() を実行");
 
     let finalRole = this.roles[this.currentRoleIndex];
-    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-    decisionSound.play();
+
+    if (!this.decisionSoundPlayed) {
+        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+        decisionSound.play();
+        this.decisionSoundPlayed = true; // ✅ 一度だけ音を鳴らす
+    }
 
     this.roleDisplay.setTexture(finalRole);
 
@@ -257,13 +245,11 @@ class GamePlayScene extends Phaser.Scene {
 
         if (playerData && playerData.role && playerData.role !== "未定") {
             console.log("✅ すでに役職が設定されている:", playerData.role);
-            return; // 🔹 すでに役職がある場合は処理をスキップ
+            return;
         }
 
-        // ✅ ユーザーのチームを決定
         let team = this.players.find(p => p.id === userId)?.team || (Object.keys(this.players).length % 2 === 0 ? "Blue" : "Red");
 
-        // ✅ Firebase に役職とチームを保存
         await playerRef.update({
             role: finalRole,
             team: team,
@@ -276,7 +262,19 @@ class GamePlayScene extends Phaser.Scene {
     } catch (error) {
         console.error("❌ Firebase に役職を保存中にエラー:", error);
     }
+
+    // ✅ フェードアウト処理を適切に管理
+    this.tweens.add({
+        targets: this.roleDisplay,
+        alpha: 0,
+        duration: 2000,
+        onComplete: () => {
+            console.log("🛠 showVsScreen() を呼び出し");
+            this.showVsScreen();
+        }
+    });
 }
+
 
   
     showVsScreen() {
