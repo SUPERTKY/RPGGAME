@@ -214,13 +214,45 @@ class GamePlayScene extends Phaser.Scene {
 
 
 
-    finalizeRole() {
-        let finalRole = this.roles[this.currentRoleIndex];
-        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-        decisionSound.play();
+    async finalizeRole() {
+    let finalRole = this.roles[this.currentRoleIndex];
+    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+    decisionSound.play();
 
-        this.roleDisplay.setTexture(finalRole);
+    this.roleDisplay.setTexture(finalRole);
+
+    // ✅ Firebase に役職とチームを保存
+    try {
+        let userId = firebase.auth().currentUser?.uid;
+        if (!userId) {
+            console.error("⚠️ ユーザーIDが取得できません。");
+            return;
+        }
+
+        let roomId = localStorage.getItem("roomId");
+        if (!roomId) {
+            console.warn("⚠️ ルームIDが見つかりません。検索します...");
+            roomId = await this.findRoomByUserId(userId);
+            if (!roomId) {
+                console.error("⚠️ ルームIDが取得できませんでした。");
+                return;
+            }
+        }
+
+        // ✅ ユーザーのチームを決定（左チーム or 右チーム）
+        let team = this.players.find(p => p.id === userId)?.team || (this.players.length % 2 === 0 ? "Blue" : "Red");
+
+        await firebase.database().ref(`gameRooms/${roomId}/players/${userId}`).update({
+            role: finalRole,
+            team: team
+        });
+
+        console.log(`✅ Firebase に役職 '${finalRole}' とチーム '${team}' を保存しました`);
+    } catch (error) {
+        console.error("❌ Firebase に役職を保存中にエラー:", error);
     }
+}
+
     
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
