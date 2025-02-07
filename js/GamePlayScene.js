@@ -102,15 +102,21 @@ class GamePlayScene extends Phaser.Scene {
 
 
     startRoulette() {
+    if (this.rouletteStarted) {
+        console.warn("⚠️ ルーレットは既に開始されています。");
+        return;
+    }
+    this.rouletteStarted = true; // ✅ 二重実行防止
+
     this.currentRoleIndex = 0;
     this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
         .setScale(0.6)
         .setDepth(1)
-        .setAlpha(1);  // ✅ 最初から明示的に表示
+        .setAlpha(1);
 
-    this.time.delayedCall(5000, () => {
-        let totalSpins = this.roles.length * 4;
-        let spinDuration = 600;
+    this.time.delayedCall(3000, () => { // 🔽 開始を 5秒 → 3秒に短縮
+        let totalSpins = this.roles.length * 2; // 🔽 6×4 → 6×2 = 12回に減らす
+        let spinDuration = 500; // 🔽 600ms → 500msでスピーディに
 
         let spinEvent = this.time.addEvent({
             delay: spinDuration,
@@ -124,10 +130,11 @@ class GamePlayScene extends Phaser.Scene {
 
         this.time.delayedCall(spinDuration * totalSpins, () => {
             console.log("🛠 finalizeRole() を呼び出し");
-            this.finalizeRole(); // 🔹 一度しか実行されないようにする
+            this.finalizeRole();
         });
     });
 }
+
 
 
 
