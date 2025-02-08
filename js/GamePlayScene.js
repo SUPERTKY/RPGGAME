@@ -205,12 +205,19 @@ class GamePlayScene extends Phaser.Scene {
 
 
     finalizeRole() {
-        let finalRole = this.roles[this.currentRoleIndex];
-        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-        decisionSound.play();
+    let finalRole = this.roles[this.currentRoleIndex];
+    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+    decisionSound.play();
 
-        this.roleDisplay.setTexture(finalRole);
+    this.roleDisplay.setTexture(finalRole);
+
+    // ルーレットの停止処理
+    if (this.rouletteEvent) {
+        this.rouletteEvent.remove(false);
+        console.log("✅ ルーレットイベントを停止しました。");
     }
+}
+
     
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
