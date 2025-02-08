@@ -269,27 +269,11 @@ async finalizeRole() {
     this.roleDisplay.setAlpha(1);
     this.showVsScreen();
 }
-    window.addEventListener("beforeunload", () => {
-    let roomId = localStorage.getItem("roomId");
-    let playerId = localStorage.getItem("userId");
-
-    if (roomId && playerId) {
-        firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).remove()
-            .then(() => console.log(`🔥 ウェブサイト終了: ${playerId} のデータを削除`))
-            .catch(error => console.error("🔥 ウェブサイト終了時のデータ削除エラー:", error));
-    }
+    
+    
 });
 
-window.addEventListener("offline", () => {
-    let roomId = localStorage.getItem("roomId");
-    let playerId = localStorage.getItem("userId");
 
-    if (roomId && playerId) {
-        firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).remove()
-            .then(() => console.log(`🔥 ネットワーク切断: ${playerId} のデータを削除`))
-            .catch(error => console.error("🔥 ネットワーク切断時のデータ削除エラー:", error));
-    }
-});
 
     async updatePlayerRoleAndTeam(playerId, team, role) {
     let roomId = localStorage.getItem("roomId");
@@ -353,7 +337,7 @@ window.addEventListener("offline", () => {
     });
 }
 
-}
+
 
 async function registerPlayer(roomId, playerName, team, role) {
     let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
@@ -374,3 +358,24 @@ class BattleScene extends Phaser.Scene {
         console.log("バトルシーンに移動しました。");
     }
 } 　
+window.addEventListener("beforeunload", () => {
+    let roomId = localStorage.getItem("roomId");
+    let playerId = localStorage.getItem("userId");
+
+    if (roomId && playerId) {
+        firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).remove()
+            .then(() => console.log(`🔥 ウェブサイト終了: ${playerId} のデータを削除`))
+            .catch(error => console.error("🔥 ウェブサイト終了時のデータ削除エラー:", error));
+    }
+});
+
+window.addEventListener("offline", () => {
+    let roomId = localStorage.getItem("roomId");
+    let playerId = localStorage.getItem("userId");
+
+    if (roomId && playerId) {
+        firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).remove()
+            .then(() => console.log(`🔥 ネットワーク切断: ${playerId} のデータを削除`))
+            .catch(error => console.error("🔥 ネットワーク切断時のデータ削除エラー:", error));
+    }
+});
