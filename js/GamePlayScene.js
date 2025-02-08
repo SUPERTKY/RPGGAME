@@ -102,10 +102,16 @@ class GamePlayScene extends Phaser.Scene {
 
 
     startRoulette() {
+    if (this.isRouletteRunning) {
+        console.warn("⚠️ ルーレットがすでに実行中のため、再実行を防ぎます。");
+        return;
+    }
+    this.isRouletteRunning = true; // ✅ ルーレット開始フラグ
+
     this.currentRoleIndex = 0;
 
     if (this.rouletteEvent) {
-        this.rouletteEvent.remove(false); // 既存のルーレットイベントを削除
+        this.rouletteEvent.remove(false);
         console.log("🛑 既存のルーレットイベントを削除しました");
     }
 
@@ -114,9 +120,9 @@ class GamePlayScene extends Phaser.Scene {
         .setDepth(1)
         .setAlpha(0);
 
-    this.time.delayedCall(5000, () => { // ⏳ ゆっくりスタート
-        let totalSpins = this.roles.length * 2; // 🔄 ループ回数を減らす
-        let spinDuration = 1000; // ⏳ ゆっくり回転 (1秒)
+    this.time.delayedCall(5000, () => {
+        let totalSpins = this.roles.length * 2; // 🔄 ループ回数を調整
+        let spinDuration = 1000; // ⏳ ゆっくり回転
 
         this.roleDisplay.setAlpha(1);
 
@@ -136,10 +142,6 @@ class GamePlayScene extends Phaser.Scene {
 
         this.time.delayedCall(spinDuration * totalSpins, () => {
             this.finalizeRole();
-        });
-
-        this.time.delayedCall(spinDuration * totalSpins + 7000, () => { // ⏳ VS画面への遷移を遅くする
-            this.showVsScreen();
         });
     });
 }
@@ -225,9 +227,10 @@ class GamePlayScene extends Phaser.Scene {
 
     this.roleDisplay.setTexture(finalRole);
 
-    // 🎯 **ルーレットが完全に終了してから Firebase に送信**
+    // ✅ **ルーレットが完全に終わってから Firebase にデータを送信**
     this.time.delayedCall(3000, async () => {
         await this.assignRolesAndSendToFirebase();
+        this.isRouletteRunning = false; // ✅ ルーレット終了フラグ
     });
 }
    async assignRolesAndSendToFirebase() {
@@ -245,20 +248,16 @@ class GamePlayScene extends Phaser.Scene {
     try {
         let updates = {};
 
-        // **チームを確実に設定**
+        // **データを Firebase に送信**
         this.players.forEach((player, index) => {
-            let team = index < this.players.length / 2 ? "Red" : "Blue";
-            let role = this.roles[index];
-
-            updates[`gameRooms/${roomId}/players/${player.id}/team`] = team;
-            updates[`gameRooms/${roomId}/players/${player.id}/role`] = role;
+            updates[`gameRooms/${roomId}/players/${player.id}/role`] = this.roles[index];
         });
 
         await firebase.database().ref().update(updates);
-        console.log("✅ 役職 & チームデータを Firebase に送信しました:", updates);
+        console.log("✅ 役職データを Firebase に送信しました:", updates);
 
-        // **🛑 ルーレットをもう一度開始しないようにする**
-        this.isRouletteFinished = true;
+        // ✅ **データ送信後はもうルーレットを再実行しないようにする**
+        this.isRouletteRunning = false;
 
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
