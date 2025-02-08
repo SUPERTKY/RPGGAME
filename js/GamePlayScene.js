@@ -220,7 +220,7 @@ finalizeRole() {
         console.log("✅ ルーレットイベントを停止しました");
     }
 
-    this.isRouletteRunning = false; // ✅ ここで明示的にリセット
+    this.isRouletteRunning = false; // ✅ ルーレット実行フラグをオフ
 
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
@@ -231,16 +231,17 @@ finalizeRole() {
         this.roleDisplay.setAlpha(1);
     }
 
-    // ✅ **ルーレットが完全に終了してから Firebase にデータを送信**
-    this.time.delayedCall(3000, async () => {
+    // ✅ ルーレット終了後、5秒間待ってから Firebase にデータを送信
+    this.time.delayedCall(10000, async () => {
         await this.assignRolesAndSendToFirebase();
 
-        // ✅ ここではもうルーレットを止めた後なので、二重実行の問題は起きない
-
-        // ✅ **VS画面を表示**
-        this.showVsScreen();
+        // ✅ **データ送信後にさらに3秒待機して VS 画面を表示**
+        this.time.delayedCall(3000, () => {
+            this.showVsScreen();
+        });
     });
 }
+
 
    async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
