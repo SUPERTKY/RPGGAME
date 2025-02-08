@@ -1,124 +1,34 @@
 class GamePlayScene extends Phaser.Scene {
     constructor() {
         super({ key: "GamePlayScene" });
-        this.loadingText = null;
-        this.errorText = null;
-        this.reconnectAttempts = 0;
-        this.MAX_RECONNECT_ATTEMPTS = 3;
-    }
-
-    // ローディング表示の管理
-    showLoading(message) {
-        if (this.loadingText) {
-            this.loadingText.destroy();
-        }
-        this.loadingText = this.add.text(this.scale.width / 2, this.scale.height / 2, 
-            message || "読み込み中...", 
-            { fontSize: '24px', fill: '#fff' })
-            .setOrigin(0.5)
-            .setDepth(100);
-    }
-
-    hideLoading() {
-        if (this.loadingText) {
-            this.loadingText.destroy();
-            this.loadingText = null;
-        }
-    }
-
-    // エラーメッセージの表示
-    showError(message, duration = 3000) {
-        if (this.errorText) {
-            this.errorText.destroy();
-        }
-        this.errorText = this.add.text(this.scale.width / 2, this.scale.height * 0.2, 
-            message, 
-            { fontSize: '24px', fill: '#ff0000', backgroundColor: '#ffffff', padding: 10 })
-            .setOrigin(0.5)
-            .setDepth(100);
-
-        this.time.delayedCall(duration, () => {
-            if (this.errorText) {
-                this.errorText.destroy();
-                this.errorText = null;
-            }
-        });
     }
 
     async getUserId() {
-        return new Promise((resolve, reject) => {
-            const unsubscribe = firebase.auth().onAuthStateChanged(user => {
-                unsubscribe(); // リスナーの解除
-                if (user) {
-                    console.log("✅ Firebase 認証成功 ユーザーID:", user.uid);
-                    this.setupDisconnectHandlers(user.uid);
-                    resolve(user.uid);
-                } else {
-                    console.warn("⚠️ ユーザーが未ログインです。匿名ログインを試行...");
-                    firebase.auth().signInAnonymously()
-                        .then(result => {
-                            console.log("✅ 匿名ログイン成功 ユーザーID:", result.user.uid);
-                            this.setupDisconnectHandlers(result.user.uid);
-                            resolve(result.user.uid);
-                        })
-                        .catch(error => {
-                            console.error("❌ ログインエラー:", error);
-                            this.showError("ログインに失敗しました。再試行します...");
-                            reject(error);
-                        });
-                }
-            });
-        });
-    }
-
-    // 切断時の処理をセットアップ
-    setupDisconnectHandlers(userId) {
-        const roomId = localStorage.getItem("roomId");
-        if (!roomId || !userId) return;
-
-        const playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${userId}`);
-        const connectRef = firebase.database().ref(".info/connected");
-
-        connectRef.on("value", (snap) => {
-            if (snap.val() === true) {
-                // オンラインになった時の処理
-                console.log("🌐 オンラインに復帰しました");
-                this.reconnectAttempts = 0;
-                this.hideLoading();
-
-                // 切断時の処理を設定
-                playerRef.onDisconnect().remove();
-            } else {
-                // オフラインになった時の処理
-                console.log("⚠️ オフラインになりました");
-                this.showLoading("接続が切れました。再接続を試みています...");
-                this.attemptReconnect();
-            }
-        });
-    }
-
-    // 再接続の試行
-    async attemptReconnect() {
-        if (this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
-            this.showError("接続に失敗しました。ページを更新してください。");
-            return;
-        }
-
-        this.reconnectAttempts++;
         try {
-            await firebase.database().goOnline();
-            console.log("✅ 再接続成功");
-            this.hideLoading();
+            let user = firebase.auth().currentUser;
+            if (user) return user.uid;
+
+            let authChangePromise = new Promise((resolve, reject) => {
+                let unsubscribe = firebase.auth().onAuthStateChanged(user => {
+                    unsubscribe();
+                    if (user) resolve(user.uid);
+                    else {
+                        firebase.auth().signInAnonymously()
+                            .then(result => resolve(result.user.uid))
+                            .catch(error => reject(error));
+                    }
+                });
+            });
+
+            return await authChangePromise;
         } catch (error) {
-            console.error("❌ 再接続失敗:", error);
-            this.time.delayedCall(2000, () => this.attemptReconnect());
+            console.error("❌ getUserId() でエラー:", error);
+            showError("ログインエラー: 再試行してください。");
+            throw error;
         }
     }
 
     preload() {
-        this.showLoading("アセットを読み込み中...");
-
-        // アセットのロード
         this.load.image("background3", "assets/background3.png");
         this.load.image("vsImage", "assets/VS.png");
         this.load.image("swordsman", "assets/剣士.png");
@@ -127,264 +37,162 @@ class GamePlayScene extends Phaser.Scene {
         this.load.audio("bgmRoleReveal", "assets/役職発表音楽.mp3");
         this.load.audio("decisionSound", "assets/決定音.mp3");
         this.load.audio("vsSound", "assets/VS効果音.mp3");
-
-        // ロード完了時の処理
-        this.load.on('complete', () => {
-            this.hideLoading();
-        });
-
-        // ロードエラー時の処理
-        this.load.on('loaderror', (file) => {
-            console.error("❌ アセットのロードに失敗:", file.key);
-            this.showError(`${file.key}の読み込みに失敗しました`);
-        });
     }
 
     async create() {
-        try {
-            this.showLoading("ゲームを準備中...");
-            this.setupScene();
-            await this.initializeGame();
-            this.hideLoading();
-        } catch (error) {
-            console.error("❌ ゲーム初期化エラー:", error);
-            this.showError("ゲームの開始に失敗しました。再試行します...");
-            // 3秒後に再試行
-            this.time.delayedCall(3000, () => this.create());
-        }
-    }
+        showLoading(); // 🔄 ローディング開始
 
-    setupScene() {
-        // 背景の設定
         this.cameras.main.setBackgroundColor("#000000");
-        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
-        let scaleX = this.scale.width / this.bg.width;
-        let scaleY = this.scale.height / this.bg.height;
-        let scale = Math.max(scaleX, scaleY);
-        this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
+        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3")
+            .setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height))
+            .setScrollFactor(0).setDepth(-5);
 
-        // BGMの設定
         this.sound.stopAll();
         this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
         this.bgm.play();
 
-        // 役職の初期化
-        this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
-        Phaser.Utils.Array.Shuffle(this.roles);
-    }
+        try {
+            this.userId = await this.getUserId();
+            this.roomId = await this.findRoomByUserId(this.userId);
 
-    async initializeGame() {
-        // ユーザーIDの取得
-        let userId = await this.getUserId();
-        console.log("✅ ユーザーID取得成功:", userId);
+            if (!this.roomId) throw new Error("ルームIDが見つかりません");
 
-        // ルームIDの取得と検証
-        let roomId = await this.validateAndGetRoomId(userId);
-        if (!roomId) throw new Error("ルームIDの取得に失敗しました");
+            localStorage.setItem("roomId", this.roomId);
+            this.players = await this.getPlayersFromFirebase();
 
-        // プレイヤー情報の取得
-        this.players = await this.getPlayersFromFirebase(roomId);
-        if (!this.players || this.players.length === 0) {
-            throw new Error("プレイヤー情報の取得に失敗しました");
-        }
-
-        // VS画面リスナーのセットアップ
-        this.setupVsScreenListener();
-
-        // ブラウザ終了時の処理
-        window.onbeforeunload = () => {
-            this.leaveRoom(userId);
-        };
-
-        // ルーレット開始
-        this.startRoulette();
-    }
-
-    async validateAndGetRoomId(userId) {
-        let roomId = localStorage.getItem("roomId");
-        if (!roomId) {
-            console.warn("⚠️ ルームIDが見つかりません。Firebase から検索します...");
-            try {
-                roomId = await this.findRoomByUserId(userId);
-                if (roomId) {
-                    localStorage.setItem("roomId", roomId);
-                    console.log("✅ 取得したルームID:", roomId);
-                    return roomId;
-                }
-                throw new Error("ルームIDが取得できませんでした");
-            } catch (error) {
-                console.error("❌ Firebase からルームID取得中にエラー:", error);
-                throw error;
+            if (!this.players || this.players.length === 0) {
+                throw new Error("プレイヤー情報が取得できません");
             }
+
+            this.setupVsScreenListener();
+            this.startRoulette();
+        } catch (error) {
+            console.error("❌ ゲーム初期化エラー:", error);
+            showError("ゲームの開始に失敗しました。");
+        } finally {
+            hideLoading(); // ✅ ローディング終了
         }
-        return roomId;
+    }
+
+    async findRoomByUserId(userId) {
+        try {
+            let snapshot = await firebase.database().ref("gameRooms").once("value");
+            let rooms = snapshot.val();
+            if (!rooms) return null;
+
+            for (let roomId in rooms) {
+                if (rooms[roomId].players?.[userId]) return roomId;
+            }
+            return null;
+        } catch (error) {
+            console.error("❌ ルーム検索エラー:", error);
+            return null;
+        }
+    }
+
+    async getPlayersFromFirebase() {
+        return await fetchWithRetry(`gameRooms/${this.roomId}/players`);
+    }
+
+    setupVsScreenListener() {
+        firebase.database().ref(`gameRooms/${this.roomId}/startVsScreen`).on("value", snapshot => {
+            if (snapshot.val()) this.showVsScreen();
+        });
     }
 
     startRoulette() {
-        if (this.isRouletteRunning) {
-            console.warn("⚠️ ルーレットがすでに実行中のため、再実行を防ぎます。");
-            return;
-        }
+        if (this.isRouletteRunning) return;
 
-        // ルーレットの状態を Firebase で同期
-        const roomId = localStorage.getItem("roomId");
-        if (!roomId) return;
-
-        firebase.database().ref(`gameRooms/${roomId}/roulette`).set({
-            isRunning: true,
-            startTime: firebase.database.ServerValue.TIMESTAMP
-        });
-
-        this.setupRoulette();
-    }
-
-    setupRoulette() {
         this.isRouletteRunning = true;
         this.currentRoleIndex = 0;
-
-        if (this.rouletteEvent) {
-            this.rouletteEvent.remove(false);
-            this.rouletteEvent = null;
-        }
-
         this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
-            .setScale(0.6)
-            .setDepth(1)
-            .setAlpha(0);
+            .setScale(0.6).setDepth(1).setAlpha(0);
 
-        // ルーレットのアニメーション開始
-        this.time.delayedCall(5000, () => {
-            this.startRouletteAnimation();
-        });
-    }
+        setTimeout(() => {
+            let totalSpins = Math.min(this.roles.length * 3, 10);
+            let spinDuration = 1000;
+            this.roleDisplay.setAlpha(1);
 
-    startRouletteAnimation() {
-        let totalSpins = this.roles.length * 2;
-        let spinDuration = 1000;
-
-        this.roleDisplay.setAlpha(1);
-
-        this.rouletteEvent = this.time.addEvent({
-            delay: spinDuration,
-            repeat: totalSpins - 1,
-            callback: () => {
-                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                if (this.roleDisplay) {
+            this.rouletteEvent = this.time.addEvent({
+                delay: spinDuration,
+                repeat: totalSpins - 1,
+                callback: () => {
+                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
                     this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-                }
-            },
-            callbackScope: this
-        });
+                },
+                callbackScope: this
+            });
 
-        this.time.delayedCall(spinDuration * totalSpins, () => {
-            this.finalizeRole();
-        });
+            setTimeout(() => this.finalizeRole(), spinDuration * totalSpins);
+        }, 5000);
     }
 
-    async finalizeRole() {
-        // ルーレットの終了処理
-        if (this.rouletteEvent) {
-            this.rouletteEvent.remove(false);
-            this.rouletteEvent = null;
-        }
-
+    finalizeRole() {
+        if (this.rouletteEvent) this.rouletteEvent.remove(false);
         this.isRouletteRunning = false;
 
-        // 結果の表示と効果音
         let finalRole = this.roles[this.currentRoleIndex];
-        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-        decisionSound.play();
+        firebase.database().ref(`gameRooms/${this.roomId}/finalRole`).set(finalRole);
+    }
 
-        if (this.roleDisplay) {
-            this.roleDisplay.setTexture(finalRole);
-            this.roleDisplay.setAlpha(1);
-        }
+    showVsScreen() {
+        let vsSound = this.sound.add("vsSound", { volume: 1 });
+        vsSound.play();
+        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
+            .setScale(0.7).setDepth(2);
 
+        setTimeout(() => {
+            vsImage.destroy();
+            this.scene.start("BattleScene");
+        }, 8000);
+    }
+}
+
+// ✅ 共通関数
+function showError(message) {
+    let errorBox = document.getElementById("errorBox") || document.createElement("div");
+    errorBox.id = "errorBox";
+    errorBox.innerText = message;
+    errorBox.style.color = "red";
+    errorBox.style.position = "absolute";
+    errorBox.style.top = "10px";
+    errorBox.style.left = "50%";
+    errorBox.style.transform = "translateX(-50%)";
+    errorBox.style.background = "#fff";
+    errorBox.style.padding = "10px";
+    errorBox.style.border = "1px solid red";
+    document.body.appendChild(errorBox);
+}
+
+function showLoading() {
+    let loading = document.getElementById("loading") || document.createElement("div");
+    loading.id = "loading";
+    loading.innerText = "読み込み中...";
+    loading.style.position = "absolute";
+    loading.style.top = "50%";
+    loading.style.left = "50%";
+    loading.style.transform = "translate(-50%, -50%)";
+    loading.style.background = "#000";
+    loading.style.color = "#fff";
+    loading.style.padding = "10px";
+    document.body.appendChild(loading);
+}
+
+function hideLoading() {
+    let loading = document.getElementById("loading");
+    if (loading) loading.remove();
+}
+
+async function fetchWithRetry(ref, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
         try {
-            // Firebase にデータを送信
-            await this.assignRolesAndSendToFirebase();
-            
-            // VS画面の表示準備
-            this.time.delayedCall(3000, () => {
-                this.showVsScreen();
-            });
+            let snapshot = await firebase.database().ref(ref).once("value");
+            if (snapshot.exists()) return snapshot.val();
         } catch (error) {
-            console.error("❌ 役職の確定処理でエラー:", error);
-            this.showError("役職の確定に失敗しました。再試行します...");
-            // 3秒後に再試行
-            this.time.delayedCall(3000, () => this.finalizeRole());
+            console.error(`❌ データ取得失敗 (${i + 1}/${maxRetries})`, error);
         }
+        await new Promise(resolve => setTimeout(resolve, 2000));
     }
-
-    async assignRolesAndSendToFirebase() {
-        const roomId = localStorage.getItem("roomId");
-        if (!roomId || !this.players || this.players.length === 0) {
-            throw new Error("必要なデータが不足しています");
-        }
-
-        try {
-            let updates = {};
-
-            // 各プレイヤーに役職とチームを割り当て
-            this.players = this.players.map((player, index) => ({
-                id: player.id,
-                name: player.name,
-                team: index < this.players.length / 2 ? "Red" : "Blue",
-                role: this.roles[index]
-            }));
-
-            // Firebase に更新データを準備
-            this.players.forEach(player => {
-                updates[`gameRooms/${roomId}/players/${player.id}/team`] = player.team;
-                updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
-            });
-
-            // データを一括更新
-            await firebase.database().ref().update(updates);
-            console.log("✅ 役職 & チームデータを Firebase に送信完了");
-
-            // VS画面の表示トリガーをセット
-            const vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
-            await vsRef.set(true);
-            
-            // 10秒後に自動削除
-            this.time.delayedCall(10000, () => {
-                vsRef.remove()
-                    .catch(error => console.error("❌ VS画面トリガー削除エラー:", error));
-            });
-
-        } catch (error) {
-            console.error("❌ Firebase データ更新エラー:", error);
-            throw error;
-        }
-    }
-
-       showVsScreen() {
-        const roomId = localStorage.getItem("roomId");
-        if (!roomId) {
-            this.showError("ルーム情報が見つかりません");
-            return;
-        }
-
-        // VS画面の画像を表示
-        this.vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
-            .setScale(1)
-            .setDepth(5)
-            .setAlpha(0);
-
-        // フェードインアニメーション
-        this.tweens.add({
-            targets: this.vsImage,
-            alpha: 1,
-            duration: 1000,
-            onComplete: () => {
-                this.sound.play("vsSound", { volume: 1 });
-
-                // 3秒後にゲーム開始シーンへ移行
-                this.time.delayedCall(3000, () => {
-                    this.scene.start("GameStartScene", { roomId });
-                });
-            }
-        });
-    }
-
+    showError("データ取得に失敗しました。");
+    return null;
+}
