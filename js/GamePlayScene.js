@@ -216,8 +216,7 @@ class GamePlayScene extends Phaser.Scene {
         return ["エラー: 例外発生"];
     }
 }
-
-    finalizeRole() {
+finalizeRole() {
     if (this.rouletteEvent) {
         this.rouletteEvent.remove(false);
         console.log("✅ ルーレットイベントを停止しました");
@@ -289,7 +288,7 @@ class GamePlayScene extends Phaser.Scene {
 
     leftTeam.forEach((player, index) => {
         this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), 
-            `${player.name} (${player.team})\n役職: ${player.role}`, {
+            `${player.name} , {
             fontSize: "28px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
