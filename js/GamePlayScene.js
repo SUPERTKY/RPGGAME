@@ -277,11 +277,12 @@ async leaveRoom(userId) {
 finalizeRole() {
     if (this.rouletteEvent) {
         this.rouletteEvent.remove(false);
-        this.rouletteEvent = null; // ✅ ルーレットイベントの参照を消す
+        this.rouletteEvent.destroy(); // 完全に削除
+        this.rouletteEvent = null;
         console.log("✅ ルーレットイベントを完全に停止しました");
     }
 
-    this.isRouletteRunning = false; // ✅ 二度とルーレットが実行されないようにする
+    this.isRouletteRunning = false;
 
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
@@ -292,16 +293,14 @@ finalizeRole() {
         this.roleDisplay.setAlpha(1);
     }
 
-    // ✅ ルーレット終了後、5秒間待ってから Firebase にデータを送信
     this.time.delayedCall(5000, async () => {
         await this.assignRolesAndSendToFirebase();
-
-        // ✅ **データ送信後にさらに3秒待機して VS 画面を表示**
         this.time.delayedCall(3000, () => {
             this.showVsScreen();
         });
     });
 }
+
 
 
 
@@ -349,6 +348,7 @@ finalizeRole() {
 }
    
    showVsScreen() {
+    this.isRouletteRunning = false; // ✅ VS画面に移行する前にフラグを確実にリセット
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
         console.error("❌ ルームIDが取得できません。");
@@ -361,8 +361,6 @@ finalizeRole() {
     let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
         .setScale(0.7)
         .setDepth(2);
-
-    console.log("📌 VS画面のプレイヤーデータ:", this.players);
 
     if (!this.players || this.players.length === 0) {
         console.error("❌ VS画面に表示するプレイヤーがいません！");
@@ -384,16 +382,23 @@ finalizeRole() {
         }).setOrigin(0.5).setDepth(3);
     });
 
-    // ✅ **VS画面が表示されたら `startVsScreen` を削除**
     firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove()
         .then(() => console.log("✅ Firebase から `startVsScreen` を削除しました"))
         .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
+
+    if (this.roleDisplay) {
+        console.log("🛑 VS画面移行前に roleDisplay を削除");
+        this.roleDisplay.destroy();
+        this.roleDisplay = null;
+    }
 
     this.time.delayedCall(8000, () => {
         vsImage.destroy();
         this.scene.start("BattleScene");
     });
 }
+
+
 
 }
 
