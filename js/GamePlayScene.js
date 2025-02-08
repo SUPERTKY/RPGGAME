@@ -270,8 +270,7 @@ async finalizeRole() {
     this.showVsScreen();
 }
     
-    
-});
+
 
 
 
