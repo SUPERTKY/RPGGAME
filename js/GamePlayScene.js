@@ -204,91 +204,14 @@ class GamePlayScene extends Phaser.Scene {
 
 
 
-    async finalizeRole() {
-    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-    decisionSound.play();
+    finalizeRole() {
+        let finalRole = this.roles[this.currentRoleIndex];
+        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+        decisionSound.play();
 
-    // ルーレットの最終結果を画面に反映
-    let finalRole = this.roles[this.currentRoleIndex];
-    this.roleDisplay.setTexture(finalRole);
-
-    // 役職をシャッフル（チームごとに偏らないように分ける）
-    Phaser.Utils.Array.Shuffle(this.roles);
-
-    if (this.players.length < this.roles.length) {
-        this.roles = this.roles.slice(0, this.players.length);
+        this.roleDisplay.setTexture(finalRole);
     }
-
-    let teamA = [];
-    let teamB = [];
-
-    let assignedRoles = {};
-    for (let role of this.roles) {
-        if (!assignedRoles[role]) assignedRoles[role] = [];
-    }
-
-    for (let i = 0; i < this.players.length; i++) {
-        let role = this.roles[i];
-        assignedRoles[role].push(this.players[i]);
-    }
-
-    for (let role in assignedRoles) {
-        let shuffledPlayers = Phaser.Utils.Array.Shuffle(assignedRoles[role]);
-        for (let i = 0; i < shuffledPlayers.length; i++) {
-            if (i % 2 === 0) {
-                teamA.push(shuffledPlayers[i]);
-            } else {
-                teamB.push(shuffledPlayers[i]);
-            }
-        }
-    }
-
-    // Firebase に非同期でデータを送信（ルーレットの処理には影響させない）
-    Promise.all([
-        ...teamA.map(player => this.updatePlayerRoleAndTeam(player.id, "A", player.role)),
-        ...teamB.map(player => this.updatePlayerRoleAndTeam(player.id, "B", player.role))
-    ]).then(() => {
-        console.log("✅ すべてのプレイヤーの役職とチームを Firebase に送信しました。");
-    }).catch(error => {
-        console.error("❌ Firebase のデータ更新中にエラー発生:", error);
-    });
-
-    // **ルーレットの処理を止めずに次に進む**
-    this.time.delayedCall(2000, () => {
-        this.showVsScreen();
-    });
-}
-
-    async updatePlayerRoleAndTeam(playerId, team, role) {
-    let roomId = localStorage.getItem("roomId");
-    if (!roomId) {
-        console.error("⚠️ ルームIDが不明のため、プレイヤー情報を更新できません。");
-        return;
-    }
-
-    try {
-        let playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`);
-
-        // 切断時にデータを削除
-        firebase.database().ref(".info/connected").on("value", (snapshot) => {
-            if (snapshot.val() === true) {
-                playerRef.onDisconnect().remove()
-                    .then(() => console.log(`✅ ${playerId} のデータは切断時に削除されます`))
-                    .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
-            }
-        });
-
-        // 役職とチームを Firebase に保存
-        return playerRef.update({
-            team: team,
-            role: role
-        });
-    } catch (error) {
-        console.error(`❌ プレイヤー ${playerId} の情報更新中にエラー発生:`, error);
-    }
-}
-
-
+    
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
@@ -340,24 +263,4 @@ class BattleScene extends Phaser.Scene {
     create() {
         console.log("バトルシーンに移動しました。");
     }
-}
-window.addEventListener("beforeunload", () => {
-    let roomId = localStorage.getItem("roomId");
-    let playerId = localStorage.getItem("userId");
-
-    if (roomId && playerId) {
-        firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).remove()
-            .then(() => console.log(`🔥 ウェブサイト終了: ${playerId} のデータを削除`))
-            .catch(error => console.error("🔥 ウェブサイト終了時のデータ削除エラー:", error));
-    }
-});
-window.addEventListener("offline", () => {
-    let roomId = localStorage.getItem("roomId");
-    let playerId = localStorage.getItem("userId");
-
-    if (roomId && playerId) {
-        firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).remove()
-            .then(() => console.log(`🔥 ネットワーク切断: ${playerId} のデータを削除`))
-            .catch(error => console.error("🔥 ネットワーク切断時のデータ削除エラー:", error));
-    }
-});
+} 　
