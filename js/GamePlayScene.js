@@ -103,9 +103,9 @@ class GamePlayScene extends Phaser.Scene {
 
     startRoulette() {
     this.currentRoleIndex = 0;
-    
+
     if (this.rouletteEvent) {
-        this.rouletteEvent.remove(false); // 既存のルーレットを削除
+        this.rouletteEvent.remove(false); // 既存のルーレットイベントを削除
         console.log("🛑 既存のルーレットイベントを削除しました");
     }
 
@@ -114,13 +114,12 @@ class GamePlayScene extends Phaser.Scene {
         .setDepth(1)
         .setAlpha(0);
 
-    this.time.delayedCall(4000, () => {
-        let totalSpins = this.roles.length * 3; // 役職の数×3回ループ
-        let spinDuration = 500;
+    this.time.delayedCall(5000, () => { // ⏳ ゆっくりスタート
+        let totalSpins = this.roles.length * 2; // 🔄 ループ回数を減らす
+        let spinDuration = 1000; // ⏳ ゆっくり回転 (1秒)
 
         this.roleDisplay.setAlpha(1);
 
-        // ルーレットの開始（すでにイベントがある場合は削除）
         if (this.rouletteEvent) {
             this.rouletteEvent.remove(false);
         }
@@ -135,13 +134,11 @@ class GamePlayScene extends Phaser.Scene {
             callbackScope: this
         });
 
-        // ルーレットの最終決定
         this.time.delayedCall(spinDuration * totalSpins, () => {
             this.finalizeRole();
         });
 
-        // VS画面へ移行
-        this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+        this.time.delayedCall(spinDuration * totalSpins + 7000, () => { // ⏳ VS画面への遷移を遅くする
             this.showVsScreen();
         });
     });
@@ -178,10 +175,7 @@ class GamePlayScene extends Phaser.Scene {
         return ["エラー: ユーザー不明"];
     }
 
-    // roomId を明示的に取得
     let roomId = localStorage.getItem("roomId");
-    console.log("現在のルームID:", roomId);  // デバッグ用出力
-
     if (!roomId) {
         console.warn("⚠️ ルームIDが見つかりません。検索します...");
         roomId = await this.findRoomByUserId(userId);
@@ -197,11 +191,11 @@ class GamePlayScene extends Phaser.Scene {
     try {
         let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
         let data = snapshot.val();
-        console.log("取得したデータ:", data);  // デバッグ用出力
+        console.log("取得したデータ:", data); 
 
         if (data) {
             let players = Object.keys(data).map(playerId => ({
-                id: playerId,  // IDも含める
+                id: playerId,
                 name: data[playerId].name || "名前なし",
                 team: data[playerId].team || "チーム未定",
                 role: data[playerId].role || "役職未定"
@@ -219,11 +213,9 @@ class GamePlayScene extends Phaser.Scene {
     }
 }
 
-
-
     finalizeRole() {
     if (this.rouletteEvent) {
-        this.rouletteEvent.remove(false); // ルーレットイベントを削除
+        this.rouletteEvent.remove(false);
         console.log("✅ ルーレットイベントを停止しました");
     }
 
@@ -239,7 +231,9 @@ class GamePlayScene extends Phaser.Scene {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
 
-    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
+    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
+        .setScale(0.7)
+        .setDepth(2);
 
     let leftTeam = this.players.slice(0, 3);
     let rightTeam = this.players.slice(3, 6);
@@ -247,20 +241,21 @@ class GamePlayScene extends Phaser.Scene {
     console.log("左チーム:", leftTeam);
     console.log("右チーム:", rightTeam);
 
-    // 名前の表示を一番上にし、左右の幅を広げる
     leftTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5).setDepth(3); // 名前が一番前面になるように
-    });
-
-    rightTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), 
+            `${player.name} (${player.team})\n役職: ${player.role}`, {
+            fontSize: "28px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
 
-    this.time.delayedCall(8000, () => {
+    rightTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), 
+            `${player.name} (${player.team})\n役職: ${player.role}`, {
+            fontSize: "28px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3);
+    });
+
+    this.time.delayedCall(10000, () => { // ⏳ VS画面を10秒間表示
         vsImage.destroy();
         this.scene.start("BattleScene");
     });
