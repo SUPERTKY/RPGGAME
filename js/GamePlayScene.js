@@ -102,33 +102,41 @@ class GamePlayScene extends Phaser.Scene {
 
 
     startRoulette() {
-        this.currentRoleIndex = 0;
-        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
-
-        this.time.delayedCall(4000, () => {
-            let totalSpins = this.roles.length * 3;
-            let spinDuration = 500;
-
-            this.roleDisplay.setAlpha(1);
-            this.time.addEvent({
-                delay: spinDuration,
-                repeat: totalSpins - 1,
-                callback: () => {
-                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-                },
-                callbackScope: this
-            });
-
-            this.time.delayedCall(spinDuration * totalSpins, () => {
-                this.finalizeRole();
-            });
-
-            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-                this.showVsScreen();
-            });
-        });
+    if (this.rouletteRunning) {
+        console.warn("⚠️ ルーレットがすでに開始されています。2重起動を防止");
+        return;
     }
+    this.rouletteRunning = true;
+
+    this.currentRoleIndex = 0;
+    this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
+
+    this.time.delayedCall(4000, () => {
+        let totalSpins = Math.max(15, this.roles.length * 3); // 15回以上回すようにする
+        let spinDuration = 500;
+
+        this.roleDisplay.setAlpha(1);
+        let spinEvent = this.time.addEvent({
+            delay: spinDuration,
+            repeat: totalSpins - 1,
+            callback: () => {
+                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+            },
+            callbackScope: this
+        });
+
+        this.time.delayedCall(spinDuration * totalSpins, () => {
+            spinEvent.remove(); // 明示的にルーレットのイベントを削除
+            this.finalizeRole();
+        });
+
+        this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+            this.showVsScreen();
+        });
+    });
+}
+
 　　async findRoomByUserId(userId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
