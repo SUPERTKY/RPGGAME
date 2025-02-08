@@ -359,9 +359,32 @@ class GamePlayScene extends Phaser.Scene {
         }
     }
 
-    showVsScreen() {
+       showVsScreen() {
         const roomId = localStorage.getItem("roomId");
         if (!roomId) {
             this.showError("ルーム情報が見つかりません");
             return;
         }
+
+        // VS画面の画像を表示
+        this.vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
+            .setScale(1)
+            .setDepth(5)
+            .setAlpha(0);
+
+        // フェードインアニメーション
+        this.tweens.add({
+            targets: this.vsImage,
+            alpha: 1,
+            duration: 1000,
+            onComplete: () => {
+                this.sound.play("vsSound", { volume: 1 });
+
+                // 3秒後にゲーム開始シーンへ移行
+                this.time.delayedCall(3000, () => {
+                    this.scene.start("GameStartScene", { roomId });
+                });
+            }
+        });
+    }
+
