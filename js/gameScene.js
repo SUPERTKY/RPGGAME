@@ -11,7 +11,7 @@ class GameScene extends Phaser.Scene {
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
     }
 
-    create() {
+        create() {
         this.cameras.main.setBackgroundColor("#000000");
 
         let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
@@ -45,6 +45,42 @@ class GameScene extends Phaser.Scene {
         });
 
         this.checkExistingPlayer();
+
+        // ページフォーカスが外れた時にルームを離れる
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                this.leaveRoomAndGoHome();
+            }
+        });
+
+        // ページを閉じる/再読み込みする時にルームを離れる
+        window.addEventListener("beforeunload", () => {
+            this.leaveRoom();
+        });
+
+        // ネットワーク切断時にルームを離れる
+        window.addEventListener("offline", () => {
+            this.leaveRoomAndGoHome();
+        });
+    }
+
+        leaveRoom() {
+        let roomId = localStorage.getItem("roomId");
+        if (!roomId || !this.roomRef) return;
+
+        let playerRef = window.db.ref(`gameRooms/${roomId}/players/${this.playerId}`);
+        playerRef.remove().then(() => {
+            console.log(`🚪 ルーム ${roomId} からプレイヤー ${this.playerId} を削除しました`);
+        }).catch(error => {
+            console.error("🔥 ルーム退出エラー:", error);
+        });
+
+        localStorage.removeItem("roomId");
+    }
+
+    leaveRoomAndGoHome() {
+        this.leaveRoom();
+        this.scene.start("HomeScene"); // ホーム画面に戻る
     }
 
     checkExistingPlayer() {
