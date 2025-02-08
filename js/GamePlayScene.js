@@ -255,14 +255,22 @@ finalizeRole() {
 
     try {
         let updates = {};
+        let playerUpdates = this.players.map((player, index) => ({
+            id: player.id,
+            team: index < this.players.length / 2 ? "Red" : "Blue", // ✅ チームを保持
+            role: this.roles[index]
+        }));
 
-        // **データを Firebase に送信**
-        this.players.forEach((player, index) => {
-            updates[`gameRooms/${roomId}/players/${player.id}/role`] = this.roles[index];
+        playerUpdates.forEach(player => {
+            updates[`gameRooms/${roomId}/players/${player.id}/team`] = player.team;
+            updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
         });
 
         await firebase.database().ref().update(updates);
-        console.log("✅ 役職データを Firebase に送信しました:", updates);
+        console.log("✅ 役職 & チームデータを Firebase に送信しました:", updates);
+
+        // ✅ `this.players` のデータを更新
+        this.players = playerUpdates;
 
         this.isRouletteRunning = false; // ✅ データ送信後、ルーレットを完全に停止
 
