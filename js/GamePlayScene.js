@@ -269,6 +269,28 @@ async finalizeRole() {
     this.roleDisplay.setAlpha(1);
     this.showVsScreen();
 }
+    window.addEventListener("beforeunload", () => {
+    let roomId = localStorage.getItem("roomId");
+    let playerId = localStorage.getItem("userId");
+
+    if (roomId && playerId) {
+        firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).remove()
+            .then(() => console.log(`🔥 ウェブサイト終了: ${playerId} のデータを削除`))
+            .catch(error => console.error("🔥 ウェブサイト終了時のデータ削除エラー:", error));
+    }
+});
+
+window.addEventListener("offline", () => {
+    let roomId = localStorage.getItem("roomId");
+    let playerId = localStorage.getItem("userId");
+
+    if (roomId && playerId) {
+        firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).remove()
+            .then(() => console.log(`🔥 ネットワーク切断: ${playerId} のデータを削除`))
+            .catch(error => console.error("🔥 ネットワーク切断時のデータ削除エラー:", error));
+    }
+});
+
     async updatePlayerRoleAndTeam(playerId, team, role) {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
@@ -277,15 +299,29 @@ async finalizeRole() {
     }
 
     try {
-        await firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).update({
+        let playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`);
+
+        // 切断時にプレイヤーデータを削除する設定
+        firebase.database().ref(".info/connected").on("value", (snapshot) => {
+            if (snapshot.val() === true) {
+                playerRef.onDisconnect().remove()
+                    .then(() => console.log(`✅ ${playerId} のデータは切断時に削除されます`))
+                    .catch(error => console.error("🔥 onDisconnect 設定エラー:", error));
+            }
+        });
+
+        // `team` と `role` を追加して更新
+        await playerRef.update({
             team: team,
             role: role
         });
+
         console.log(`✅ プレイヤー ${playerId} の情報を更新: チーム=${team}, 役職=${role}`);
     } catch (error) {
         console.error(`❌ プレイヤー ${playerId} の情報更新中にエラー発生:`, error);
     }
 }
+    
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
