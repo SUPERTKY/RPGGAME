@@ -151,23 +151,32 @@ async leaveRoom(userId) {
         this.rouletteEvent = null;
     }
 
+    // ✅ ここで roleDisplay を確実に初期化
+    if (this.roleDisplay) {
+        this.roleDisplay.destroy();
+    }
     this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
         .setScale(0.6)
         .setDepth(1)
         .setAlpha(0);
 
     this.time.delayedCall(5000, () => {
+        if (!this.roleDisplay) {
+            console.warn("⚠️ ルーレット開始時に roleDisplay が null になっています。処理を中止します。");
+            return;
+        }
+
         let totalSpins = this.roles.length * 2;
         let spinDuration = 1000;
 
-        this.roleDisplay.setAlpha(1);
+        this.roleDisplay.setAlpha(1);  // ここで null チェックが適用される
 
         this.rouletteEvent = this.time.addEvent({
             delay: spinDuration,
             repeat: totalSpins - 1,
             callback: () => {
                 if (!this.roleDisplay) {
-                    console.warn("⚠️ ルーレット用の roleDisplay が存在しません。ルーレットを中止します。");
+                    console.warn("⚠️ ルーレット中に roleDisplay が null になりました。");
                     return;
                 }
                 this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
@@ -187,6 +196,7 @@ async leaveRoom(userId) {
         });
     });
 }
+
 
 
 
@@ -387,7 +397,7 @@ finalizeRole() {
         .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
 
     if (this.roleDisplay) {
-        console.log("🛑 VS画面移行前に roleDisplay を削除");
+        console.log("🛑 VS画面移行前に roleDisplay を完全に削除");
         this.roleDisplay.destroy();
         this.roleDisplay = null;
     }
@@ -397,6 +407,7 @@ finalizeRole() {
         this.scene.start("BattleScene");
     });
 }
+
 
 
 
