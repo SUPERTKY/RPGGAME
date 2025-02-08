@@ -11,77 +11,90 @@ class GameScene extends Phaser.Scene {
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
     }
 
-        create() {
-        this.cameras.main.setBackgroundColor("#000000");
+       create() {
+    this.cameras.main.setBackgroundColor("#000000");
 
-        let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
-        let scaleX = this.scale.width / bg.width;
-        let scaleY = this.scale.height / bg.height;
-        let scale = Math.max(scaleX, scaleY);
-        bg.setScale(scale).setScrollFactor(0).setDepth(-5);
+    let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
+    let scaleX = this.scale.width / bg.width;
+    let scaleY = this.scale.height / bg.height;
+    let scale = Math.max(scaleX, scaleY);
+    bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-        if (this.sound.get("bgm")) {
-            this.sound.stopByKey("bgm");
-        }
-        if (!this.sound.get("newBgm")) {
-            this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
-            this.newBgm.play();
-        }
-
-        console.log("GameScene: ユーザーID =", this.playerId);
-
-        if (typeof window.db === "undefined") {
-            console.error("🔥 Firebase Database が未定義です！ ゲームを開始できません！");
-            return;
-        }
-
-        this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
-            .setInteractive()
-            .setDepth(2)
-            .setScale(0.5);
-
-        this.matchingButton.on("pointerdown", () => {
-            this.findRoomAndJoin();
-        });
-
-        this.checkExistingPlayer();
-
-        // ページフォーカスが外れた時にルームを離れる
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden) {
-                this.leaveRoomAndGoHome();
-            }
-        });
-
-        // ページを閉じる/再読み込みする時にルームを離れる
-        window.addEventListener("beforeunload", () => {
-            this.leaveRoom();
-        });
-
-        // ネットワーク切断時にルームを離れる
-        window.addEventListener("offline", () => {
-            this.leaveRoomAndGoHome();
-        });
+    if (this.sound.get("bgm")) {
+        this.sound.stopByKey("bgm");
     }
+    
+    // すでに音楽が再生されている場合、再度再生しない
+    if (!this.sound.get("newBgm")) {
+        this.newBgm = this.sound.add("newBgm", { loop: true, volume: 0.5 });
+        this.newBgm.play();
+    }
+
+    console.log("GameScene: ユーザーID =", this.playerId);
+
+    if (typeof window.db === "undefined") {
+        console.error("🔥 Firebase Database が未定義です！ ゲームを開始できません！");
+        return;
+    }
+
+    this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
+        .setInteractive()
+        .setDepth(2)
+        .setScale(0.5);
+
+    this.matchingButton.on("pointerdown", () => {
+        this.findRoomAndJoin();
+    });
+
+    this.checkExistingPlayer();
+
+    // ページフォーカスが外れた時にルームを離れる
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            this.leaveRoomAndGoHome();
+        }
+    });
+
+    // ページを閉じる/再読み込みする時にルームを離れる
+    window.addEventListener("beforeunload", () => {
+        this.leaveRoom();
+    });
+
+    // ネットワーク切断時にルームを離れる
+    window.addEventListener("offline", () => {
+        this.leaveRoomAndGoHome();
+    });
+}
+
 
         leaveRoom() {
-        let roomId = localStorage.getItem("roomId");
-        if (!roomId || !this.roomRef) return;
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId || !this.roomRef) return;
 
-        let playerRef = window.db.ref(`gameRooms/${roomId}/players/${this.playerId}`);
-        playerRef.remove().then(() => {
-            console.log(`🚪 ルーム ${roomId} からプレイヤー ${this.playerId} を削除しました`);
-        }).catch(error => {
-            console.error("🔥 ルーム退出エラー:", error);
-        });
+    let playerRef = window.db.ref(`gameRooms/${roomId}/players/${this.playerId}`);
+    playerRef.remove().then(() => {
+        console.log(`🚪 ルーム ${roomId} からプレイヤー ${this.playerId} を削除しました`);
+    }).catch(error => {
+        console.error("🔥 ルーム退出エラー:", error);
+    });
 
-        localStorage.removeItem("roomId");
-    }
+    localStorage.removeItem("roomId");
+}
+
 
     leaveRoomAndGoHome() {
-        this.leaveRoom();
-        this.scene.start("HomeScene"); // ホーム画面に戻る
+    this.leaveRoom();
+
+    // 音楽を停止する
+    if (this.newBgm) {
+        this.newBgm.stop();
+        this.newBgm.destroy(); // メモリから削除
+        this.newBgm = null;
     }
+
+    this.scene.start("HomeScene"); // ホーム画面に戻る
+}
+
 
     checkExistingPlayer() {
         window.db.ref("gameRooms").once("value").then(snapshot => {
