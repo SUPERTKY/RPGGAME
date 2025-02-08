@@ -225,10 +225,10 @@ class GamePlayScene extends Phaser.Scene {
 
     this.roleDisplay.setTexture(finalRole);
 
-    // 🎯 役職データを Firebase に送信
+    // 🎯 役職とチームデータを Firebase に送信
     this.assignRolesAndSendToFirebase();
 }
-    async assignRolesAndSendToFirebase() {
+   async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
         console.error("❌ ルームIDが取得できませんでした。データ送信を中止します。");
@@ -242,12 +242,18 @@ class GamePlayScene extends Phaser.Scene {
 
     try {
         let updates = {};
+        
         this.players.forEach((player, index) => {
+            if (!player.team) {
+                player.team = index < this.players.length / 2 ? "Red" : "Blue"; // 🔴🔵 チームを明示的に振り分け
+            }
+
+            updates[`gameRooms/${roomId}/players/${player.id}/team`] = player.team;
             updates[`gameRooms/${roomId}/players/${player.id}/role`] = this.roles[index];
         });
 
         await firebase.database().ref().update(updates);
-        console.log("✅ 役職データを Firebase に送信しました:", updates);
+        console.log("✅ 役職 & チームデータを Firebase に送信:", updates);
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
     }
