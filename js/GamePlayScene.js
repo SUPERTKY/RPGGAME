@@ -210,16 +210,37 @@ class GamePlayScene extends Phaser.Scene {
     }
 }
 
+async finalizeRole() {
+    let finalRole = this.roles[this.currentRoleIndex];
+    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+    decisionSound.play();
 
+    this.roleDisplay.setTexture(finalRole);
 
-    finalizeRole() {
-        let finalRole = this.roles[this.currentRoleIndex];
-        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-        decisionSound.play();
-
-        this.roleDisplay.setTexture(finalRole);
+    // 各プレイヤーに役職とチームを割り振り
+    for (let i = 0; i < this.players.length; i++) {
+        let team = i < this.players.length / 2 ? "A" : "B";
+        let role = this.roles[i];
+        await this.updatePlayerRoleAndTeam(this.players[i].id, team, role);
     }
-    
+}
+    async updatePlayerRoleAndTeam(playerId, team, role) {
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.error("⚠️ ルームIDが不明のため、プレイヤー情報を更新できません。");
+        return;
+    }
+
+    try {
+        await firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).update({
+            team: team,
+            role: role
+        });
+        console.log(`✅ プレイヤー ${playerId} の情報を更新: チーム=${team}, 役職=${role}`);
+    } catch (error) {
+        console.error(`❌ プレイヤー ${playerId} の情報更新中にエラー発生:`, error);
+    }
+}
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
