@@ -256,24 +256,21 @@ finalizeRole() {
     try {
         let updates = {};
 
-        // **プレイヤーデータを変更せず、新しいオブジェクト `playerUpdates` を作成**
-        let playerUpdates = this.players.map((player, index) => ({
+        // ✅ `name` をそのまま保持する
+        this.players = this.players.map((player, index) => ({
             id: player.id,
-            name: player.name,  // ✅ 名前を上書きしない
+            name: player.name,  // ✅ 名前を維持
             team: index < this.players.length / 2 ? "Red" : "Blue",
             role: this.roles[index]
         }));
 
-        playerUpdates.forEach(player => {
+        this.players.forEach(player => {
             updates[`gameRooms/${roomId}/players/${player.id}/team`] = player.team;
             updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
         });
 
         await firebase.database().ref().update(updates);
         console.log("✅ 役職 & チームデータを Firebase に送信しました:", updates);
-
-        // ✅ `this.players` のデータを更新（名前を維持）
-        this.players = playerUpdates;
 
         this.isRouletteRunning = false; // ✅ データ送信後、ルーレットを完全に停止
 
@@ -283,31 +280,40 @@ finalizeRole() {
 }
 
 
+
     
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
 
-    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
+    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
+        .setScale(0.7)
+        .setDepth(2);
+
+    console.log("📌 VS画面のプレイヤーデータ:", this.players);
 
     if (!this.players || this.players.length === 0) {
         console.error("❌ VS画面に表示するプレイヤーがいません！");
         return;
     }
 
-    console.log("📌 VS画面のプレイヤーデータ:", this.players);
-
     let leftTeam = this.players.slice(0, 3);
     let rightTeam = this.players.slice(3, 6);
 
     leftTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
+        if (!player.name) {
+            console.warn(`⚠️ プレイヤー ${index} の名前がありません`);
+        }
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
             fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
 
     rightTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
+        if (!player.name) {
+            console.warn(`⚠️ プレイヤー ${index} の名前がありません`);
+        }
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
             fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
@@ -317,6 +323,7 @@ finalizeRole() {
         this.scene.start("BattleScene");
     });
 }
+
 
 
 }
