@@ -211,18 +211,63 @@ class GamePlayScene extends Phaser.Scene {
 }
 
 async finalizeRole() {
-    let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
 
-    this.roleDisplay.setTexture(finalRole);
+    // 役職をシャッフル
+    Phaser.Utils.Array.Shuffle(this.roles);
 
-    // 各プレイヤーに役職とチームを割り振り
-    for (let i = 0; i < this.players.length; i++) {
-        let team = i < this.players.length / 2 ? "A" : "B";
-        let role = this.roles[i];
-        await this.updatePlayerRoleAndTeam(this.players[i].id, team, role);
+    // プレイヤーが少ない場合の安全対策
+    if (this.players.length < this.roles.length) {
+        console.warn("⚠️ プレイヤー数が役職数より少ないため、役職を調整します。");
+        this.roles = this.roles.slice(0, this.players.length);
     }
+
+    // チーム分けのための配列
+    let teamA = [];
+    let teamB = [];
+
+    // 役職ごとにチームを分ける
+    let assignedRoles = {};
+    for (let role of this.roles) {
+        if (!assignedRoles[role]) assignedRoles[role] = [];
+    }
+
+    // 各プレイヤーの役職を決定し、役職ごとにプレイヤーを分ける
+    for (let i = 0; i < this.players.length; i++) {
+        let role = this.roles[i];
+        assignedRoles[role].push(this.players[i]);
+    }
+
+    // 役職ごとにチームに振り分ける
+    for (let role in assignedRoles) {
+        let shuffledPlayers = Phaser.Utils.Array.Shuffle(assignedRoles[role]);
+        for (let i = 0; i < shuffledPlayers.length; i++) {
+            if (i % 2 === 0) {
+                teamA.push(shuffledPlayers[i]);
+            } else {
+                teamB.push(shuffledPlayers[i]);
+            }
+        }
+    }
+
+    // チーム分けした結果を適用
+    let updatePromises = [];
+    for (let player of teamA) {
+        updatePromises.push(this.updatePlayerRoleAndTeam(player.id, "A", player.role));
+    }
+    for (let player of teamB) {
+        updatePromises.push(this.updatePlayerRoleAndTeam(player.id, "B", player.role));
+    }
+
+    // すべての Firebase 更新を待つ
+    await Promise.all(updatePromises);
+
+    console.log("✅ すべてのプレイヤーの役職とチームを Firebase に送信しました。");
+
+    // 役職決定後の次の処理を続行
+    this.roleDisplay.setAlpha(1);
+    this.showVsScreen();
 }
     async updatePlayerRoleAndTeam(playerId, team, role) {
     let roomId = localStorage.getItem("roomId");
