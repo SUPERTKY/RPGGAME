@@ -102,33 +102,50 @@ class GamePlayScene extends Phaser.Scene {
 
 
     startRoulette() {
-        this.currentRoleIndex = 0;
-        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
-
-        this.time.delayedCall(4000, () => {
-            let totalSpins = this.roles.length * 3;
-            let spinDuration = 500;
-
-            this.roleDisplay.setAlpha(1);
-            this.time.addEvent({
-                delay: spinDuration,
-                repeat: totalSpins - 1,
-                callback: () => {
-                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-                },
-                callbackScope: this
-            });
-
-            this.time.delayedCall(spinDuration * totalSpins, () => {
-                this.finalizeRole();
-            });
-
-            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-                this.showVsScreen();
-            });
-        });
+    this.currentRoleIndex = 0;
+    
+    if (this.rouletteEvent) {
+        this.rouletteEvent.remove(false); // 既存のルーレットを削除
+        console.log("🛑 既存のルーレットイベントを削除しました");
     }
+
+    this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
+        .setScale(0.6)
+        .setDepth(1)
+        .setAlpha(0);
+
+    this.time.delayedCall(4000, () => {
+        let totalSpins = this.roles.length * 3; // 役職の数×3回ループ
+        let spinDuration = 500;
+
+        this.roleDisplay.setAlpha(1);
+
+        // ルーレットの開始（すでにイベントがある場合は削除）
+        if (this.rouletteEvent) {
+            this.rouletteEvent.remove(false);
+        }
+
+        this.rouletteEvent = this.time.addEvent({
+            delay: spinDuration,
+            repeat: totalSpins - 1,
+            callback: () => {
+                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+            },
+            callbackScope: this
+        });
+
+        // ルーレットの最終決定
+        this.time.delayedCall(spinDuration * totalSpins, () => {
+            this.finalizeRole();
+        });
+
+        // VS画面へ移行
+        this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+            this.showVsScreen();
+        });
+    });
+}
 　　async findRoomByUserId(userId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
@@ -205,17 +222,16 @@ class GamePlayScene extends Phaser.Scene {
 
 
     finalizeRole() {
+    if (this.rouletteEvent) {
+        this.rouletteEvent.remove(false); // ルーレットイベントを削除
+        console.log("✅ ルーレットイベントを停止しました");
+    }
+
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
 
     this.roleDisplay.setTexture(finalRole);
-
-    // ルーレットの停止処理
-    if (this.rouletteEvent) {
-        this.rouletteEvent.remove(false);
-        console.log("✅ ルーレットイベントを停止しました。");
-    }
 }
 
     
