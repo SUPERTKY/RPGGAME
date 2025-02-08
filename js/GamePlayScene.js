@@ -235,10 +235,18 @@ async leaveRoom(userId) {
         let shouldStart = snapshot.val();
         if (shouldStart) {
             console.log("🔥 VS画面を開始する合図を受信！");
-            this.showVsScreen();
+
+            // ✅ **VS画面への遷移がすでに実行されていないかチェック**
+            if (!this.isVsScreenShown) {
+                this.isVsScreenShown = true; // ✅ フラグを設定
+                this.showVsScreen();
+            } else {
+                console.warn("⚠️ VS画面はすでに表示されています。二重実行を防ぎます。");
+            }
         }
     });
 }
+
 
     async getPlayersFromFirebase() {
     let userId = firebase.auth().currentUser?.uid;
@@ -287,7 +295,7 @@ async leaveRoom(userId) {
 finalizeRole() {
     if (this.rouletteEvent) {
         this.rouletteEvent.remove(false);
-        this.rouletteEvent.destroy(); // 完全に削除
+        this.rouletteEvent.destroy();
         this.rouletteEvent = null;
         console.log("✅ ルーレットイベントを完全に停止しました");
     }
@@ -305,14 +313,18 @@ finalizeRole() {
 
     this.time.delayedCall(5000, async () => {
         await this.assignRolesAndSendToFirebase();
-        this.time.delayedCall(3000, () => {
-            this.showVsScreen();
-        });
+
+        // ✅ **VS画面へ移動前に `showVsScreen()` が重複しないようにチェック**
+        if (!this.isVsScreenShown) {
+            this.isVsScreenShown = true;
+            this.time.delayedCall(3000, () => {
+                this.showVsScreen();
+            });
+        } else {
+            console.warn("⚠️ VS画面がすでに表示されているため、重複を防ぎます。");
+        }
     });
 }
-
-
-
 
    async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
@@ -358,15 +370,24 @@ finalizeRole() {
 }
    
    showVsScreen() {
-    this.isRouletteRunning = false; // ✅ VS画面に移行する前にフラグを確実にリセット
+    this.isRouletteRunning = false; // ✅ VS画面に移行する前にフラグをリセット
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
         console.error("❌ ルームIDが取得できません。");
         return;
     }
 
+    // ✅ **すべての音を停止**
+    this.sound.stopAll();
+
     let vsSound = this.sound.add("vsSound", { volume: 1 });
-    vsSound.play();
+
+    // ✅ **既に `vsSound` が鳴っていないか確認**
+    if (!vsSound.isPlaying) {
+        vsSound.play();
+    } else {
+        console.warn("⚠️ VS音がすでに鳴っています。二重再生を防ぎます。");
+    }
 
     let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
         .setScale(0.7)
@@ -407,9 +428,6 @@ finalizeRole() {
         this.scene.start("BattleScene");
     });
 }
-
-
-
 
 }
 
