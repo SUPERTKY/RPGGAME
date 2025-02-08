@@ -101,7 +101,7 @@ class GamePlayScene extends Phaser.Scene {
 
 
 
-   startRoulette() {
+  startRoulette() {
     if (this.isRouletteRunning) {
         console.warn("⚠️ ルーレットがすでに実行中のため、再実行を防ぎます。");
         return;
@@ -111,8 +111,9 @@ class GamePlayScene extends Phaser.Scene {
     this.currentRoleIndex = 0;
 
     if (this.rouletteEvent) {
-        this.rouletteEvent.remove(false);
         console.log("🛑 既存のルーレットイベントを削除しました");
+        this.rouletteEvent.remove(false);
+        this.rouletteEvent = null; // ✅ 参照をクリア
     }
 
     this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
@@ -125,10 +126,6 @@ class GamePlayScene extends Phaser.Scene {
         let spinDuration = 1000; // ⏳ ゆっくり回転
 
         this.roleDisplay.setAlpha(1);
-
-        if (this.rouletteEvent) {
-            this.rouletteEvent.remove(false);
-        }
 
         this.rouletteEvent = this.time.addEvent({
             delay: spinDuration,
@@ -147,6 +144,7 @@ class GamePlayScene extends Phaser.Scene {
         });
     });
 }
+
 　　async findRoomByUserId(userId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
@@ -222,6 +220,8 @@ finalizeRole() {
         console.log("✅ ルーレットイベントを停止しました");
     }
 
+    this.isRouletteRunning = false; // ✅ ここで明示的にリセット
+
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
@@ -235,12 +235,13 @@ finalizeRole() {
     this.time.delayedCall(3000, async () => {
         await this.assignRolesAndSendToFirebase();
 
-        this.isRouletteRunning = false; // ✅ ルーレット終了フラグ
+        // ✅ ここではもうルーレットを止めた後なので、二重実行の問題は起きない
 
         // ✅ **VS画面を表示**
         this.showVsScreen();
     });
 }
+
    async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
