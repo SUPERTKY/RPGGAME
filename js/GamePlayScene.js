@@ -101,19 +101,19 @@ class GamePlayScene extends Phaser.Scene {
 
 
 
-  startRoulette() {
+ startRoulette() {
     if (this.isRouletteRunning) {
         console.warn("⚠️ ルーレットがすでに実行中のため、再実行を防ぎます。");
         return;
     }
-    this.isRouletteRunning = true; // ✅ ルーレット開始フラグ
+    this.isRouletteRunning = true;
 
     this.currentRoleIndex = 0;
 
     if (this.rouletteEvent) {
         console.log("🛑 既存のルーレットイベントを削除しました");
         this.rouletteEvent.remove(false);
-        this.rouletteEvent = null; // ✅ 参照をクリア
+        this.rouletteEvent = null;
     }
 
     this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
@@ -122,8 +122,8 @@ class GamePlayScene extends Phaser.Scene {
         .setAlpha(0);
 
     this.time.delayedCall(5000, () => {
-        let totalSpins = this.roles.length * 2; // 🔄 ループ回数を調整
-        let spinDuration = 1000; // ⏳ ゆっくり回転
+        let totalSpins = this.roles.length * 2;
+        let spinDuration = 1000;
 
         this.roleDisplay.setAlpha(1);
 
@@ -144,6 +144,7 @@ class GamePlayScene extends Phaser.Scene {
         });
     });
 }
+
 
 　　async findRoomByUserId(userId) {
     try {
@@ -217,10 +218,11 @@ class GamePlayScene extends Phaser.Scene {
 finalizeRole() {
     if (this.rouletteEvent) {
         this.rouletteEvent.remove(false);
-        console.log("✅ ルーレットイベントを停止しました");
+        this.rouletteEvent = null; // ✅ ルーレットイベントの参照を消す
+        console.log("✅ ルーレットイベントを完全に停止しました");
     }
 
-    this.isRouletteRunning = false; // ✅ ルーレット実行フラグをオフ
+    this.isRouletteRunning = false; // ✅ 二度とルーレットが実行されないようにする
 
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
@@ -232,7 +234,7 @@ finalizeRole() {
     }
 
     // ✅ ルーレット終了後、5秒間待ってから Firebase にデータを送信
-    this.time.delayedCall(10000, async () => {
+    this.time.delayedCall(5000, async () => {
         await this.assignRolesAndSendToFirebase();
 
         // ✅ **データ送信後にさらに3秒待機して VS 画面を表示**
@@ -241,6 +243,7 @@ finalizeRole() {
         });
     });
 }
+
 
 
    async assignRolesAndSendToFirebase() {
@@ -285,6 +288,14 @@ finalizeRole() {
 
     
     showVsScreen() {
+    // ここでもルーレットの実行を完全に停止
+    if (this.rouletteEvent) {
+        this.rouletteEvent.remove(false);
+        this.rouletteEvent = null;
+        console.log("✅ VS画面でルーレットの再実行を防ぎました");
+    }
+    this.isRouletteRunning = false;
+
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
 
@@ -303,18 +314,12 @@ finalizeRole() {
     let rightTeam = this.players.slice(3, 6);
 
     leftTeam.forEach((player, index) => {
-        if (!player.name) {
-            console.warn(`⚠️ プレイヤー ${index} の名前がありません`);
-        }
         this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
             fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
 
     rightTeam.forEach((player, index) => {
-        if (!player.name) {
-            console.warn(`⚠️ プレイヤー ${index} の名前がありません`);
-        }
         this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
             fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
@@ -322,6 +327,14 @@ finalizeRole() {
 
     this.time.delayedCall(8000, () => {
         vsImage.destroy();
+
+        // ✅ シーン遷移前にルーレットを確実に止める
+        if (this.rouletteEvent) {
+            this.rouletteEvent.remove(false);
+            this.rouletteEvent = null;
+        }
+        this.isRouletteRunning = false;
+
         this.scene.start("BattleScene");
     });
 }
