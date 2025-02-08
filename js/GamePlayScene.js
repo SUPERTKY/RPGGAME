@@ -1,4 +1,4 @@
-class GamePlayScene extends Phaser.Scene {
+    class GamePlayScene extends Phaser.Scene {
     constructor() {
         super({ key: "GamePlayScene" });
     }
@@ -166,19 +166,28 @@ async leaveRoom(userId) {
             delay: spinDuration,
             repeat: totalSpins - 1,
             callback: () => {
-                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                if (this.roleDisplay) {
-                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+                if (!this.roleDisplay) {
+                    console.warn("⚠️ ルーレット用の roleDisplay が存在しません。ルーレットを中止します。");
+                    return;
                 }
+                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
             },
             callbackScope: this
         });
 
         this.time.delayedCall(spinDuration * totalSpins, () => {
-            this.finalizeRole();
+            try {
+                this.finalizeRole();
+            } catch (error) {
+                console.error("❌ ルーレット停止処理中にエラー:", error);
+            } finally {
+                this.isRouletteRunning = false;
+            }
         });
     });
 }
+
 
 
 　　async findRoomByUserId(userId) {
