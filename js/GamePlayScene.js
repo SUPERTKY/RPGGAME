@@ -178,7 +178,7 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     try {
-        let snapshot = await firebase.database().ref(gameRooms/${roomId}/players).once("value");
+        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
         let data = snapshot.val();
         console.log("取得したデータ:", data);  // デバッグ用出力
 
@@ -246,7 +246,7 @@ class GamePlayScene extends Phaser.Scene {
 }
 
 async function registerPlayer(roomId, playerName, team, role) {
-    let playerRef = firebase.database().ref(gameRooms/${roomId}/players).push();
+    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
     await playerRef.set({
         joinedAt: Date.now(),
         team: team,
