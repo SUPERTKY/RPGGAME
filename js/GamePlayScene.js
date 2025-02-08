@@ -221,40 +221,78 @@ async assignRolesAndTeams(roomId) {
 
 
 
-    finalizeRole() {
-        let finalRole = this.roles[this.currentRoleIndex];
-        let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-        decisionSound.play();
+   finalizeRole() {
+    let finalRole = this.roles[this.currentRoleIndex];
+    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+    decisionSound.play();
 
-        this.roleDisplay.setTexture(finalRole);
+    this.roleDisplay.setTexture(finalRole);
+
+    // 🛠️ 役職をFirebaseに保存
+    let userId = firebase.auth().currentUser?.uid;
+    let roomId = localStorage.getItem("roomId");
+
+    if (userId && roomId) {
+        firebase.database().ref(`gameRooms/${roomId}/players/${userId}`).update({
+            role: finalRole
+        }).then(() => {
+            console.log(`✅ ユーザー ${userId} の役職 (${finalRole}) を保存しました。`);
+        }).catch(error => {
+            console.error("❌ 役職の保存中にエラー:", error);
+        });
     }
-    
+}
     showVsScreen() {
-        let vsSound = this.sound.add("vsSound", { volume: 1 });
-        vsSound.play();
+    let vsSound = this.sound.add("vsSound", { volume: 1 });
+    vsSound.play();
 
-        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
+    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-        let leftTeam = this.players.filter(player => player.team === "チーム1");
-        let rightTeam = this.players.filter(player => player.team === "チーム2");
+    let leftTeam = this.players.slice(0, 3);
+    let rightTeam = this.players.slice(3, 6);
 
-        leftTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), `チーム1`, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5).setDepth(3);
+    console.log("左チーム:", leftTeam);
+    console.log("右チーム:", rightTeam);
+
+    let roomId = localStorage.getItem("roomId");
+
+    leftTeam.forEach((player, index) => {
+        let team = "left";
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), `${player.name} (${player.role})`, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3);
+
+        // Firebaseにチームを保存
+        firebase.database().ref(`gameRooms/${roomId}/players/${player.id}`).update({
+            team: team
+        }).then(() => {
+            console.log(`✅ ユーザー ${player.id} のチーム (${team}) を保存しました。`);
+        }).catch(error => {
+            console.error("❌ チームの保存中にエラー:", error);
         });
+    });
 
-        rightTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), `チーム2`, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5).setDepth(3);
-        });
+    rightTeam.forEach((player, index) => {
+        let team = "right";
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), `${player.name} (${player.role})`, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3);
 
-        this.time.delayedCall(8000, () => {
-            vsImage.destroy();
-            this.scene.start("BattleScene");
+        // Firebaseにチームを保存
+        firebase.database().ref(`gameRooms/${roomId}/players/${player.id}`).update({
+            team: team
+        }).then(() => {
+            console.log(`✅ ユーザー ${player.id} のチーム (${team}) を保存しました。`);
+        }).catch(error => {
+            console.error("❌ チームの保存中にエラー:", error);
         });
-    }
+    });
+
+    this.time.delayedCall(8000, () => {
+        vsImage.destroy();
+        this.scene.start("BattleScene");
+    });
+}
 
 }
 
