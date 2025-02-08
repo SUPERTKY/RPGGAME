@@ -212,64 +212,36 @@ class GamePlayScene extends Phaser.Scene {
         this.roleDisplay.setTexture(finalRole);
     }
     
-        showVsScreen() {
-        let vsSound = this.sound.add("vsSound", { volume: 1 });
-        vsSound.play();
+    showVsScreen() {
+    let vsSound = this.sound.add("vsSound", { volume: 1 });
+    vsSound.play();
 
-        let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
+    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
-        let leftTeam = this.players.slice(0, 3);
-        let rightTeam = this.players.slice(3, 6);
+    let leftTeam = this.players.slice(0, 3);
+    let rightTeam = this.players.slice(3, 6);
 
-        console.log("左チーム:", leftTeam);
-        console.log("右チーム:", rightTeam);
+    console.log("左チーム:", leftTeam);
+    console.log("右チーム:", rightTeam);
 
-        // 名前の表示を一番上にし、左右の幅を広げる
-        leftTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5).setDepth(3); // 名前が一番前面になるように
-        });
+    // 名前の表示を一番上にし、左右の幅を広げる
+    leftTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3); // 名前が一番前面になるように
+    });
 
-        rightTeam.forEach((player, index) => {
-            this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
-                fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-            }).setOrigin(0.5).setDepth(3);
-        });
+    rightTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3);
+    });
 
-        // 🔹 Firebase にプレイヤーのチームと役職を保存
-        this.assignTeamsAndRoles(leftTeam, "Team A");
-        this.assignTeamsAndRoles(rightTeam, "Team B");
-
-        this.time.delayedCall(8000, () => {
-            vsImage.destroy();
-            this.scene.start("BattleScene");
-        });
-    }
-
-    async assignTeamsAndRoles(players, teamName) {
-        let roomId = localStorage.getItem("roomId");
-        if (!roomId) {
-            console.error("⚠️ ルームIDが取得できませんでした。");
-            return;
-        }
-
-        for (let i = 0; i < players.length; i++) {
-            let playerId = players[i].id;
-            let role = this.roles[i]; // 役職を割り当てる
-
-            try {
-                await firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`).update({
-                    team: teamName,
-                    role: role
-                });
-                console.log(`✅ ${players[i].name} にチーム:${teamName}, 役職:${role} を割り当てました。`);
-            } catch (error) {
-                console.error(`❌ ${players[i].name} のデータ更新に失敗:`, error);
-            }
-        }
-    }
-
+    this.time.delayedCall(8000, () => {
+        vsImage.destroy();
+        this.scene.start("BattleScene");
+    });
+}
 
 }
 
