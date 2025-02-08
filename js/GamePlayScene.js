@@ -101,7 +101,7 @@ class GamePlayScene extends Phaser.Scene {
 
 
 
-    startRoulette() {
+   startRoulette() {
     if (this.isRouletteRunning) {
         console.warn("⚠️ ルーレットがすでに実行中のため、再実行を防ぎます。");
         return;
@@ -135,7 +135,9 @@ class GamePlayScene extends Phaser.Scene {
             repeat: totalSpins - 1,
             callback: () => {
                 this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+                if (this.roleDisplay) {
+                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+                }
             },
             callbackScope: this
         });
@@ -225,12 +227,19 @@ class GamePlayScene extends Phaser.Scene {
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
 
-    this.roleDisplay.setTexture(finalRole);
+    if (this.roleDisplay) {
+        this.roleDisplay.setTexture(finalRole);
+        this.roleDisplay.setAlpha(1);
+    }
 
-    // ✅ **ルーレットが完全に終わってから Firebase にデータを送信**
+    // ✅ **ルーレットが完全に終了してから Firebase にデータを送信**
     this.time.delayedCall(3000, async () => {
         await this.assignRolesAndSendToFirebase();
+
         this.isRouletteRunning = false; // ✅ ルーレット終了フラグ
+
+        // ✅ **VS画面を表示**
+        this.showVsScreen();
     });
 }
    async assignRolesAndSendToFirebase() {
@@ -256,8 +265,7 @@ class GamePlayScene extends Phaser.Scene {
         await firebase.database().ref().update(updates);
         console.log("✅ 役職データを Firebase に送信しました:", updates);
 
-        // ✅ **データ送信後はもうルーレットを再実行しないようにする**
-        this.isRouletteRunning = false;
+        this.isRouletteRunning = false; // ✅ データ送信後、ルーレットを完全に停止
 
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
