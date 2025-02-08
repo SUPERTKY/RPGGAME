@@ -38,14 +38,12 @@ class GamePlayScene extends Phaser.Scene {
    async create() {
     this.cameras.main.setBackgroundColor("#000000");
 
-    // 背景画像の設定
     this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
     let scaleX = this.scale.width / this.bg.width;
     let scaleY = this.scale.height / this.bg.height;
     let scale = Math.max(scaleX, scaleY);
     this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
 
-    // 音楽の再生
     this.sound.stopAll();
     this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
     this.bgm.play();
@@ -53,7 +51,6 @@ class GamePlayScene extends Phaser.Scene {
     this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
     Phaser.Utils.Array.Shuffle(this.roles);
 
-    // 🛠️ ユーザーIDの取得（認証完了を待機）
     let userId;
     try {
         userId = await this.getUserId();
@@ -63,7 +60,6 @@ class GamePlayScene extends Phaser.Scene {
         return;
     }
 
-    // 🛠️ ルームIDの取得
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
         console.warn("⚠️ ルームIDが見つかりません。Firebase から検索します...");
@@ -82,7 +78,6 @@ class GamePlayScene extends Phaser.Scene {
         }
     }
 
-    // 🛠️ プレイヤー情報の取得
     try {
         this.players = await this.getPlayersFromFirebase(roomId);
         console.log("✅ 取得したプレイヤー名:", this.players);
@@ -95,9 +90,13 @@ class GamePlayScene extends Phaser.Scene {
         return;
     }
 
+    // ✅ **VS画面を全端末で同期させるリスナーを開始**
+    this.setupVsScreenListener();
+
     // 🛠️ ルーレット開始
     this.startRoulette();
 }
+
 
 
 
@@ -169,6 +168,21 @@ class GamePlayScene extends Phaser.Scene {
         console.error("❌ Firebase からルーム検索中にエラーが発生:", error);
         return null;
     }
+}
+    setupVsScreenListener() {
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.error("❌ ルームIDが取得できません。");
+        return;
+    }
+
+    firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).on("value", snapshot => {
+        let shouldStart = snapshot.val();
+        if (shouldStart) {
+            console.log("🔥 VS画面を開始する合図を受信！");
+            this.showVsScreen();
+        }
+    });
 }
 
     async getPlayersFromFirebase() {
@@ -261,10 +275,10 @@ finalizeRole() {
     try {
         let updates = {};
 
-        // ✅ `name` をそのまま保持する
+        // ✅ 各プレイヤーに役職とチームをセット
         this.players = this.players.map((player, index) => ({
             id: player.id,
-            name: player.name,  // ✅ 名前を維持
+            name: player.name,
             team: index < this.players.length / 2 ? "Red" : "Blue",
             role: this.roles[index]
         }));
@@ -277,12 +291,18 @@ finalizeRole() {
         await firebase.database().ref().update(updates);
         console.log("✅ 役職 & チームデータを Firebase に送信しました:", updates);
 
-        this.isRouletteRunning = false; // ✅ データ送信後、ルーレットを完全に停止
+        this.isRouletteRunning = false; // ✅ ルーレット停止
+
+        // 🔥 **全員のデータ送信が完了したら、VS画面の合図を送る**
+        await firebase.database().ref(`gameRooms/${roomId}`).update({
+            startVsScreen: true
+        });
 
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
     }
 }
+
 
 
 
