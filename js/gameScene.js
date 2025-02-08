@@ -11,7 +11,7 @@ class GameScene extends Phaser.Scene {
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
     }
 
-       create() {
+    create() {
     this.cameras.main.setBackgroundColor("#000000");
 
     let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
@@ -48,23 +48,24 @@ class GameScene extends Phaser.Scene {
 
     this.checkExistingPlayer();
 
-    // ページフォーカスが外れた時にルームを離れる
+    // **ウェブページを離れたとき（タブ切り替え・ウィンドウ非表示）にリロード**
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
-            this.leaveRoomAndGoHome();
+            this.leaveRoomAndReload();
         }
     });
 
-    // ページを閉じる/再読み込みする時にルームを離れる
+    // **ネットワークが切れたときにリロード**
+    window.addEventListener("offline", () => {
+        this.leaveRoomAndReload();
+    });
+
+    // **ブラウザを閉じる or リロードする前にルームを退出**
     window.addEventListener("beforeunload", () => {
         this.leaveRoom();
     });
-
-    // ネットワーク切断時にルームを離れる
-    window.addEventListener("offline", () => {
-        this.leaveRoomAndGoHome();
-    });
 }
+
 
 
         leaveRoom() {
@@ -82,7 +83,7 @@ class GameScene extends Phaser.Scene {
 }
 
 
-    leaveRoomAndGoHome() {
+   leaveRoomAndReload() {
     this.leaveRoom();
 
     // 音楽を停止する
@@ -92,8 +93,12 @@ class GameScene extends Phaser.Scene {
         this.newBgm = null;
     }
 
-    this.scene.start("HomeScene"); // ホーム画面に戻る
+    console.log("🔄 ゲームをリロードします...");
+    setTimeout(() => {
+        window.location.reload(); // 100ms 後にリロード（即時リロードより安定する）
+    }, 100);
 }
+
 
 
     checkExistingPlayer() {
