@@ -224,6 +224,33 @@ class GamePlayScene extends Phaser.Scene {
     decisionSound.play();
 
     this.roleDisplay.setTexture(finalRole);
+
+    // 🎯 役職データを Firebase に送信
+    this.assignRolesAndSendToFirebase();
+}
+    async assignRolesAndSendToFirebase() {
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.error("❌ ルームIDが取得できませんでした。データ送信を中止します。");
+        return;
+    }
+
+    if (!this.players || this.players.length === 0) {
+        console.error("❌ プレイヤーデータがありません。データ送信を中止します。");
+        return;
+    }
+
+    try {
+        let updates = {};
+        this.players.forEach((player, index) => {
+            updates[`gameRooms/${roomId}/players/${player.id}/role`] = this.roles[index];
+        });
+
+        await firebase.database().ref().update(updates);
+        console.log("✅ 役職データを Firebase に送信しました:", updates);
+    } catch (error) {
+        console.error("❌ Firebase へのデータ送信エラー:", error);
+    }
 }
 
     
