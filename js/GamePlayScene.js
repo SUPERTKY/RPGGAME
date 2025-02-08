@@ -284,9 +284,7 @@ finalizeRole() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
 
-    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
-        .setScale(0.7)
-        .setDepth(2);
+    let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage").setScale(0.7).setDepth(2);
 
     let leftTeam = this.players.slice(0, 3);
     let rightTeam = this.players.slice(3, 6);
@@ -294,21 +292,20 @@ finalizeRole() {
     console.log("左チーム:", leftTeam);
     console.log("右チーム:", rightTeam);
 
+    // 名前の表示を一番上にし、左右の幅を広げる
     leftTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), 
-            `${player.name} `, {
-            fontSize: "28px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5).setDepth(3);
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3); // 名前が一番前面になるように
     });
 
     rightTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), 
-            `${player.name} (${player.team})\n役職: ${player.role}`, {
-            fontSize: "28px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name, {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
 
-    this.time.delayedCall(10000, () => { // ⏳ VS画面を10秒間表示
+    this.time.delayedCall(8000, () => {
         vsImage.destroy();
         this.scene.start("BattleScene");
     });
