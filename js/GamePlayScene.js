@@ -98,6 +98,42 @@ class GamePlayScene extends Phaser.Scene {
 }
 
 
+async leaveRoom(userId) {
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId || !userId) {
+        console.error("❌ ルームID または ユーザーID が見つかりません。");
+        return;
+    }
+
+    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${userId}`);
+
+    try {
+        // ✅ プレイヤー情報を削除
+        await playerRef.remove();
+        console.log(`✅ プレイヤー ${userId} をルーム ${roomId} から削除しました`);
+
+        let activePlayersRef = firebase.database().ref(`gameRooms/${roomId}/activePlayers`);
+        
+        // ✅ `activePlayers` のカウントを減らす
+        activePlayersRef.transaction(count => {
+            if (count === null) return 0; // カウントがない場合は 0 に
+            return Math.max(count - 1, 0); // 0 以下にならないように制限
+        }).then(snapshot => {
+            let remainingPlayers = snapshot.val();
+            console.log(`👥 残りのアクティブプレイヤー数: ${remainingPlayers}`);
+
+            // 🔥 **全員が抜けた場合、ゲームルームを削除**
+            if (remainingPlayers === 0) {
+                firebase.database().ref(`gameRooms/${roomId}`).remove()
+                    .then(() => console.log("✅ ルームが削除されました"))
+                    .catch(error => console.error("❌ ルーム削除エラー:", error));
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ プレイヤー削除エラー:", error);
+    }
+}
 
 
  startRoulette() {
@@ -347,29 +383,6 @@ finalizeRole() {
     this.time.delayedCall(8000, () => {
         vsImage.destroy();
         this.scene.start("BattleScene");
-    });
-}
-
-
-
-async function leaveRoom(userId) {
-    let roomId = localStorage.getItem("roomId");
-    if (!roomId) return;
-
-    let playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${userId}`);
-    await playerRef.remove();
-
-    let activePlayersRef = firebase.database().ref(`gameRooms/${roomId}/activePlayers`);
-    activePlayersRef.transaction(count => {
-        if (count === null) return 0;
-        return count - 1;
-    }).then(snapshot => {
-        if (snapshot.val() === 0) {
-            // 🔥 **誰もいなくなったらゲームデータを削除**
-            firebase.database().ref(`gameRooms/${roomId}`).remove()
-                .then(() => console.log("✅ ルームが削除されました"))
-                .catch(error => console.error("❌ ルーム削除エラー:", error));
-        }
     });
 }
 
