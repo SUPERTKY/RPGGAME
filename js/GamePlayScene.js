@@ -208,32 +208,30 @@ class GamePlayScene extends Phaser.Scene {
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
 
-    // 役職をシャッフル
+    // ルーレットの最終結果を画面に反映
+    let finalRole = this.roles[this.currentRoleIndex];
+    this.roleDisplay.setTexture(finalRole);
+
+    // 役職をシャッフル（チームごとに偏らないように分ける）
     Phaser.Utils.Array.Shuffle(this.roles);
 
-    // プレイヤーが少ない場合の安全対策
     if (this.players.length < this.roles.length) {
-        console.warn("⚠️ プレイヤー数が役職数より少ないため、役職を調整します。");
         this.roles = this.roles.slice(0, this.players.length);
     }
 
-    // チーム分けのための配列
     let teamA = [];
     let teamB = [];
 
-    // 役職ごとにチームを分ける
     let assignedRoles = {};
     for (let role of this.roles) {
         if (!assignedRoles[role]) assignedRoles[role] = [];
     }
 
-    // 各プレイヤーの役職を決定し、役職ごとにプレイヤーを分ける
     for (let i = 0; i < this.players.length; i++) {
         let role = this.roles[i];
         assignedRoles[role].push(this.players[i]);
     }
 
-    // 役職ごとにチームに振り分ける
     for (let role in assignedRoles) {
         let shuffledPlayers = Phaser.Utils.Array.Shuffle(assignedRoles[role]);
         for (let i = 0; i < shuffledPlayers.length; i++) {
@@ -245,24 +243,22 @@ class GamePlayScene extends Phaser.Scene {
         }
     }
 
-    // チーム分けした結果を適用
-    let updatePromises = [];
-    for (let player of teamA) {
-        updatePromises.push(this.updatePlayerRoleAndTeam(player.id, "A", player.role));
-    }
-    for (let player of teamB) {
-        updatePromises.push(this.updatePlayerRoleAndTeam(player.id, "B", player.role));
-    }
+    // Firebase に非同期でデータを送信（ルーレットの処理には影響させない）
+    Promise.all([
+        ...teamA.map(player => this.updatePlayerRoleAndTeam(player.id, "A", player.role)),
+        ...teamB.map(player => this.updatePlayerRoleAndTeam(player.id, "B", player.role))
+    ]).then(() => {
+        console.log("✅ すべてのプレイヤーの役職とチームを Firebase に送信しました。");
+    }).catch(error => {
+        console.error("❌ Firebase のデータ更新中にエラー発生:", error);
+    });
 
-    // すべての Firebase 更新を待つ
-    await Promise.all(updatePromises);
-
-    console.log("✅ すべてのプレイヤーの役職とチームを Firebase に送信しました。");
-
-    // 役職決定後の次の処理を続行
-    this.roleDisplay.setAlpha(1);
-    this.showVsScreen();
+    // **ルーレットの処理を止めずに次に進む**
+    this.time.delayedCall(2000, () => {
+        this.showVsScreen();
+    });
 }
+
     async updatePlayerRoleAndTeam(playerId, team, role) {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
@@ -273,7 +269,7 @@ class GamePlayScene extends Phaser.Scene {
     try {
         let playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${playerId}`);
 
-        // 切断時にプレイヤーデータを削除する設定
+        // 切断時にデータを削除
         firebase.database().ref(".info/connected").on("value", (snapshot) => {
             if (snapshot.val() === true) {
                 playerRef.onDisconnect().remove()
@@ -282,17 +278,16 @@ class GamePlayScene extends Phaser.Scene {
             }
         });
 
-        // `team` と `role` を追加して更新
-        await playerRef.update({
+        // 役職とチームを Firebase に保存
+        return playerRef.update({
             team: team,
             role: role
         });
-
-        console.log(`✅ プレイヤー ${playerId} の情報を更新: チーム=${team}, 役職=${role}`);
     } catch (error) {
         console.error(`❌ プレイヤー ${playerId} の情報更新中にエラー発生:`, error);
     }
 }
+
 
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
