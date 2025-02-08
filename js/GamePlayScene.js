@@ -225,7 +225,7 @@ class GamePlayScene extends Phaser.Scene {
 
     this.roleDisplay.setTexture(finalRole);
 
-    // 🔄 **ルーレットが完全に終わるのを保証**
+    // 🎯 **ルーレットが完全に終了してから Firebase に送信**
     this.time.delayedCall(3000, async () => {
         await this.assignRolesAndSendToFirebase();
     });
@@ -243,22 +243,23 @@ class GamePlayScene extends Phaser.Scene {
     }
 
     try {
-        // **左側の3人をレッド、右側の3人をブルーにする**
         let updates = {};
+
+        // **チームを確実に設定**
         this.players.forEach((player, index) => {
             let team = index < this.players.length / 2 ? "Red" : "Blue";
             let role = this.roles[index];
 
-            // **Firebase に確実にデータをセット**
-            updates[`gameRooms/${roomId}/players/${player.id}`] = {
-                name: player.name,
-                team: team,
-                role: role
-            };
+            updates[`gameRooms/${roomId}/players/${player.id}/team`] = team;
+            updates[`gameRooms/${roomId}/players/${player.id}/role`] = role;
         });
 
         await firebase.database().ref().update(updates);
-        console.log("✅ 役職 & チームデータを Firebase に送信:", updates);
+        console.log("✅ 役職 & チームデータを Firebase に送信しました:", updates);
+
+        // **🛑 ルーレットをもう一度開始しないようにする**
+        this.isRouletteFinished = true;
+
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
     }
