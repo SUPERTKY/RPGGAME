@@ -216,6 +216,20 @@ class GamePlayScene extends Phaser.Scene {
         this.rouletteEvent.remove(false);
         console.log("✅ ルーレットイベントを停止しました。");
     }
+
+    // Firebase に役職を保存
+    let userId = firebase.auth().currentUser?.uid;
+    let roomId = localStorage.getItem("roomId");
+
+    if (userId && roomId) {
+        firebase.database().ref(`gameRooms/${roomId}/players/${userId}`).update({
+            role: finalRole
+        }).then(() => {
+            console.log(`✅ ユーザー ${userId} の役職を ${finalRole} に更新しました。`);
+        }).catch(error => {
+            console.error("❌ 役職の更新に失敗:", error);
+        });
+    }
 }
 
     
@@ -230,6 +244,30 @@ class GamePlayScene extends Phaser.Scene {
 
     console.log("左チーム:", leftTeam);
     console.log("右チーム:", rightTeam);
+
+    // チーム情報を Firebase に保存
+    let roomId = localStorage.getItem("roomId");
+    if (roomId) {
+        leftTeam.forEach(player => {
+            firebase.database().ref(`gameRooms/${roomId}/players/${player.id}`).update({
+                team: "左チーム"
+            }).then(() => {
+                console.log(`✅ ${player.name} を 左チーム に設定しました。`);
+            }).catch(error => {
+                console.error("❌ チーム設定エラー:", error);
+            });
+        });
+
+        rightTeam.forEach(player => {
+            firebase.database().ref(`gameRooms/${roomId}/players/${player.id}`).update({
+                team: "右チーム"
+            }).then(() => {
+                console.log(`✅ ${player.name} を 右チーム に設定しました。`);
+            }).catch(error => {
+                console.error("❌ チーム設定エラー:", error);
+            });
+        });
+    }
 
     // 名前の表示を一番上にし、左右の幅を広げる
     leftTeam.forEach((player, index) => {
