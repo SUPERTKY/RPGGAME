@@ -288,7 +288,7 @@ finalizeRole() {
 
     leftTeam.forEach((player, index) => {
         this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), 
-            `${player.name} , {
+            `${player.name} `, {
             fontSize: "28px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
