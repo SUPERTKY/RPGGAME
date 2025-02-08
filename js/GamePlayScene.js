@@ -102,41 +102,33 @@ class GamePlayScene extends Phaser.Scene {
 
 
     startRoulette() {
-    if (this.rouletteRunning) {
-        console.warn("⚠️ ルーレットがすでに開始されています。2重起動を防止");
-        return;
+        this.currentRoleIndex = 0;
+        this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
+
+        this.time.delayedCall(4000, () => {
+            let totalSpins = this.roles.length * 3;
+            let spinDuration = 500;
+
+            this.roleDisplay.setAlpha(1);
+            this.time.addEvent({
+                delay: spinDuration,
+                repeat: totalSpins - 1,
+                callback: () => {
+                    this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
+                    this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+                },
+                callbackScope: this
+            });
+
+            this.time.delayedCall(spinDuration * totalSpins, () => {
+                this.finalizeRole();
+            });
+
+            this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
+                this.showVsScreen();
+            });
+        });
     }
-    this.rouletteRunning = true;
-
-    this.currentRoleIndex = 0;
-    this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest").setScale(0.6).setDepth(1).setAlpha(0);
-
-    this.time.delayedCall(4000, () => {
-        let totalSpins = Math.max(15, this.roles.length * 3); // 15回以上回すようにする
-        let spinDuration = 500;
-
-        this.roleDisplay.setAlpha(1);
-        let spinEvent = this.time.addEvent({
-            delay: spinDuration,
-            repeat: totalSpins - 1,
-            callback: () => {
-                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-            },
-            callbackScope: this
-        });
-
-        this.time.delayedCall(spinDuration * totalSpins, () => {
-            spinEvent.remove(); // 明示的にルーレットのイベントを削除
-            this.finalizeRole();
-        });
-
-        this.time.delayedCall(spinDuration * totalSpins + 5000, () => {
-            this.showVsScreen();
-        });
-    });
-}
-
 　　async findRoomByUserId(userId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
@@ -210,7 +202,9 @@ class GamePlayScene extends Phaser.Scene {
     }
 }
 
-async finalizeRole() {
+
+
+    async finalizeRole() {
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
 
@@ -269,11 +263,6 @@ async finalizeRole() {
     this.roleDisplay.setAlpha(1);
     this.showVsScreen();
 }
-    
-
-
-
-
     async updatePlayerRoleAndTeam(playerId, team, role) {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
@@ -304,7 +293,7 @@ async finalizeRole() {
         console.error(`❌ プレイヤー ${playerId} の情報更新中にエラー発生:`, error);
     }
 }
-    
+
     showVsScreen() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     vsSound.play();
@@ -336,7 +325,7 @@ async finalizeRole() {
     });
 }
 
-
+}
 
 async function registerPlayer(roomId, playerName, team, role) {
     let playerRef = firebase.database().ref(`gameRooms/${roomId}/players`).push();
@@ -356,7 +345,7 @@ class BattleScene extends Phaser.Scene {
     create() {
         console.log("バトルシーンに移動しました。");
     }
-} 　
+}
 window.addEventListener("beforeunload", () => {
     let roomId = localStorage.getItem("roomId");
     let playerId = localStorage.getItem("userId");
@@ -367,7 +356,6 @@ window.addEventListener("beforeunload", () => {
             .catch(error => console.error("🔥 ウェブサイト終了時のデータ削除エラー:", error));
     }
 });
-
 window.addEventListener("offline", () => {
     let roomId = localStorage.getItem("roomId");
     let playerId = localStorage.getItem("userId");
