@@ -305,21 +305,13 @@ setupVsScreenListener() {
         let shouldStart = snapshot.val();
         console.log("🟢 Firebase の `startVsScreen` 変更検知:", shouldStart);
 
-        if (shouldStart) {
-            if (!this.isVsScreenShown) {
-                console.log("🟢 VS画面を表示します");
-                this.isVsScreenShown = true;
-                this.showVsScreen();
-            } else {
-                console.warn("⚠️ VS画面はすでに表示されています。二重実行を防ぎます。");
-            }
+        if (shouldStart && !this.isVsScreenShown) {
+            console.log("🟢 VS画面を開始します。");
+            this.isVsScreenShown = true;
+            this.showVsScreen();
         }
     });
 }
-
-
-
-
     async getPlayersFromFirebase() {
     let userId = firebase.auth().currentUser?.uid;
     if (!userId) {
@@ -490,6 +482,7 @@ async finalizeRole() {
             .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
     });
 }
+
 
 
 }
