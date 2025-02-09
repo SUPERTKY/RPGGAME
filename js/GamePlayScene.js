@@ -582,6 +582,6 @@ const config = {
 const game = new Phaser.Game(config);
 
 // 他のスクリプトでバトルシーンを開始する場合
-// game.scene.start("BattleScene");
+game.scene.start("BattleScene");
 
 
