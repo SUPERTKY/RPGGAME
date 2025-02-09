@@ -120,7 +120,7 @@ async waitForRouletteStart() {
         this.load.audio("vsSound", "assets/VS効果音.mp3");
     }
 
-   async create() {
+  async create() {
     this.cameras.main.setBackgroundColor("#000000");
 
     this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
@@ -132,6 +132,10 @@ async waitForRouletteStart() {
     this.sound.stopAll();
     this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
     this.bgm.play();
+
+    // ✅ **roles の初期化を確実に行う**
+    this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
+    Phaser.Utils.Array.Shuffle(this.roles);
 
     let userId;
     try {
@@ -169,6 +173,7 @@ async waitForRouletteStart() {
     // ✅ **ルーレット終了の監視**
     this.setupRouletteCompleteListener();
 }
+
 
 async leaveRoom(userId) {
     let roomId = localStorage.getItem("roomId");
@@ -213,9 +218,18 @@ async leaveRoom(userId) {
         console.warn("⚠️ ルーレットがすでに実行中のため、再実行を防ぎます。");
         return;
     }
-    this.isRouletteRunning = true;
 
+    // ✅ **roles の null チェックを追加**
+    if (!this.roles || this.roles.length === 0) {
+        console.error("❌ ルーレットを開始できません。this.roles が設定されていません。");
+        return;
+    }
+
+    this.isRouletteRunning = true;
     this.currentRoleIndex = 0;
+
+    let totalSpins = this.roles.length * 2; // ✅ **ここでエラーが出ないようにチェック**
+    let spinDuration = 1000;
 
     if (this.rouletteEvent) {
         console.log("🛑 既存のルーレットイベントを削除しました");
@@ -223,10 +237,10 @@ async leaveRoom(userId) {
         this.rouletteEvent = null;
     }
 
-    // ✅ ここで roleDisplay を確実に初期化
     if (this.roleDisplay) {
         this.roleDisplay.destroy();
     }
+
     this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
         .setScale(0.6)
         .setDepth(1)
@@ -238,10 +252,7 @@ async leaveRoom(userId) {
             return;
         }
 
-        let totalSpins = this.roles.length * 2;
-        let spinDuration = 1000;
-
-        this.roleDisplay.setAlpha(1);  // ここで null チェックが適用される
+        this.roleDisplay.setAlpha(1);
 
         this.rouletteEvent = this.time.addEvent({
             delay: spinDuration,
@@ -268,8 +279,6 @@ async leaveRoom(userId) {
         });
     });
 }
-
-
 
 
 　　async findRoomByUserId(userId) {
