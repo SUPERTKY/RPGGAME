@@ -316,9 +316,8 @@ setupVsScreenListener() {
         let shouldStart = snapshot.val();
         console.log("🟢 Firebase の `startVsScreen` 変更検知:", shouldStart);
 
-        if (shouldStart && !this.isVsScreenShown) {
+        if (shouldStart) {
             console.log("🟢 VS画面を開始します。");
-            this.isVsScreenShown = true;
             this.showVsScreen();
         }
     });
@@ -404,13 +403,8 @@ async finalizeRole() {
         await vsRef.set(true);  // ✅ ここで Firebase に `startVsScreen = true` をセット
         console.log("🟢 Firebase に `startVsScreen` を設定");
 
-        if (!this.isVsScreenShown) {
-            console.log("🟢 VS画面を表示予定 (3秒後)");
-            this.isVsScreenShown = true;
-            this.time.delayedCall(3000, () => {
-                this.showVsScreen();
-            });
-        }
+        // ❌ `isVsScreenShown = true;` は削除
+        console.log("🟢 VS画面は Firebase のリスナーに任せる");
     });
 }
 
@@ -454,7 +448,7 @@ async finalizeRole() {
     }
 }
 
-   showVsScreen() {
+  showVsScreen() {
     console.log("🟢 VS画面を表示しようとしています。");
 
     if (this.isVsScreenShown) {
@@ -462,7 +456,7 @@ async finalizeRole() {
         return;
     }
 
-    this.isVsScreenShown = true;
+    this.isVsScreenShown = true;  // ✅ ここでのみ `true` にする
     console.log("🟢 VS画面を表示しました。");
 
     let roomId = localStorage.getItem("roomId");
@@ -485,7 +479,7 @@ async finalizeRole() {
     this.time.delayedCall(8000, () => {
         console.log("🟢 VS画面終了、バトルシーンへ移動");
         vsImage.destroy();
-        this.isVsScreenShown = false;  // 🔥 フラグをリセット
+        this.isVsScreenShown = false;  // 🔥 ここでリセットする
         this.scene.start("BattleScene");
     });
 
@@ -495,8 +489,6 @@ async finalizeRole() {
             .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
     });
 }
-
-
 
 
 }
