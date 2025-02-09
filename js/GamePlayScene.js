@@ -1,21 +1,21 @@
     class GamePlayScene extends Phaser.Scene {
-   constructor() {
+  constructor() {
     super({ key: "GamePlayScene" });
 
-    // 🔥 **ルーレットが無限に回るのを防ぐ**
+    // ✅ シーンが初期化されたかどうかを管理（再実行を防ぐ）
+    this.isSceneInitialized = false;
+
+    // ✅ ルーレットの無限ループを防ぐ
     this.isRouletteRunning = false;
+
+    // ✅ VS画面の無限実行を防ぐ
     this.isVsScreenShown = false;
 
-    // 🔥 **ルーレットイベント管理用**
+    // ✅ ルーレットイベント管理
     this.rouletteEvent = null;
 
-    // 🔥 **画面に表示する画像オブジェクトを管理**
-    this.roleDisplay = null;
-
-    // 🔥 **VS画面リスナーの二重登録を防ぐ**
+    // ✅ VS画面リスナーの二重登録防止
     this.vsScreenListener = null;
-
-    console.log("🎮 GamePlayScene コンストラクタが実行されました");
 }
 
     async getUserId() {
@@ -52,6 +52,11 @@
     }
 
    async create() {
+       if (this.isSceneInitialized) {
+        console.warn("⚠️ GamePlayScene はすでに初期化済みです。再実行を防ぎます。");
+        return;
+    }
+    this.isSceneInitialized = true;
     this.cameras.main.setBackgroundColor("#000000");
 
     this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
@@ -132,6 +137,7 @@ async cleanupRouletteData() {
         console.error("❌ ルーレット関連データの削除エラー:", error);
     }
 }
+
 
 async cleanupPlayerRoles() {
     let roomId = localStorage.getItem("roomId");
@@ -299,9 +305,6 @@ setupVsScreenListener() {
 }
 
 
-
-
-
     async getPlayersFromFirebase() {
     let userId = firebase.auth().currentUser?.uid;
     if (!userId) {
@@ -372,7 +375,8 @@ async finalizeRole() {
         }
 
         await this.cleanupRouletteData(); // ✅ **ルーレットデータ削除**
-        this.isRouletteRunning = false; // ✅ **ルーレットの実行を解除**
+
+        this.isRouletteRunning = false; // ✅ **ルーレットの再実行を防ぐ**
         console.log("🛑 ルーレットが完全に終了しました。");
 
         let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
