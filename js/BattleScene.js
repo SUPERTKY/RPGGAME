@@ -5,7 +5,7 @@ class BattleScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.audio("battleBgm", "ピエロは暗闇で踊る.mp3"); // ← ここで事前にロード
+        this.load.audio("battleBgm", "ピエロは暗闇で踊る.mp3");
         this.load.image("battleBackground", "assets/旅立ち.png");
     }
 
@@ -44,20 +44,52 @@ class BattleScene extends Phaser.Scene {
             if (!players) return;
 
             let playerCount = Object.keys(players).length;
-            this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
+            this.statusText.setText(`戦闘準備完了: ${playerCount} / 4`);
 
-            if (playerCount >= 6) {
+            if (playerCount >= 4) {
                 console.log("🟢 全プレイヤーが揃いました。バトル開始！");
                 this.playersRef.off("value");
-                this.startBattle();
+                this.startCountdown();
             }
         });
     }
 
+    startCountdown() {
+        this.statusText.setText("");
+        const countdownNumbers = ["3", "2", "1", "スタート！"];
+        let index = 0;
+
+        const showNextNumber = () => {
+            if (index >= countdownNumbers.length) {
+                this.startBattle();
+                return;
+            }
+            let countText = this.add.text(this.scale.width / 2, this.scale.height / 2, countdownNumbers[index], {
+                fontSize: "80px",
+                fill: "#ffffff",
+                stroke: "#000000",
+                strokeThickness: 8
+            }).setOrigin(0.5);
+
+            countText.setAlpha(0);
+            this.tweens.add({
+                targets: countText,
+                alpha: 1,
+                scale: 1.5,
+                duration: 500,
+                ease: "Cubic.easeOut",
+                yoyo: true,
+                onComplete: () => {
+                    countText.destroy();
+                    index++;
+                    this.time.delayedCall(500, showNextNumber);
+                }
+            });
+        };
+        showNextNumber();
+    }
+
     startBattle() {
-        this.statusText.setText("バトル開始！");
-        this.time.delayedCall(2000, () => {
-            this.scene.start("GamePlayScene");
-        });
+        this.scene.start("GamePlayScene");
     }
 }
