@@ -394,20 +394,47 @@ async finalizeRole() {
         }
 
         console.log("🟢 ルーレットデータを削除");
-        await this.cleanupRouletteData(); // ✅ ルーレットデータを削除
+        await this.cleanupRouletteData();
 
-        this.isRouletteRunning = false; 
+        this.isRouletteRunning = false;
         console.log("🛑 ルーレットが完全に終了しました。");
 
-        let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
-        await vsRef.set(true);  // ✅ ここで Firebase に `startVsScreen = true` をセット
-        console.log("🟢 Firebase に `startVsScreen` を設定");
+        // 🔥 1人ずつフェードアウトさせる
+        this.fadeOutCharacters(() => {
+            console.log("🟢 すべてのキャラが消えたので VS 画面へ");
+            let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
+            vsRef.set(true);
+            console.log("🟢 Firebase に `startVsScreen` を設定");
 
-        // ❌ `isVsScreenShown = true;` は削除
-        console.log("🟢 VS画面は Firebase のリスナーに任せる");
+            this.setupVsScreenListener();
+        });
     });
 }
 
+/**
+ * 🔥 キャラを 1 人ずつフェードアウトする関数
+ */
+fadeOutCharacters(callback) {
+    let delay = 500; // 0.5 秒ごとに 1 人ずつ消える
+    let fadeDuration = 1000; // 1 秒かけてフェードアウト
+    let characters = [this.roleDisplay]; // 表示されているキャラを配列に追加
+
+    characters.forEach((character, index) => {
+        this.time.delayedCall(index * delay, () => {
+            this.tweens.add({
+                targets: character,
+                alpha: 0,
+                duration: fadeDuration,
+                onComplete: () => {
+                    character.destroy();
+                }
+            });
+        });
+    });
+
+    // 最後のキャラが消えたらコールバックを呼ぶ
+    this.time.delayedCall(characters.length * delay + fadeDuration, callback);
+}
 
 
   async assignRolesAndSendToFirebase() {
@@ -448,7 +475,7 @@ async finalizeRole() {
     }
 }
 
-  showVsScreen() {
+showVsScreen() {
     console.log("🟢 VS画面を表示しようとしています。");
 
     if (this.isVsScreenShown) {
@@ -465,56 +492,65 @@ async finalizeRole() {
         return;
     }
 
-    this.sound.stopAll();
-    let vsSound = this.sound.add("vsSound", { volume: 1 });
-
-    if (!vsSound.isPlaying) {
-        vsSound.play();
+    // 🔥 ルーレットの BGM をフェードアウト
+    if (this.bgm) {
+        this.tweens.add({
+            targets: this.bgm,
+            volume: 0,
+            duration: 2000,
+            onComplete: () => {
+                this.bgm.stop();
+            }
+        });
     }
+
+    // 🔥 VS の BGM をフェードイン
+    let vsSound = this.sound.add("vsSound", { volume: 0 });
+    vsSound.play();
+    this.tweens.add({
+        targets: vsSound,
+        volume: 1,
+        duration: 2000
+    });
 
     let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
         .setScale(0.7)
         .setDepth(2);
 
-    // 🟢 **プレイヤーの名前を表示**
+    // 🔥 プレイヤーの名前を表示
     if (!this.players || this.players.length === 0) {
         console.error("❌ VS画面に表示するプレイヤーがいません！");
         return;
     }
 
-    // 🔥 チーム分け（Red, Blue）
     let leftTeam = this.players.slice(0, Math.ceil(this.players.length / 2));
     let rightTeam = this.players.slice(Math.ceil(this.players.length / 2));
 
-    // 🔥 左側（Redチーム）の名前表示
     leftTeam.forEach((player, index) => {
         this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
             fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
 
-    // 🔥 右側（Blueチーム）の名前表示
     rightTeam.forEach((player, index) => {
         this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
             fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
         }).setOrigin(0.5).setDepth(3);
     });
 
-    // ✅ **VS画面の表示時間を8秒に設定**
+    // ✅ VS画面の表示時間を8秒に設定
     this.time.delayedCall(8000, () => {
         vsImage.destroy();
         this.scene.start("BattleScene");
     });
 
-    // ✅ `startVsScreen` を8秒後に削除（すぐに消さない！）
+    // ✅ `startVsScreen` を削除
     setTimeout(() => {
         firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove()
             .then(() => console.log("✅ Firebase から `startVsScreen` を削除しました"))
             .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
     }, 8000);
 }
-
-
 
 }
 
