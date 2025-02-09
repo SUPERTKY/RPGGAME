@@ -128,17 +128,28 @@ async cleanupRouletteData() {
         let updates = {
             [`gameRooms/${roomId}/roles`]: null,
             [`gameRooms/${roomId}/startVsScreen`]: null,
-            [`gameRooms/${roomId}/rouletteState`]: null, // 🔥 ルーレット関連のデータも削除
-            [`gameRooms/${roomId}/rouletteFinished`]: null // 🔥 ルーレットの完了フラグも削除
+            [`gameRooms/${roomId}/rouletteState`]: null,
+            [`gameRooms/${roomId}/rouletteFinished`]: null
         };
 
         await firebase.database().ref().update(updates);
         console.log("✅ ルーレット関連データを Firebase から削除しました。");
 
+        let roomRef = firebase.database().ref(`gameRooms/${roomId}`);
+        let snapshot = await roomRef.once("value");
+
+        if (!snapshot.exists()) {
+            console.log("🛑 ルームのデータが空のため削除します...");
+            await roomRef.remove()
+                .then(() => console.log("✅ ルームデータを完全削除しました"))
+                .catch(error => console.error("❌ ルーム削除エラー:", error));
+        }
+
     } catch (error) {
         console.error("❌ ルーレット関連データの削除エラー:", error);
     }
 }
+
 
 
 async cleanupPlayerRoles() {
@@ -181,32 +192,32 @@ async leaveRoom() {
     let playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${this.playerId}`);
 
     try {
-        // ✅ プレイヤー情報を削除
         await playerRef.remove();
         console.log(`✅ プレイヤー ${this.playerId} をルーム ${roomId} から削除しました`);
 
+        let roomRef = firebase.database().ref(`gameRooms/${roomId}`);
         let activePlayersRef = firebase.database().ref(`gameRooms/${roomId}/activePlayers`);
         
-        // ✅ `activePlayers` のカウントを減らす
-        activePlayersRef.transaction(count => {
-            if (count === null) return 0; // カウントがない場合は 0 に
-            return Math.max(count - 1, 0); // 0 以下にならないように制限
-        }).then(async snapshot => {
-            let remainingPlayers = snapshot.val();
-            console.log(`👥 残りのアクティブプレイヤー数: ${remainingPlayers}`);
+        // 🔥 `activePlayers` のカウントを減らし、0なら `gameRooms` を削除
+        activePlayersRef.transaction(async count => {
+            let newCount = (count || 1) - 1;
+            console.log(`👥 残りのアクティブプレイヤー数: ${newCount}`);
 
-            // 🔥 **全員が抜けた場合、ゲームルームを削除**
-            if (remainingPlayers === 0) {
-                await firebase.database().ref(`gameRooms/${roomId}`).remove()
-                    .then(() => console.log("✅ ルームが削除されました"))
+            if (newCount <= 0) {
+                console.log("🛑 全員が退出しました。ルームを削除します...");
+                await roomRef.remove()
+                    .then(() => console.log("✅ ルームが Firebase から削除されました"))
                     .catch(error => console.error("❌ ルーム削除エラー:", error));
             }
+
+            return newCount;
         });
 
     } catch (error) {
         console.error("❌ プレイヤー削除エラー:", error);
     }
 }
+
 
 
 startRoulette() {
@@ -312,6 +323,7 @@ setupVsScreenListener() {
         }
     });
 }
+
     async getPlayersFromFirebase() {
     let userId = firebase.auth().currentUser?.uid;
     if (!userId) {
@@ -473,15 +485,17 @@ async finalizeRole() {
     this.time.delayedCall(8000, () => {
         console.log("🟢 VS画面終了、バトルシーンへ移動");
         vsImage.destroy();
+        this.isVsScreenShown = false;  // 🔥 フラグをリセット
         this.scene.start("BattleScene");
     });
 
-    this.time.delayedCall(8500, () => {
-        firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove()
+    this.time.delayedCall(8500, async () => {
+        await firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove()
             .then(() => console.log("✅ Firebase から `startVsScreen` を削除しました"))
             .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
     });
 }
+
 
 
 
