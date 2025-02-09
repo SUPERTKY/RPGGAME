@@ -49,9 +49,9 @@ class BattleScene extends Phaser.Scene {
             if (!players) return;
 
             let playerCount = Object.keys(players).length;
-            this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
+            this.statusText.setText(`戦闘準備完了: ${playerCount} / 4`);
 
-            if (playerCount >= 6) {
+            if (playerCount >= 4) {
                 console.log("🟢 全プレイヤーが揃いました。バトル開始！");
                 this.playersRef.off("value");
                 this.startCountdown();
