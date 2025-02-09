@@ -133,7 +133,7 @@ async waitForRouletteStart() {
     this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
     this.bgm.play();
 
-    // ✅ **roles の初期化を確実に行う**
+    // ✅ **roles の初期化を最優先で行う**
     this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
     Phaser.Utils.Array.Shuffle(this.roles);
 
@@ -173,7 +173,6 @@ async waitForRouletteStart() {
     // ✅ **ルーレット終了の監視**
     this.setupRouletteCompleteListener();
 }
-
 
 async leaveRoom(userId) {
     let roomId = localStorage.getItem("roomId");
@@ -228,7 +227,7 @@ async leaveRoom(userId) {
     this.isRouletteRunning = true;
     this.currentRoleIndex = 0;
 
-    let totalSpins = this.roles.length * 2; // ✅ **ここでエラーが出ないようにチェック**
+    let totalSpins = this.roles.length * 2; // ✅ **エラー防止のため roles の長さを確実に使用**
     let spinDuration = 1000;
 
     if (this.rouletteEvent) {
@@ -279,6 +278,7 @@ async leaveRoom(userId) {
         });
     });
 }
+
 
 
 　　async findRoomByUserId(userId) {
@@ -373,7 +373,7 @@ async leaveRoom(userId) {
         return ["エラー: 例外発生"];
     }
 }
-async finalizeRole() {
+finalizeRole() {
     if (this.rouletteEvent) {
         this.rouletteEvent.remove(false);
         this.rouletteEvent.destroy();
@@ -383,6 +383,15 @@ async finalizeRole() {
     this.isRouletteRunning = false;
 
     let finalRole = this.roles[this.currentRoleIndex];
+    let decisionSound = this.sound.add("decisionSound", { volume: 1 });
+
+    // ✅ **決定音が鳴るように修正**
+    if (!decisionSound.isPlaying) {
+        decisionSound.play();
+    } else {
+        console.warn("⚠️ 決定音はすでに再生されています。");
+    }
+
     if (this.roleDisplay) {
         this.roleDisplay.setTexture(finalRole);
         this.roleDisplay.setAlpha(1);
