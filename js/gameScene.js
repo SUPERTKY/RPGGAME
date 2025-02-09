@@ -42,13 +42,13 @@ class GameScene extends Phaser.Scene {
     }
 
     this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
-        this.clickSound.play();
 
         .setInteractive()
         .setDepth(2)
         .setScale(0.5);
 
     this.matchingButton.on("pointerdown", () => {
+         this.clickSound.play(); // 🔊 クリック音を再生
         this.findRoomAndJoin();
     });
 
