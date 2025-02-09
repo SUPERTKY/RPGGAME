@@ -133,7 +133,6 @@ async cleanupRouletteData() {
     }
 }
 
-
 async cleanupPlayerRoles() {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
@@ -202,12 +201,12 @@ async leaveRoom(userId) {
 }
 
 
- startRoulette() {
+startRoulette() {
     if (this.isRouletteRunning) {
         console.warn("⚠️ ルーレットがすでに実行中のため、再実行を防ぎます。");
         return;
     }
-    this.isRouletteRunning = true;
+    this.isRouletteRunning = true; // ✅ ルーレット開始をロック
 
     this.currentRoleIndex = 0;
 
@@ -252,17 +251,10 @@ async leaveRoom(userId) {
                 this.finalizeRole();
             } catch (error) {
                 console.error("❌ ルーレット停止処理中にエラー:", error);
-            } finally {
-                this.isRouletteRunning = false;
             }
         });
     });
 }
-
-
-
-
-
 　　async findRoomByUserId(userId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
@@ -362,8 +354,6 @@ async finalizeRole() {
         console.log("✅ ルーレットイベントを完全に停止しました");
     }
 
-    this.isRouletteRunning = false;
-
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
     decisionSound.play();
@@ -382,6 +372,8 @@ async finalizeRole() {
         }
 
         await this.cleanupRouletteData(); // ✅ **ルーレットデータ削除**
+        this.isRouletteRunning = false; // ✅ **ルーレットの実行を解除**
+        console.log("🛑 ルーレットが完全に終了しました。");
 
         let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
         await vsRef.set(true);
@@ -395,7 +387,6 @@ async finalizeRole() {
         }
     });
 }
-
 
 
   async assignRolesAndSendToFirebase() {
