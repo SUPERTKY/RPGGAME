@@ -312,6 +312,7 @@ setupVsScreenListener() {
 }
 
 
+
     async getPlayersFromFirebase() {
     let userId = firebase.auth().currentUser?.uid;
     if (!userId) {
@@ -384,10 +385,12 @@ async finalizeRole() {
         await this.cleanupRouletteData(); // ✅ ルーレットデータ削除
 
         this.isRouletteRunning = false; // ✅ ルーレットの実行解除
+        console.log("🛑 ルーレットが完全に終了しました。");
 
         let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
         await vsRef.set(true);
 
+        // **VS画面がまだ表示されていない場合のみ呼び出す**
         if (!this.isVsScreenShown) {
             this.isVsScreenShown = true;
             this.time.delayedCall(3000, () => {
@@ -396,7 +399,6 @@ async finalizeRole() {
         }
     });
 }
-
 
   async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
@@ -441,7 +443,7 @@ async finalizeRole() {
         console.warn("⚠️ VS画面はすでに表示されています。二重実行を防ぎます。");
         return;
     }
-    this.isVsScreenShown = true;
+    this.isVsScreenShown = true; // ✅ VS画面が1回だけ表示されるように管理
 
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
@@ -449,17 +451,24 @@ async finalizeRole() {
         return;
     }
 
+    // ✅ **すべての音を停止**
     this.sound.stopAll();
 
     let vsSound = this.sound.add("vsSound", { volume: 1 });
+
+    // ✅ **すでに `vsSound` が鳴っていないか確認**
     if (!vsSound.isPlaying) {
         vsSound.play();
+    } else {
+        console.warn("⚠️ VS音がすでに鳴っています。二重再生を防ぎます。");
     }
 
+    // ✅ VS画面の画像を表示
     let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
         .setScale(0.7)
         .setDepth(2);
 
+    // ✅ プレイヤーの表示
     if (!this.players || this.players.length === 0) {
         console.error("❌ VS画面に表示するプレイヤーがいません！");
         return;
@@ -480,21 +489,19 @@ async finalizeRole() {
         }).setOrigin(0.5).setDepth(3);
     });
 
+    // ✅ **VS画面の表示時間を8秒に設定**
     this.time.delayedCall(8000, () => {
         vsImage.destroy();
         this.scene.start("BattleScene");
     });
 
-    // 🔥 **VS画面が表示された後に `startVsScreen` を削除**
-    setTimeout(() => {
+    // ✅ `startVsScreen` を削除する処理を遅延させる
+    this.time.delayedCall(8500, () => {
         firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove()
             .then(() => console.log("✅ Firebase から `startVsScreen` を削除しました"))
             .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
-    }, 8000);
+    });
 }
-
-
-
 
 }
 
