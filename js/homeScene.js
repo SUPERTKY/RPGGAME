@@ -8,7 +8,8 @@ class HomeScene extends Phaser.Scene {
     preload() {
         this.load.image("background", "assets/background.png");
         this.load.image("startButton", "assets/startButton.png");
-        this.load.audio("bgm", "assets/Old_FortThe_sun_goes_down.mp3"); // 🎵 音楽をロード
+        this.load.audio("bgm", "assets/Old_FortThe_sun_goes_down.mp3"); // 🎵 BGMロード
+        this.load.audio("clickSound", "assets/ファニージャンプ.mp3"); // 🔊 クリック音ロード
     }
 
     create() {
@@ -17,6 +18,7 @@ class HomeScene extends Phaser.Scene {
         bg.setInteractive();
 
         this.bgm = this.sound.add("bgm", { loop: true, volume: 0.5 });
+        this.clickSound = this.sound.add("clickSound", { volume: 0.8 }); // 🔊 クリック音をセット
 
         let button = this.add.image(this.scale.width / 2, this.scale.height * 0.75, "startButton").setScale(0.4);
         button.setInteractive();
@@ -49,6 +51,7 @@ class HomeScene extends Phaser.Scene {
 
         button.on("pointerdown", () => {
             if (this.firstClick && this.playerName) {
+                this.clickSound.play(); // 🔊 クリック音を再生
                 console.log("ボタンが押された - ゲーム開始");
                 this.scene.start("GameScene");
             }
