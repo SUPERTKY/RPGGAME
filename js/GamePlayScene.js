@@ -564,12 +564,38 @@ async function registerPlayer(roomId, playerName, team, role) {
 }
 
 
-class BattleScene extends Phaser.Scene {
-    constructor() {
-        super({ key: "BattleScene" });
-    }
+const battleScene = new Phaser.Scene("BattleScene");
 
-    create() {
-        console.log("バトルシーンに移動しました。");
+battleScene.create = function () {
+    console.log("⚔ バトルシーン開始！");
+
+    // 背景設定
+    this.cameras.main.setBackgroundColor("#222222");
+
+    let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
+    let scaleX = this.scale.width / bg.width;
+    let scaleY = this.scale.height / bg.height;
+    let scale = Math.max(scaleX, scaleY);
+    bg.setScale(scale).setScrollFactor(0).setDepth(-5);
+
+    // サウンド設定
+    if (this.sound.get("newBgm")) {
+        this.sound.stopByKey("newBgm");
     }
-} 　
+    this.battleBgm = this.sound.add("battleBgm", { loop: true, volume: 0.6 });
+    this.battleBgm.play();
+
+    console.log("🆕 BattleScene に遷移しました。");
+};
+
+// **ゲーム設定**
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    scene: [battleScene] // シーンを直接追加
+};
+
+// **ゲーム開始**
+const game = new Phaser.Game(config);
+
