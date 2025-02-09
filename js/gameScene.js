@@ -180,20 +180,27 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-    monitorPlayers() {
-        this.roomRef.on("value", snapshot => {
-            let players = snapshot.val() || {};
-            console.log("現在のプレイヤーデータ:", players);
-            let playerCount = Object.keys(players).length;
-
-            console.log(`現在のプレイヤー数: ${playerCount}`);
-
-            if (playerCount >= 4) {
-                console.log("✅ マッチング完了！ゲーム開始！");
-                this.startGame();
-            }
-        });
+   monitorPlayers() {
+    if (this.isGameStarted) {
+        console.warn("⚠️ `monitorPlayers()` ですでにゲーム開始済みのため、Firebase の監視を停止");
+        return;
     }
+
+    this.roomRef.off("value"); // ✅ 以前のリスナーを削除
+    this.roomRef.on("value", snapshot => {
+        let players = snapshot.val() || {};
+        console.log("🟢 Firebase 更新検知:", players);
+        let playerCount = Object.keys(players).length;
+
+        console.log(`現在のプレイヤー数: ${playerCount}`);
+
+        if (playerCount >= 4) {
+            console.log("✅ マッチング完了！ゲーム開始！");
+            this.startGame();
+        }
+    });
+}
+
 
     startGame() {
         console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
