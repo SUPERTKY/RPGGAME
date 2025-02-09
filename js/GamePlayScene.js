@@ -100,7 +100,6 @@
 async cleanupRouletteData() {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
-        console.error("❌ ルームIDが取得できません。削除処理を中止します。");
         return;
     }
 
@@ -197,12 +196,10 @@ async leaveRoom(userId) {
     this.currentRoleIndex = 0;
 
     if (this.rouletteEvent) {
-        console.log("🛑 既存のルーレットイベントを削除しました");
         this.rouletteEvent.remove(false);
         this.rouletteEvent = null;
     }
 
-    // ✅ ここで roleDisplay を確実に初期化
     if (this.roleDisplay) {
         this.roleDisplay.destroy();
     }
@@ -213,21 +210,19 @@ async leaveRoom(userId) {
 
     this.time.delayedCall(5000, () => {
         if (!this.roleDisplay) {
-            console.warn("⚠️ ルーレット開始時に roleDisplay が null になっています。処理を中止します。");
             return;
         }
 
         let totalSpins = this.roles.length * 2;
         let spinDuration = 1000;
 
-        this.roleDisplay.setAlpha(1);  // ここで null チェックが適用される
+        this.roleDisplay.setAlpha(1);
 
         this.rouletteEvent = this.time.addEvent({
             delay: spinDuration,
             repeat: totalSpins - 1,
             callback: () => {
                 if (!this.roleDisplay) {
-                    console.warn("⚠️ ルーレット中に roleDisplay が null になりました。");
                     return;
                 }
                 this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
@@ -247,6 +242,7 @@ async leaveRoom(userId) {
         });
     });
 }
+
 
 
 
@@ -278,24 +274,22 @@ async leaveRoom(userId) {
 setupVsScreenListener() {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
-        console.error("❌ ルームIDが取得できません。");
         return;
     }
 
     if (this.vsScreenListener) {
-        console.warn("⚠️ VS画面リスナーはすでに設定済みです。二重登録を防ぎます。");
         return;
     }
 
     this.vsScreenListener = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).on("value", snapshot => {
         let shouldStart = snapshot.val();
         if (shouldStart && !this.isVsScreenShown) {
-            console.log("🔥 VS画面を開始する合図を受信！");
             this.isVsScreenShown = true;
             this.showVsScreen();
         }
     });
 }
+
 
 
 
@@ -368,18 +362,13 @@ async finalizeRole() {
 
         let roomId = localStorage.getItem("roomId");
         if (!roomId) {
-            console.error("❌ ルームIDが取得できません。");
             return;
         }
 
-        // ✅ **ルーレットデータを完全に削除**
-        await this.cleanupRouletteData();
+        await this.cleanupRouletteData(); // ✅ **ルーレットデータ削除**
 
-        console.log("🔥 VS画面への合図を送信...");
         let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
         await vsRef.set(true);
-
-        // 🔥 **10秒後に削除！**
         setTimeout(() => vsRef.remove(), 10000);
 
         if (!this.isVsScreenShown) {
@@ -387,11 +376,10 @@ async finalizeRole() {
             this.time.delayedCall(3000, () => {
                 this.showVsScreen();
             });
-        } else {
-            console.warn("⚠️ VS画面がすでに表示されているため、重複を防ぎます。");
         }
     });
 }
+
 
 
   async assignRolesAndSendToFirebase() {
@@ -434,14 +422,12 @@ async finalizeRole() {
 
    showVsScreen() {
     if (this.isVsScreenShown) {
-        console.warn("⚠️ VS画面はすでに表示されています。二重実行を防ぎます。");
         return;
     }
     this.isVsScreenShown = true;
 
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
-        console.error("❌ ルームIDが取得できません。");
         return;
     }
 
@@ -450,38 +436,14 @@ async finalizeRole() {
     let vsSound = this.sound.add("vsSound", { volume: 1 });
     if (!vsSound.isPlaying) {
         vsSound.play();
-    } else {
-        console.warn("⚠️ VS音がすでに鳴っています。二重再生を防ぎます。");
     }
 
     let vsImage = this.add.image(this.scale.width / 2, this.scale.height / 2, "vsImage")
         .setScale(0.7)
         .setDepth(2);
 
-    if (!this.players || this.players.length === 0) {
-        console.error("❌ VS画面に表示するプレイヤーがいません！");
-        return;
-    }
-
-    let leftTeam = this.players.slice(0, 3);
-    let rightTeam = this.players.slice(3, 6);
-
-    leftTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5).setDepth(3);
-    });
-
-    rightTeam.forEach((player, index) => {
-        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
-            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
-        }).setOrigin(0.5).setDepth(3);
-    });
-
     setTimeout(() => {
-        firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove()
-            .then(() => console.log("✅ Firebase から `startVsScreen` を削除しました"))
-            .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
+        firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove();
     }, 3000);
 
     if (this.roleDisplay) {
@@ -494,6 +456,7 @@ async finalizeRole() {
         this.scene.start("BattleScene");
     });
 }
+
 
 }
 
