@@ -9,9 +9,13 @@ class GameScene extends Phaser.Scene {
         this.load.image("background2", "assets/村.png");
         this.load.image("matchingButton", "assets/MATCHINGBUTTON.png");
         this.load.audio("newBgm", "assets/モノクロライブラリー.mp3");
+        this.load.audio("clickSound", "ファニージャンプ.mp3");
+
     }
 
     create() {
+        this.clickSound = this.sound.add("clickSound", { volume: 0.8 });
+
     this.cameras.main.setBackgroundColor("#000000");
 
     let bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
@@ -38,6 +42,8 @@ class GameScene extends Phaser.Scene {
     }
 
     this.matchingButton = this.add.image(this.scale.width / 2, 350, "matchingButton")
+        this.clickSound.play();
+
         .setInteractive()
         .setDepth(2)
         .setScale(0.5);
