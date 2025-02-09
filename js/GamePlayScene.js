@@ -1,7 +1,23 @@
     class GamePlayScene extends Phaser.Scene {
-    constructor() {
-        super({ key: "GamePlayScene" });
-    }
+   constructor() {
+    super({ key: "GamePlayScene" });
+
+    // 🔥 **ルーレットが無限に回るのを防ぐ**
+    this.isRouletteRunning = false;
+    this.isVsScreenShown = false;
+
+    // 🔥 **ルーレットイベント管理用**
+    this.rouletteEvent = null;
+
+    // 🔥 **画面に表示する画像オブジェクトを管理**
+    this.roleDisplay = null;
+
+    // 🔥 **VS画面リスナーの二重登録を防ぐ**
+    this.vsScreenListener = null;
+
+    console.log("🎮 GamePlayScene コンストラクタが実行されました");
+}
+
     async getUserId() {
     return new Promise((resolve, reject) => {
         firebase.auth().onAuthStateChanged(user => {
