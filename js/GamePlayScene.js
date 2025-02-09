@@ -2,91 +2,6 @@
     constructor() {
         super({ key: "GamePlayScene" });
     }
-        async markReadyAndCheckAllReady() {
-    let roomId = localStorage.getItem("roomId");
-    let userId = await this.getUserId();
-    if (!roomId || !userId) {
-        console.error("❌ ルームID または ユーザーIDが取得できません。");
-        return;
-    }
-
-    console.log(`✅ プレイヤー ${userId} が準備完了`);
-    let readyStatusRef = firebase.database().ref(`gameRooms/${roomId}/readyStatus/${userId}`);
-    await readyStatusRef.set(true);
-
-    // **全員の準備完了をチェック**
-    let readyRef = firebase.database().ref(`gameRooms/${roomId}/readyStatus`);
-    let playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-
-    readyRef.on("value", async (snapshot) => {
-        let readyData = snapshot.val();
-        if (!readyData) {
-            console.warn("⚠️ まだ準備が完了していません。");
-            return;
-        }
-
-        let readyCount = Object.keys(readyData).length;
-        let totalPlayersSnapshot = await playersRef.once("value");
-        let totalPlayers = totalPlayersSnapshot.numChildren();
-
-        console.log(`🔍 準備完了プレイヤー: ${readyCount} / ${totalPlayers}`);
-
-        if (readyCount === totalPlayers) {
-            console.log("✅ **全員が準備完了！ルーレット開始の合図を送信**");
-            await firebase.database().ref(`gameRooms/${roomId}/startRoulette`).set(true);
-        }
-    });
-}
-async waitForRouletteStart() {
-    let roomId = localStorage.getItem("roomId");
-    if (!roomId) {
-        console.error("❌ ルームIDが取得できません。");
-        return;
-    }
-
-    let startRouletteRef = firebase.database().ref(`gameRooms/${roomId}/startRoulette`);
-
-    startRouletteRef.on("value", (snapshot) => {
-        let shouldStart = snapshot.val();
-        if (shouldStart) {
-            console.log("🔥 **ルーレット開始の合図を受信！**");
-            this.startRoulette();
-        }
-    });
-}
-
-         async setupRouletteCompleteListener() {
-        let roomId = localStorage.getItem("roomId");
-        if (!roomId) {
-            console.error("❌ ルームIDが取得できません。");
-            return;
-        }
-
-        let rouletteStatusRef = firebase.database().ref(`gameRooms/${roomId}/rouletteStatus`);
-        let playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-
-        // ✅ **ルーレット完了チェックを開始**
-        rouletteStatusRef.on("value", async (snapshot) => {
-            let statusData = snapshot.val();
-            if (!statusData) {
-                console.warn("⚠️ ルーレット完了状況がまだ登録されていません。");
-                return;
-            }
-
-            let completedPlayers = Object.keys(statusData).length;
-            let totalPlayersSnapshot = await playersRef.once("value");
-            let totalPlayers = totalPlayersSnapshot.numChildren();
-
-            console.log(`🔍 ルーレット完了状況: ${completedPlayers} / ${totalPlayers}`);
-
-            // 🔥 **全員のルーレットが終わったらVS画面へ遷移**
-            if (completedPlayers === totalPlayers) {
-                console.log("✅ 全員のルーレットが完了！VS画面へ移行準備...");
-                await firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).set(true);
-                setTimeout(() => firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove(), 10000);
-            }
-        });
-    }
     async getUserId() {
     return new Promise((resolve, reject) => {
         firebase.auth().onAuthStateChanged(user => {
@@ -120,7 +35,7 @@ async waitForRouletteStart() {
         this.load.audio("vsSound", "assets/VS効果音.mp3");
     }
 
-  async create() {
+   async create() {
     this.cameras.main.setBackgroundColor("#000000");
 
     this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background3");
@@ -133,7 +48,6 @@ async waitForRouletteStart() {
     this.bgm = this.sound.add("bgmRoleReveal", { loop: true, volume: 0.5 });
     this.bgm.play();
 
-    // ✅ **roles の初期化を最優先で行う**
     this.roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
     Phaser.Utils.Array.Shuffle(this.roles);
 
@@ -148,13 +62,25 @@ async waitForRouletteStart() {
 
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
-        console.warn("⚠️ ルームIDが見つかりません。");
-        return;
+        console.warn("⚠️ ルームIDが見つかりません。Firebase から検索します...");
+        try {
+            roomId = await this.findRoomByUserId(userId);
+            if (roomId) {
+                localStorage.setItem("roomId", roomId);
+                console.log("✅ 取得したルームID:", roomId);
+            } else {
+                console.error("⚠️ ルームIDが取得できませんでした。");
+                return;
+            }
+        } catch (error) {
+            console.error("❌ Firebase からルームID取得中にエラー:", error);
+            return;
+        }
     }
 
     try {
         this.players = await this.getPlayersFromFirebase(roomId);
-        console.log("✅ 取得したプレイヤー:", this.players);
+        console.log("✅ 取得したプレイヤー名:", this.players);
         if (!this.players || this.players.length === 0) {
             console.error("⚠️ プレイヤーが取得できませんでした。");
             return;
@@ -164,15 +90,13 @@ async waitForRouletteStart() {
         return;
     }
 
-    // ✅ **準備完了を送信**
-    await this.markReadyAndCheckAllReady();
+    // ✅ **VS画面を全端末で同期させるリスナーを開始**
+    this.setupVsScreenListener();
 
-    // ✅ **ルーレット開始を待つ**
-    this.waitForRouletteStart();
-
-    // ✅ **ルーレット終了の監視**
-    this.setupRouletteCompleteListener();
+    // 🛠️ ルーレット開始
+    this.startRoulette();
 }
+
 
 async leaveRoom(userId) {
     let roomId = localStorage.getItem("roomId");
@@ -217,18 +141,9 @@ async leaveRoom(userId) {
         console.warn("⚠️ ルーレットがすでに実行中のため、再実行を防ぎます。");
         return;
     }
-
-    // ✅ **roles の null チェックを追加**
-    if (!this.roles || this.roles.length === 0) {
-        console.error("❌ ルーレットを開始できません。this.roles が設定されていません。");
-        return;
-    }
-
     this.isRouletteRunning = true;
-    this.currentRoleIndex = 0;
 
-    let totalSpins = this.roles.length * 2; // ✅ **エラー防止のため roles の長さを確実に使用**
-    let spinDuration = 1000;
+    this.currentRoleIndex = 0;
 
     if (this.rouletteEvent) {
         console.log("🛑 既存のルーレットイベントを削除しました");
@@ -236,10 +151,10 @@ async leaveRoom(userId) {
         this.rouletteEvent = null;
     }
 
+    // ✅ ここで roleDisplay を確実に初期化
     if (this.roleDisplay) {
         this.roleDisplay.destroy();
     }
-
     this.roleDisplay = this.add.image(this.scale.width / 2, this.scale.height / 2, "priest")
         .setScale(0.6)
         .setDepth(1)
@@ -251,7 +166,10 @@ async leaveRoom(userId) {
             return;
         }
 
-        this.roleDisplay.setAlpha(1);
+        let totalSpins = this.roles.length * 2;
+        let spinDuration = 1000;
+
+        this.roleDisplay.setAlpha(1);  // ここで null チェックが適用される
 
         this.rouletteEvent = this.time.addEvent({
             delay: spinDuration,
@@ -278,6 +196,7 @@ async leaveRoom(userId) {
         });
     });
 }
+
 
 
 
@@ -378,19 +297,14 @@ finalizeRole() {
         this.rouletteEvent.remove(false);
         this.rouletteEvent.destroy();
         this.rouletteEvent = null;
+        console.log("✅ ルーレットイベントを完全に停止しました");
     }
 
     this.isRouletteRunning = false;
 
     let finalRole = this.roles[this.currentRoleIndex];
     let decisionSound = this.sound.add("decisionSound", { volume: 1 });
-
-    // ✅ **決定音が鳴るように修正**
-    if (!decisionSound.isPlaying) {
-        decisionSound.play();
-    } else {
-        console.warn("⚠️ 決定音はすでに再生されています。");
-    }
+    decisionSound.play();
 
     if (this.roleDisplay) {
         this.roleDisplay.setTexture(finalRole);
@@ -400,16 +314,29 @@ finalizeRole() {
     this.time.delayedCall(5000, async () => {
         await this.assignRolesAndSendToFirebase();
 
+        // ✅ **ルーレット終了後に VS 画面への合図をセット**
         let roomId = localStorage.getItem("roomId");
-        let userId = await this.getUserId();
-        if (!roomId || !userId) return;
+        if (!roomId) {
+            console.error("❌ ルームIDが取得できません。");
+            return;
+        }
 
-        console.log(`🔥 ルーレット完了を通知: ${userId}`);
-        await firebase.database().ref(`gameRooms/${roomId}/rouletteStatus/${userId}`).set(true);
+        console.log("🔥 VS画面への合図を送信...");
+        let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
+        await vsRef.set(true);
+        setTimeout(() => vsRef.remove(), 10000); // 🔥 **10秒後に削除！**
+
+        // ✅ **VS画面へ移動前に `showVsScreen()` が重複しないようにチェック**
+        if (!this.isVsScreenShown) {
+            this.isVsScreenShown = true;
+            this.time.delayedCall(3000, () => {
+                this.showVsScreen();
+            });
+        } else {
+            console.warn("⚠️ VS画面がすでに表示されているため、重複を防ぎます。");
+        }
     });
 }
-
-
 
   async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
