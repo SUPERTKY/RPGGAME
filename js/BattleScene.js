@@ -1,4 +1,4 @@
-class WaitingRoomScene extends Phaser.Scene {
+class BattleScene extends Phaser.Scene {
     constructor() {
         super({ key: "WaitingRoomScene" });
         this.isListening = false;
