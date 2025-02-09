@@ -90,12 +90,16 @@
         return;
     }
 
+    // ✅ **全員のルーレット完了を監視**
+    this.setupRouletteCompleteListener();
+
     // ✅ **VS画面を全端末で同期させるリスナーを開始**
     this.setupVsScreenListener();
 
     // 🛠️ ルーレット開始
     this.startRoulette();
 }
+
 
 
 async leaveRoom(userId) {
@@ -314,29 +318,20 @@ finalizeRole() {
     this.time.delayedCall(5000, async () => {
         await this.assignRolesAndSendToFirebase();
 
-        // ✅ **ルーレット終了後に VS 画面への合図をセット**
+        // ✅ **ルーレット終了を通知**
         let roomId = localStorage.getItem("roomId");
-        if (!roomId) {
-            console.error("❌ ルームIDが取得できません。");
+        let userId = await this.getUserId(); // 自分のユーザーID取得
+        if (!roomId || !userId) {
+            console.error("❌ ルームID または ユーザーIDが取得できません。");
             return;
         }
 
-        console.log("🔥 VS画面への合図を送信...");
-        let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
-        await vsRef.set(true);
-        setTimeout(() => vsRef.remove(), 10000); // 🔥 **10秒後に削除！**
-
-        // ✅ **VS画面へ移動前に `showVsScreen()` が重複しないようにチェック**
-        if (!this.isVsScreenShown) {
-            this.isVsScreenShown = true;
-            this.time.delayedCall(3000, () => {
-                this.showVsScreen();
-            });
-        } else {
-            console.warn("⚠️ VS画面がすでに表示されているため、重複を防ぎます。");
-        }
+        console.log(`🔥 ルーレット完了を通知: ${userId}`);
+        let rouletteStatusRef = firebase.database().ref(`gameRooms/${roomId}/rouletteStatus/${userId}`);
+        await rouletteStatusRef.set(true);
     });
 }
+
 
   async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
