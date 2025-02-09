@@ -5,15 +5,15 @@ class BattleScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("waitingBackground", "assets/旅立ち.png");
+        this.load.image("battleBackground", "assets/旅立ち.png");
     }
 
     async create() {
         this.cameras.main.setBackgroundColor("#000000");
-        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "waitingBackground");
+        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "battleBackground");
         this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
 
-        this.statusText = this.add.text(this.scale.width / 2, this.scale.height * 0.8, "プレイヤーを待っています...", {
+        this.statusText = this.add.text(this.scale.width / 2, this.scale.height * 0.1, "バトル開始を待っています...", {
             fontSize: "32px",
             fill: "#ffffff",
             stroke: "#000000",
@@ -43,15 +43,20 @@ class BattleScene extends Phaser.Scene {
             if (!players) return;
 
             let playerCount = Object.keys(players).length;
-            this.statusText.setText(`参加プレイヤー数: ${playerCount} / 6`);
+            this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
 
             if (playerCount >= 6) {
-                console.log("🟢 全プレイヤーが揃いました。ゲーム開始！");
+                console.log("🟢 全プレイヤーが揃いました。バトル開始！");
                 this.playersRef.off("value");
-                this.time.delayedCall(2000, () => {
-                    this.scene.start("GamePlayScene");
-                });
+                this.startBattle();
             }
+        });
+    }
+
+    startBattle() {
+        this.statusText.setText("バトル開始！");
+        this.time.delayedCall(2000, () => {
+            this.scene.start("GamePlayScene");
         });
     }
 }
