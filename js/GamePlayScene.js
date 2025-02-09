@@ -2,6 +2,38 @@
     constructor() {
         super({ key: "GamePlayScene" });
     }
+         async setupRouletteCompleteListener() {
+        let roomId = localStorage.getItem("roomId");
+        if (!roomId) {
+            console.error("❌ ルームIDが取得できません。");
+            return;
+        }
+
+        let rouletteStatusRef = firebase.database().ref(`gameRooms/${roomId}/rouletteStatus`);
+        let playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
+
+        // ✅ **ルーレット完了チェックを開始**
+        rouletteStatusRef.on("value", async (snapshot) => {
+            let statusData = snapshot.val();
+            if (!statusData) {
+                console.warn("⚠️ ルーレット完了状況がまだ登録されていません。");
+                return;
+            }
+
+            let completedPlayers = Object.keys(statusData).length;
+            let totalPlayersSnapshot = await playersRef.once("value");
+            let totalPlayers = totalPlayersSnapshot.numChildren();
+
+            console.log(`🔍 ルーレット完了状況: ${completedPlayers} / ${totalPlayers}`);
+
+            // 🔥 **全員のルーレットが終わったらVS画面へ遷移**
+            if (completedPlayers === totalPlayers) {
+                console.log("✅ 全員のルーレットが完了！VS画面へ移行準備...");
+                await firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).set(true);
+                setTimeout(() => firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove(), 10000);
+            }
+        });
+    }
     async getUserId() {
     return new Promise((resolve, reject) => {
         firebase.auth().onAuthStateChanged(user => {
@@ -99,6 +131,7 @@
     // 🛠️ ルーレット開始
     this.startRoulette();
 }
+
 
 
 
