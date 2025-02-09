@@ -370,6 +370,7 @@ async finalizeRole() {
     }
 
     this.time.delayedCall(5000, async () => {
+        console.log("🟢 役職を Firebase に送信");
         await this.assignRolesAndSendToFirebase();
 
         let roomId = localStorage.getItem("roomId");
@@ -377,16 +378,18 @@ async finalizeRole() {
             return;
         }
 
-        await this.cleanupRouletteData(); // ✅ ルーレットデータ削除
+        console.log("🟢 ルーレットデータを削除");
+        await this.cleanupRouletteData(); // ✅ ルーレットデータを削除
 
-        this.isRouletteRunning = false; // ✅ ルーレットの実行解除
+        this.isRouletteRunning = false; 
         console.log("🛑 ルーレットが完全に終了しました。");
 
         let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
         await vsRef.set(true);
+        console.log("🟢 Firebase に `startVsScreen` を設定");
 
-        // **VS画面がまだ表示されていない場合のみ呼び出す**
         if (!this.isVsScreenShown) {
+            console.log("🟢 VS画面を表示予定 (3秒後)");
             this.isVsScreenShown = true;
             this.time.delayedCall(3000, () => {
                 this.showVsScreen();
@@ -394,6 +397,7 @@ async finalizeRole() {
         }
     });
 }
+
 
   async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
