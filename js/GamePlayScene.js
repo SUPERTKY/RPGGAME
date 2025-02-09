@@ -573,8 +573,6 @@ battleScene.create = function () {
 };
 
 
-// 他のスクリプトでバトルシーンを開始する場合
-game.scene.start("BattleScene");
 
 
 
