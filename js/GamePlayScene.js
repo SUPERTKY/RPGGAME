@@ -573,9 +573,6 @@ battleScene.create = function () {
 };
 
 
-// **ゲーム開始**
-const game = new Phaser.Game(config);
-
 // 他のスクリプトでバトルシーンを開始する場合
 game.scene.start("BattleScene");
 
