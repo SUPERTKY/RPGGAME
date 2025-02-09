@@ -203,23 +203,33 @@ class GameScene extends Phaser.Scene {
 
 
     startGame() {
-        console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
-
-        let roomId = localStorage.getItem("roomId");
-        console.log("📌 保存された roomId:", roomId);
-
-        let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
-        let playerRef = this.roomRef.child(this.playerId);
-
-        playerRef.update({ name: playerName })
-            .then(() => console.log("✅ プレイヤー名を Firebase に保存:", playerName))
-            .catch(error => console.error("🔥 プレイヤー名保存エラー:", error));
-
-        if (!this.scene.manager.keys["GamePlayScene"]) {
-            console.log("📌 GamePlayScene を動的に追加します");
-            this.scene.add("GamePlayScene", GamePlayScene);
-        }
-
-        this.scene.start("GamePlayScene");
+    if (this.isGameStarted) {
+        console.warn("⚠️ すでに `startGame()` が実行されています。再実行を防ぎます。");
+        return;
     }
+    this.isGameStarted = true;
+
+    console.log("🎮 startGame() が呼ばれました。シーンを変更します。");
+
+    let roomId = localStorage.getItem("roomId");
+    console.log("📌 保存された roomId:", roomId);
+
+    let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
+    let playerRef = this.roomRef.child(this.playerId);
+
+    playerRef.update({ name: playerName })
+        .then(() => console.log("✅ プレイヤー名を Firebase に保存:", playerName))
+        .catch(error => console.error("🔥 プレイヤー名保存エラー:", error));
+
+    if (!this.scene.manager.keys["GamePlayScene"]) {
+        console.log("📌 GamePlayScene を動的に追加します");
+        this.scene.add("GamePlayScene", GamePlayScene);
+    }
+
+    this.scene.start("GamePlayScene");
+
+    // 🔥 **ゲーム開始後にマッチングの監視を停止**
+    this.roomRef.off("value");
+}
+
 }
