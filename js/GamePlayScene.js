@@ -97,6 +97,62 @@
     this.startRoulette();
 }
 
+async cleanupRouletteData() {
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.error("❌ ルームIDが取得できません。削除処理を中止します。");
+        return;
+    }
+
+    try {
+        // ✅ ルーレット関連データを削除
+        let rouletteRefs = [
+            `gameRooms/${roomId}/roles`,
+            `gameRooms/${roomId}/startVsScreen`
+        ];
+
+        let updates = {};
+        rouletteRefs.forEach(ref => {
+            updates[ref] = null;
+        });
+
+        await firebase.database().ref().update(updates);
+        console.log("✅ ルーレット関連データを Firebase から削除しました。");
+
+    } catch (error) {
+        console.error("❌ ルーレット関連データの削除エラー:", error);
+    }
+}
+
+async cleanupPlayerRoles() {
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.error("❌ ルームIDが取得できません。削除処理を中止します。");
+        return;
+    }
+
+    try {
+        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+        let players = snapshot.val();
+
+        if (!players) {
+            console.warn("⚠️ プレイヤーデータが存在しません。");
+            return;
+        }
+
+        let updates = {};
+        Object.keys(players).forEach(playerId => {
+            updates[`gameRooms/${roomId}/players/${playerId}/role`] = null;
+            updates[`gameRooms/${roomId}/players/${playerId}/team`] = null;
+        });
+
+        await firebase.database().ref().update(updates);
+        console.log("✅ プレイヤーの役職データを削除しました。");
+
+    } catch (error) {
+        console.error("❌ プレイヤーの役職データ削除エラー:", error);
+    }
+}
 
 async leaveRoom(userId) {
     let roomId = localStorage.getItem("roomId");
@@ -313,6 +369,8 @@ finalizeRole() {
 
     this.time.delayedCall(5000, async () => {
         await this.assignRolesAndSendToFirebase();
+    await this.cleanupRouletteData(); // ルーレット関連データ削除
+    await this.cleanupPlayerRoles(); // 役職データ削除
 
         // ✅ **ルーレット終了後に VS 画面への合図をセット**
         let roomId = localStorage.getItem("roomId");
@@ -430,10 +488,12 @@ finalizeRole() {
         this.roleDisplay = null;
     }
 
-    this.time.delayedCall(8000, () => {
-        vsImage.destroy();
-        this.scene.start("BattleScene");
-    });
+    this.time.delayedCall(3000, async () => {
+    await this.cleanupRouletteData();
+    await this.cleanupPlayerRoles();
+    this.showVsScreen();
+});
+
 }
 
 }
