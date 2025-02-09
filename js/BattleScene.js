@@ -1,6 +1,6 @@
 class BattleScene extends Phaser.Scene {
     constructor() {
-        super({ key: "WaitingRoomScene" });
+        super({ key: "BattleScene" });
         this.isListening = false;
     }
 
