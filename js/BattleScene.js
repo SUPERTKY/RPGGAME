@@ -5,7 +5,7 @@ class BattleScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.audio("battleBgm", "assets/ピエロは暗闇で踊る.mp3");
+        this.load.audio("battleBgm", "ピエロは暗闇で踊る.mp3");
         this.load.image("battleBackground", "assets/旅立ち.png");
         this.load.image("battleField1", "assets/森.png");
         this.load.image("battleField2", "assets/海.png");
@@ -24,7 +24,7 @@ class BattleScene extends Phaser.Scene {
             strokeThickness: 5
         }).setOrigin(0.5);
 
-        this.battleBgm = this.sound.add("battleBgm");
+        this.battleBgm = this.sound.add("battleBgm", { volume: 0 });
 
         let roomId = localStorage.getItem("roomId");
         if (!roomId) {
@@ -49,9 +49,9 @@ class BattleScene extends Phaser.Scene {
             if (!players) return;
 
             let playerCount = Object.keys(players).length;
-            this.statusText.setText(`戦闘準備完了: ${playerCount} / 4`);
+            this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
 
-            if (playerCount >= 4) {
+            if (playerCount >= 6) {
                 console.log("🟢 全プレイヤーが揃いました。バトル開始！");
                 this.playersRef.off("value");
                 this.startCountdown();
@@ -96,6 +96,12 @@ class BattleScene extends Phaser.Scene {
 
     startBattle() {
         this.cameras.main.fadeOut(1000, 0, 0, 0);
+        this.tweens.add({
+            targets: this.battleBgm,
+            volume: 1,
+            duration: 2000
+        });
+
         this.cameras.main.once("camerafadeoutcomplete", () => {
             let randomChoice = Math.random();
             if (randomChoice < 0.05) {
@@ -109,8 +115,7 @@ class BattleScene extends Phaser.Scene {
                 this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
             }
             this.cameras.main.fadeIn(1000, 0, 0, 0);
-            this.battleBgm.play({ loop: true });
+            this.battleBgm.play();
         });
     }
 }
-
