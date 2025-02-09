@@ -569,22 +569,7 @@ const battleScene = new Phaser.Scene("BattleScene");
 battleScene.create = function () {
     console.log("⚔ バトルシーン開始！");
 
-    // 背景設定
-    this.cameras.main.setBackgroundColor("#222222");
-    this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "background2");
-    let scaleX = this.scale.width / this.bg.width;
-    let scaleY = this.scale.height / this.bg.height;
-    let scale = Math.max(scaleX, scaleY);
-    this.bg.setScale(scale).setScrollFactor(0).setDepth(-5);
-
-    // サウンド設定
-    if (this.sound.get("newBgm")) {
-        this.sound.stopByKey("newBgm");
-    }
-    this.battleBgm = this.sound.add("battleBgm", { loop: true, volume: 0.6 });
-    this.battleBgm.play();
-
-    console.log("🆕 BattleScene に遷移しました。");
+ 
 };
 
 // **ゲーム設定**
