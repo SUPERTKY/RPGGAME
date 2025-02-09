@@ -456,7 +456,7 @@ async finalizeRole() {
         return;
     }
 
-    this.isVsScreenShown = true;  // ✅ ここでのみ `true` にする
+    this.isVsScreenShown = true;
     console.log("🟢 VS画面を表示しました。");
 
     let roomId = localStorage.getItem("roomId");
@@ -476,19 +476,44 @@ async finalizeRole() {
         .setScale(0.7)
         .setDepth(2);
 
+    // 🟢 **プレイヤーの名前を表示**
+    if (!this.players || this.players.length === 0) {
+        console.error("❌ VS画面に表示するプレイヤーがいません！");
+        return;
+    }
+
+    // 🔥 チーム分け（Red, Blue）
+    let leftTeam = this.players.slice(0, Math.ceil(this.players.length / 2));
+    let rightTeam = this.players.slice(Math.ceil(this.players.length / 2));
+
+    // 🔥 左側（Redチーム）の名前表示
+    leftTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.2, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3);
+    });
+
+    // 🔥 右側（Blueチーム）の名前表示
+    rightTeam.forEach((player, index) => {
+        this.add.text(this.scale.width * 0.8, this.scale.height * (0.3 + index * 0.1), player.name || "???", {
+            fontSize: "32px", fill: "#ffffff", stroke: "#000000", strokeThickness: 5
+        }).setOrigin(0.5).setDepth(3);
+    });
+
+    // ✅ **VS画面の表示時間を8秒に設定**
     this.time.delayedCall(8000, () => {
-        console.log("🟢 VS画面終了、バトルシーンへ移動");
         vsImage.destroy();
-        this.isVsScreenShown = false;  // 🔥 ここでリセットする
         this.scene.start("BattleScene");
     });
 
-    this.time.delayedCall(8500, async () => {
-        await firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove()
+    // ✅ `startVsScreen` を8秒後に削除（すぐに消さない！）
+    setTimeout(() => {
+        firebase.database().ref(`gameRooms/${roomId}/startVsScreen`).remove()
             .then(() => console.log("✅ Firebase から `startVsScreen` を削除しました"))
             .catch(error => console.error("❌ `startVsScreen` の削除エラー:", error));
-    });
+    }, 8000);
 }
+
 
 
 }
