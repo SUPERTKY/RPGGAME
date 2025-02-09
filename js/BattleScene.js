@@ -5,6 +5,7 @@ class BattleScene extends Phaser.Scene {
     }
 
     preload() {
+        this.load.audio("battleBgm", "ピエロは暗闇で踊る.mp3"); // ← ここで事前にロード
         this.load.image("battleBackground", "assets/旅立ち.png");
     }
 
