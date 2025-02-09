@@ -564,12 +564,19 @@ async function registerPlayer(roomId, playerName, team, role) {
 }
 
 
-class BattleScene extends Phaser.Scene {
-    constructor() {
-        super({ key: "BattleScene" });
-    }
+const battleScene = new Phaser.Scene("BattleScene");
 
-    create() {
-        console.log("バトルシーンに移動しました。");
-    }
-} 
+battleScene.create = function () {
+    console.log("バトルシーンに移動しました。");
+};
+
+// ゲーム設定
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    scene: [battleScene] // シーンを直接追加
+};
+
+// ゲーム開始
+const game = new Phaser.Game(config);
