@@ -121,30 +121,25 @@
 async cleanupRouletteData() {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
-        console.error("❌ ルームIDが取得できません。削除処理を中止します。");
         return;
     }
 
     try {
         let updates = {
             [`gameRooms/${roomId}/roles`]: null,
-            [`gameRooms/${roomId}/startVsScreen`]: null
+            [`gameRooms/${roomId}/startVsScreen`]: null,
+            [`gameRooms/${roomId}/rouletteState`]: null, // 🔥 ルーレット関連のデータも削除
+            [`gameRooms/${roomId}/rouletteFinished`]: null // 🔥 ルーレットの完了フラグも削除
         };
 
         await firebase.database().ref().update(updates);
         console.log("✅ ルーレット関連データを Firebase から削除しました。");
 
-        // 🔥 **全員が抜けたらルーム自体を削除**
-        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
-        if (!snapshot.exists()) {
-            await firebase.database().ref(`gameRooms/${roomId}`).remove();
-            console.log(`✅ ルーム ${roomId} を完全に削除しました`);
-        }
-
     } catch (error) {
         console.error("❌ ルーレット関連データの削除エラー:", error);
     }
 }
+
 
 async cleanupPlayerRoles() {
     let roomId = localStorage.getItem("roomId");
