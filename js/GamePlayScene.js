@@ -572,19 +572,12 @@ battleScene.create = function () {
  
 };
 
-// **ゲーム設定**
-const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    scene: [battleScene] // シーンを直接追加
-};
 
 // **ゲーム開始**
 const game = new Phaser.Game(config);
 
 // 他のスクリプトでバトルシーンを開始する場合
-// game.scene.start("BattleScene");
+game.scene.start("BattleScene");
 
 
 
