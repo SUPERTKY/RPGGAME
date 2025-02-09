@@ -314,6 +314,18 @@ finalizeRole() {
     this.time.delayedCall(5000, async () => {
         await this.assignRolesAndSendToFirebase();
 
+        // ✅ **ルーレット終了後に VS 画面への合図をセット**
+        let roomId = localStorage.getItem("roomId");
+        if (!roomId) {
+            console.error("❌ ルームIDが取得できません。");
+            return;
+        }
+
+        console.log("🔥 VS画面への合図を送信...");
+        let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
+        await vsRef.set(true);
+        setTimeout(() => vsRef.remove(), 10000); // 🔥 **10秒後に削除！**
+
         // ✅ **VS画面へ移動前に `showVsScreen()` が重複しないようにチェック**
         if (!this.isVsScreenShown) {
             this.isVsScreenShown = true;
@@ -326,7 +338,7 @@ finalizeRole() {
     });
 }
 
-   async assignRolesAndSendToFirebase() {
+  async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
         console.error("❌ ルームIDが取得できませんでした。データ送信を中止します。");
@@ -359,16 +371,11 @@ finalizeRole() {
 
         this.isRouletteRunning = false; // ✅ ルーレット停止
 
-        // 🔥 **VS画面の合図をセット（10秒後に自動削除）**
-        let vsRef = firebase.database().ref(`gameRooms/${roomId}/startVsScreen`);
-        await vsRef.set(true);
-        setTimeout(() => vsRef.remove(), 10000); // 🔥 **10秒後に削除！**
-
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
     }
 }
-   
+
    showVsScreen() {
     this.isRouletteRunning = false; // ✅ VS画面に移行する前にフラグをリセット
     let roomId = localStorage.getItem("roomId");
