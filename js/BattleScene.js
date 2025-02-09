@@ -5,7 +5,7 @@ class BattleScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.image("waitingBackground", "assets/waiting_room.png");
+        this.load.image("waitingBackground", "assets/旅立ち.png");
     }
 
     async create() {
