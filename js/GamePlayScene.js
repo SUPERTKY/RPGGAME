@@ -253,17 +253,24 @@ startRoulette() {
         this.roleDisplay.setAlpha(1);
 
         this.rouletteEvent = this.time.addEvent({
-            delay: spinDuration,
-            repeat: totalSpins - 1,
-            callback: () => {
-                if (!this.roleDisplay) {
-                    return;
-                }
-                this.currentRoleIndex = (this.currentRoleIndex + 1) % this.roles.length;
-                this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-            },
-            callbackScope: this
-        });
+    delay: spinDuration,
+    repeat: totalSpins - 1,
+    callback: () => {
+        if (!this.roleDisplay) {
+            return;
+        }
+
+        let nextRoleIndex;
+        do {
+            nextRoleIndex = Phaser.Math.Between(0, this.roles.length - 1);
+        } while (nextRoleIndex === this.currentRoleIndex); // **直前の役職と被らないようにする**
+
+        this.currentRoleIndex = nextRoleIndex;
+        this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
+    },
+    callbackScope: this
+});
+
 
         this.time.delayedCall(spinDuration * totalSpins, () => {
             try {
