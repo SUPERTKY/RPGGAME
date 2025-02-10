@@ -6,7 +6,7 @@ class BattleScene extends Phaser.Scene {
     }
 
     preload() {
-        this.load.audio("battleBgm", "assets/ピエロは暗闇で踊る.mp3");
+       this.load.audio("battleBgm", "assets/ピエロは暗闇で踊る.mp3");
         this.load.image("battleBackground", "assets/旅立ち.png");
         this.load.image("battleField1", "assets/森.png");
         this.load.image("battleField2", "assets/海.png");
@@ -20,7 +20,7 @@ class BattleScene extends Phaser.Scene {
         // 敵用アイコン
         this.load.image("swordsman_enemy", "assets/剣士全身.png");
         this.load.image("mage_enemy", "assets/魔法使い全身.png");
-        this.load.image("priest_enemy", "assets/僧侶全身.png");
+        this.load.image("pries
     }
 
     async create() {
@@ -64,8 +64,9 @@ class BattleScene extends Phaser.Scene {
                 name: playersData[playerId].name || "???",
                 role: playersData[playerId].role || "不明",
                 team: playersData[playerId].team || "未定",
-                hp: this.getInitialHP(playersData[playerId].role), // HPを初期設定
-                lp: 3 // LP は固定
+                hp: this.getInitialHP(playersData[playerId].role), // HP設定
+                mp: this.getInitialMP(playersData[playerId].role), // MP設定
+                lp: 3 // LPは固定
             }));
 
             let playerCount = this.players.length;
@@ -86,6 +87,16 @@ class BattleScene extends Phaser.Scene {
             case "mage": return 160;
             case "priest": return 180;
             default: return 100;
+        }
+    }
+
+    // MPの初期設定
+    getInitialMP(role) {
+        switch (role) {
+            case "swordsman": return 8;
+            case "mage": return 12;
+            case "priest": return 14;
+            default: return 10;
         }
     }
 
@@ -148,16 +159,17 @@ class BattleScene extends Phaser.Scene {
         let allies = this.players.filter(p => p.team === "ally");
         let enemies = this.players.filter(p => p.team === "enemy");
 
-        // 仲間の表示
+        // 仲間の表示（HP・MP・LP）
         allies.forEach((player, index) => {
             let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
             let icon = this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
             this.add.text(x, allyY + 50, player.name, { fontSize: "20px", fill: "#fff" }).setOrigin(0.5);
             this.add.text(x, allyY + 75, `HP: ${player.hp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
-            this.add.text(x, allyY + 100, `LP: ${player.lp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
+            this.add.text(x, allyY + 100, `MP: ${player.mp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
+            this.add.text(x, allyY + 125, `LP: ${player.lp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
         });
 
-        // 敵の表示
+        // 敵の表示（HPのみ）
         enemies.forEach((player, index) => {
             let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
             let icon = this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
