@@ -82,9 +82,9 @@ class BattleScene extends Phaser.Scene {
     // HPの初期設定
     getInitialHP(role) {
         switch (role) {
-            case "swordsman": return 150;
-            case "mage": return 100;
-            case "priest": return 120;
+            case "swordsman": return 200;
+            case "mage": return 160;
+            case "priest": return 180;
             default: return 100;
         }
     }
