@@ -228,6 +228,8 @@ startRoulette() {
     this.isRouletteRunning = true; // ✅ ルーレット開始をロック
 
     this.currentRoleIndex = 0;
+    let shuffledRoles = [...this.roles]; // 🔥 役職リストをコピー
+    Phaser.Utils.Array.Shuffle(shuffledRoles); // 🔥 シャッフルしてランダム性を保つ
 
     if (this.rouletteEvent) {
         this.rouletteEvent.remove(false);
@@ -247,30 +249,25 @@ startRoulette() {
             return;
         }
 
-        let totalSpins = this.roles.length * 2;
+        let totalSpins = this.roles.length * 2; // 🔥 役職を2周分回す
         let spinDuration = 1000;
 
         this.roleDisplay.setAlpha(1);
 
         this.rouletteEvent = this.time.addEvent({
-    delay: spinDuration,
-    repeat: totalSpins - 1,
-    callback: () => {
-        if (!this.roleDisplay) {
-            return;
-        }
+            delay: spinDuration,
+            repeat: totalSpins - 1,
+            callback: () => {
+                if (!this.roleDisplay) {
+                    return;
+                }
 
-        let nextRoleIndex;
-        do {
-            nextRoleIndex = Phaser.Math.Between(0, this.roles.length - 1);
-        } while (nextRoleIndex === this.currentRoleIndex); // **直前の役職と被らないようにする**
-
-        this.currentRoleIndex = nextRoleIndex;
-        this.roleDisplay.setTexture(this.roles[this.currentRoleIndex]);
-    },
-    callbackScope: this
-});
-
+                // 🔥 本来の役職リスト (`this.roles`) から正しく選択する
+                this.currentRoleIndex = (this.currentRoleIndex + 1) % shuffledRoles.length;
+                this.roleDisplay.setTexture(shuffledRoles[this.currentRoleIndex]);
+            },
+            callbackScope: this
+        });
 
         this.time.delayedCall(spinDuration * totalSpins, () => {
             try {
@@ -281,6 +278,7 @@ startRoulette() {
         });
     });
 }
+
 　　async findRoomByUserId(userId) {
     try {
         let snapshot = await firebase.database().ref("gameRooms").once("value");
@@ -444,7 +442,7 @@ fadeOutCharacters(callback) {
 }
 
 
-  async assignRolesAndSendToFirebase() {
+async assignRolesAndSendToFirebase() {
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
         console.error("❌ ルームIDが取得できませんでした。データ送信を中止します。");
