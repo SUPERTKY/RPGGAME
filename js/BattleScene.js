@@ -6,7 +6,7 @@ class BattleScene extends Phaser.Scene {
     }
 
     preload() {
-       this.load.audio("battleBgm", "assets/ピエロは暗闇で踊る.mp3");
+        this.load.audio("battleBgm", "assets/ピエロは暗闇で踊る.mp3");
         this.load.image("battleBackground", "assets/旅立ち.png");
         this.load.image("battleField1", "assets/森.png");
         this.load.image("battleField2", "assets/海.png");
@@ -25,8 +25,6 @@ class BattleScene extends Phaser.Scene {
 
     async create() {
         this.cameras.main.setBackgroundColor("#000000");
-        this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, "battleBackground");
-        this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
 
         this.statusText = this.add.text(this.scale.width / 2, this.scale.height * 0.1, "バトル開始を待っています...", {
             fontSize: "32px",
@@ -144,6 +142,16 @@ class BattleScene extends Phaser.Scene {
         });
 
         this.cameras.main.once("camerafadeoutcomplete", () => {
+            let randomChoice = Math.random();
+            if (randomChoice < 0.05) {
+                this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
+                this.bg.setScale(1.2);
+                this.bg.play(true);
+            } else {
+                let selectedField = randomChoice < 0.5 ? "battleField1" : "battleField2";
+                this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, selectedField);
+                this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
+            }
             this.cameras.main.fadeIn(1000, 0, 0, 0);
             this.battleBgm.play();
             this.displayCharacters();
@@ -162,19 +170,23 @@ class BattleScene extends Phaser.Scene {
         // 仲間の表示（HP・MP・LP）
         allies.forEach((player, index) => {
             let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-            let icon = this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
-            this.add.text(x, allyY + 50, player.name, { fontSize: "20px", fill: "#fff" }).setOrigin(0.5);
-            this.add.text(x, allyY + 75, `HP: ${player.hp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
-            this.add.text(x, allyY + 100, `MP: ${player.mp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
-            this.add.text(x, allyY + 125, `LP: ${player.lp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
+            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+            this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
+                fontSize: "18px",
+                fill: "#fff",
+                align: "center"
+            }).setOrigin(0.5);
         });
 
         // 敵の表示（HPのみ）
         enemies.forEach((player, index) => {
             let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-            let icon = this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
-            this.add.text(x, enemyY - 50, player.name, { fontSize: "20px", fill: "#fff" }).setOrigin(0.5);
-            this.add.text(x, enemyY - 75, `HP: ${player.hp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
+            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+            this.add.text(x, enemyY - 50, `${player.name}\nHP: ${player.hp}`, {
+                fontSize: "18px",
+                fill: "#fff",
+                align: "center"
+            }).setOrigin(0.5);
         });
     }
 }
