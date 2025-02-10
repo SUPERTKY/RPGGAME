@@ -159,21 +159,31 @@ class BattleScene extends Phaser.Scene {
     }
 
     displayCharacters() {
-    let localTeam = localStorage.getItem("team"); // 自分のチームを取得
-    if (!localTeam) {
-        console.error("❌ チーム情報が取得できません");
+    let userId = firebase.auth().currentUser?.uid;
+    if (!userId) {
+        console.error("❌ ユーザーIDが取得できません。");
         return;
     }
+
+    let playerData = this.players.find(p => p.id === userId);
+    if (!playerData) {
+        console.error("❌ 自分のプレイヤーデータが見つかりません。");
+        return;
+    }
+
+    let localTeam = playerData.team; // 自分のチーム（"red" or "blue"）
 
     let allyY = this.scale.height * 0.8;
     let enemyY = this.scale.height * 0.2;
     let centerX = this.scale.width / 2;
     let spacing = 150;
 
+    // 🟥 自分と同じチーム → 味方 (ally)
     let allies = this.players.filter(p => p.team === localTeam);
+    // 🟦 自分と異なるチーム → 敵 (enemy)
     let enemies = this.players.filter(p => p.team !== localTeam);
 
-    // 仲間の表示（HP・MP・LP）
+    // 🎨 仲間の表示
     allies.forEach((player, index) => {
         let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
         this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
@@ -184,7 +194,7 @@ class BattleScene extends Phaser.Scene {
         }).setOrigin(0.5);
     });
 
-    // 敵の表示（HPのみ）
+    // 🎭 敵の表示
     enemies.forEach((player, index) => {
         let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
         this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
@@ -195,7 +205,8 @@ class BattleScene extends Phaser.Scene {
         }).setOrigin(0.5);
     });
 
-    console.log("✅ キャラクター表示完了");
+    console.log("✅ キャラクター表示完了", { allies, enemies });
 }
+
 
 }
