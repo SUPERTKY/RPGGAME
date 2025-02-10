@@ -20,7 +20,7 @@ class BattleScene extends Phaser.Scene {
         // 敵用アイコン
         this.load.image("swordsman_enemy", "assets/剣士全身.png");
         this.load.image("mage_enemy", "assets/魔法使い全身.png");
-        this.load.image("pries
+        this.load.image("priest_enemy", "assets/僧侶全身.png");
     }
 
     async create() {
