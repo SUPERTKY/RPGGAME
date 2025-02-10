@@ -159,34 +159,43 @@ class BattleScene extends Phaser.Scene {
     }
 
     displayCharacters() {
-        let allyY = this.scale.height * 0.8;
-        let enemyY = this.scale.height * 0.2;
-        let centerX = this.scale.width / 2;
-        let spacing = 150;
-
-        let allies = this.players.filter(p => p.team === "ally");
-        let enemies = this.players.filter(p => p.team === "enemy");
-
-        // 仲間の表示（HP・MP・LP）
-        allies.forEach((player, index) => {
-            let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
-            this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
-                fontSize: "18px",
-                fill: "#fff",
-                align: "center"
-            }).setOrigin(0.5);
-        });
-
-        // 敵の表示（HPのみ）
-        enemies.forEach((player, index) => {
-            let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
-            this.add.text(x, enemyY - 50, `${player.name}\nHP: ${player.hp}`, {
-                fontSize: "18px",
-                fill: "#fff",
-                align: "center"
-            }).setOrigin(0.5);
-        });
+    let localTeam = localStorage.getItem("team"); // 自分のチームを取得
+    if (!localTeam) {
+        console.error("❌ チーム情報が取得できません");
+        return;
     }
+
+    let allyY = this.scale.height * 0.8;
+    let enemyY = this.scale.height * 0.2;
+    let centerX = this.scale.width / 2;
+    let spacing = 150;
+
+    let allies = this.players.filter(p => p.team === localTeam);
+    let enemies = this.players.filter(p => p.team !== localTeam);
+
+    // 仲間の表示（HP・MP・LP）
+    allies.forEach((player, index) => {
+        let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
+        this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+        this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
+            fontSize: "18px",
+            fill: "#fff",
+            align: "center"
+        }).setOrigin(0.5);
+    });
+
+    // 敵の表示（HPのみ）
+    enemies.forEach((player, index) => {
+        let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
+        this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+        this.add.text(x, enemyY - 50, `${player.name}\nHP: ${player.hp}`, {
+            fontSize: "18px",
+            fill: "#fff",
+            align: "center"
+        }).setOrigin(0.5);
+    });
+
+    console.log("✅ キャラクター表示完了");
+}
+
 }
