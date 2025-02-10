@@ -444,31 +444,32 @@ fadeOutCharacters(callback) {
         return;
     }
 
-    if (!this.players || this.players.length === 0) {
-        console.error("❌ プレイヤーデータがありません。データ送信を中止します。");
+    if (!this.players || this.players.length !== 6) {
+        console.error("❌ プレイヤー数が6人でないため、データ送信を中止します。");
         return;
     }
 
     try {
         let updates = {};
 
-        // ✅ 各プレイヤーに役職とチームをセット
-        this.players = this.players.map((player, index) => ({
-            id: player.id,
-            name: player.name,
-            team: index < this.players.length / 2 ? "Red" : "Blue",
-            role: this.roles[index]
-        }));
+        // ✅ 役職リスト（各役職2つずつ）
+        let roles = ["priest", "priest", "mage", "mage", "swordsman", "swordsman"];
 
+        // ✅ 役職をシャッフル（偏りを防ぐ）
+        Phaser.Utils.Array.Shuffle(roles);
+
+        // ✅ プレイヤーに役職を割り当て
+        this.players.forEach((player, index) => {
+            player.role = roles[index]; // シャッフル済みのリストから役職を取得
+        });
+
+        // ✅ Firebase にデータ送信
         this.players.forEach(player => {
-            updates[`gameRooms/${roomId}/players/${player.id}/team`] = player.team;
             updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
         });
 
         await firebase.database().ref().update(updates);
-        console.log("✅ 役職 & チームデータを Firebase に送信しました:", updates);
-
-        this.isRouletteRunning = false; // ✅ ルーレット停止
+        console.log("✅ 役職を均等に割り当て、Firebase に保存しました:", updates);
 
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
