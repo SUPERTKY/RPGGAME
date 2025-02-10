@@ -2,6 +2,7 @@ class BattleScene extends Phaser.Scene {
     constructor() {
         super({ key: "BattleScene" });
         this.isListening = false;
+        this.players = [];
     }
 
     preload() {
@@ -10,6 +11,16 @@ class BattleScene extends Phaser.Scene {
         this.load.image("battleField1", "assets/森.png");
         this.load.image("battleField2", "assets/海.png");
         this.load.video("gorillaVideo", "assets/ゴリラ.mp4", "loadeddata", true);
+
+        // 仲間用アイコン
+        this.load.image("swordsman_ally", "assets/剣士.png");
+        this.load.image("mage_ally", "assets/魔法使い.png");
+        this.load.image("priest_ally", "assets/僧侶.png");
+
+        // 敵用アイコン
+        this.load.image("swordsman_enemy", "assets/剣士全身.png");
+        this.load.image("mage_enemy", "assets/魔法使い全身.png");
+        this.load.image("priest_enemy", "assets/僧侶全身.png");
     }
 
     async create() {
@@ -45,18 +56,37 @@ class BattleScene extends Phaser.Scene {
         this.isListening = true;
 
         this.playersRef.on("value", (snapshot) => {
-            let players = snapshot.val();
-            if (!players) return;
+            let playersData = snapshot.val();
+            if (!playersData) return;
 
-            let playerCount = Object.keys(players).length;
-            this.statusText.setText(`戦闘準備完了: ${playerCount} / 4`);
+            this.players = Object.keys(playersData).map(playerId => ({
+                id: playerId,
+                name: playersData[playerId].name || "???",
+                role: playersData[playerId].role || "不明",
+                team: playersData[playerId].team || "未定",
+                hp: this.getInitialHP(playersData[playerId].role), // HPを初期設定
+                lp: 3 // LP は固定
+            }));
 
-            if (playerCount >= 4) {
+            let playerCount = this.players.length;
+            this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
+
+            if (playerCount === 6) {
                 console.log("🟢 全プレイヤーが揃いました。バトル開始！");
                 this.playersRef.off("value");
                 this.startCountdown();
             }
         });
+    }
+
+    // HPの初期設定
+    getInitialHP(role) {
+        switch (role) {
+            case "swordsman": return 150;
+            case "mage": return 100;
+            case "priest": return 120;
+            default: return 100;
+        }
     }
 
     startCountdown() {
@@ -103,19 +133,36 @@ class BattleScene extends Phaser.Scene {
         });
 
         this.cameras.main.once("camerafadeoutcomplete", () => {
-            let randomChoice = Math.random();
-            if (randomChoice < 0.05) {
-                this.bg.destroy();
-                this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
-                this.bg.setScale(1.2);
-                this.bg.play(true);
-            } else {
-                let selectedField = randomChoice < 0.5 ? "battleField1" : "battleField2";
-                this.bg.setTexture(selectedField);
-                this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
-            }
             this.cameras.main.fadeIn(1000, 0, 0, 0);
             this.battleBgm.play();
+            this.displayCharacters();
+        });
+    }
+
+    displayCharacters() {
+        let allyY = this.scale.height * 0.8;
+        let enemyY = this.scale.height * 0.2;
+        let centerX = this.scale.width / 2;
+        let spacing = 150;
+
+        let allies = this.players.filter(p => p.team === "ally");
+        let enemies = this.players.filter(p => p.team === "enemy");
+
+        // 仲間の表示
+        allies.forEach((player, index) => {
+            let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
+            let icon = this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+            this.add.text(x, allyY + 50, player.name, { fontSize: "20px", fill: "#fff" }).setOrigin(0.5);
+            this.add.text(x, allyY + 75, `HP: ${player.hp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
+            this.add.text(x, allyY + 100, `LP: ${player.lp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
+        });
+
+        // 敵の表示
+        enemies.forEach((player, index) => {
+            let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
+            let icon = this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+            this.add.text(x, enemyY - 50, player.name, { fontSize: "20px", fill: "#fff" }).setOrigin(0.5);
+            this.add.text(x, enemyY - 75, `HP: ${player.hp}`, { fontSize: "18px", fill: "#fff" }).setOrigin(0.5);
         });
     }
 }
