@@ -177,30 +177,27 @@ class BattleScene extends Phaser.Scene {
     }
 
     let roomId = localStorage.getItem("roomId");
+    
+    // ✅ ルームIDがない場合は Firebase から取得
     if (!roomId) {
-        console.error("❌ ルームIDが取得できません。");
-        return;
+        console.warn("⚠️ ルームIDが見つかりません。Firebase から検索します...");
+        try {
+            roomId = await this.findRoomByUserId(userId);
+            if (roomId) {
+                localStorage.setItem("roomId", roomId);
+                console.log("✅ 取得したルームID:", roomId);
+            } else {
+                console.error("⚠️ ルームIDが取得できませんでした。");
+                return;
+            }
+        } catch (error) {
+            console.error("❌ Firebase からルームID取得中にエラー:", error);
+            return;
+        }
     }
 
     try {
-        // 🔥 Firebase から自分のチーム情報を取得
-        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players/${userId}/team`).once("value");
-        let localTeam = snapshot.val();
-
-        // もし `team` 情報が `null` の場合、ローカルストレージから試みる
-        if (!localTeam) {
-            console.warn("⚠️ Firebase からチーム情報を取得できません。ローカルストレージを参照します...");
-            localTeam = localStorage.getItem("team");
-        }
-
-        if (!localTeam) {
-            console.error("❌ 自分のチーム情報が見つかりません。(Firebase・ローカルストレージの両方で失敗)");
-            return;
-        }
-
-        console.log("✅ 自分のチーム:", localTeam);
-
-        // 🔥 Firebase から全プレイヤーの情報を取得
+        // ✅ `players` データ取得
         let playersSnapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
         let playersData = playersSnapshot.val();
 
@@ -209,7 +206,21 @@ class BattleScene extends Phaser.Scene {
             return;
         }
 
-        // 🔥 全プレイヤーをオブジェクトから配列に変換
+        // ✅ 自分のチーム情報を取得
+        let myTeam = playersData[userId]?.team;
+        if (!myTeam) {
+            console.warn("⚠️ Firebase からチーム情報を取得できません。ローカルストレージを参照します...");
+            myTeam = localStorage.getItem("team");
+        }
+
+        if (!myTeam) {
+            console.error("❌ 自分のチーム情報が見つかりません。(Firebase・ローカルストレージの両方で失敗)");
+            return;
+        }
+
+        console.log("✅ 自分のチーム:", myTeam);
+
+        // ✅ `playersData` を配列に変換
         this.players = Object.keys(playersData).map(playerId => ({
             id: playerId,
             name: playersData[playerId].name || "???",
@@ -228,9 +239,9 @@ class BattleScene extends Phaser.Scene {
         let spacing = 150;
 
         // 🟥 自分と同じチーム → 味方 (ally)
-        let allies = this.players.filter(p => p.team === localTeam);
+        let allies = this.players.filter(p => p.team === myTeam);
         // 🟦 自分と異なるチーム → 敵 (enemy)
-        let enemies = this.players.filter(p => p.team !== localTeam);
+        let enemies = this.players.filter(p => p.team !== myTeam);
 
         console.log("✅ 味方:", allies);
         console.log("✅ 敵:", enemies);
@@ -263,6 +274,5 @@ class BattleScene extends Phaser.Scene {
         console.error("❌ Firebase からチーム情報を取得中にエラー:", error);
     }
 }
-
 
 }
