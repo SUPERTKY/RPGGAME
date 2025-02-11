@@ -166,10 +166,13 @@ class BattleScene extends Phaser.Scene {
 }
 
 
-    async displayCharacters() {
-    let userId = firebase.auth().currentUser?.uid;
+   async displayCharacters() {
+    let firebaseUserId = firebase.auth().currentUser?.uid;
+    let localUserId = localStorage.getItem("userId");
+    let userId = firebaseUserId || localUserId;
+
     if (!userId) {
-        console.error("❌ ユーザーIDが取得できません。");
+        console.error("❌ ユーザーIDが取得できません。(Firebase・ローカルストレージの両方で失敗)");
         return;
     }
 
@@ -184,8 +187,14 @@ class BattleScene extends Phaser.Scene {
         let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players/${userId}/team`).once("value");
         let localTeam = snapshot.val();
 
+        // もし `team` 情報が `null` の場合、ローカルストレージから試みる
         if (!localTeam) {
-            console.error("❌ 自分のチーム情報が見つかりません。");
+            console.warn("⚠️ Firebase からチーム情報を取得できません。ローカルストレージを参照します...");
+            localTeam = localStorage.getItem("team");
+        }
+
+        if (!localTeam) {
+            console.error("❌ 自分のチーム情報が見つかりません。(Firebase・ローカルストレージの両方で失敗)");
             return;
         }
 
@@ -254,5 +263,6 @@ class BattleScene extends Phaser.Scene {
         console.error("❌ Firebase からチーム情報を取得中にエラー:", error);
     }
 }
+
 
 }
