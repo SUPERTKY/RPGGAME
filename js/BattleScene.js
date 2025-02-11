@@ -134,29 +134,37 @@ class BattleScene extends Phaser.Scene {
     }
 
     startBattle() {
-        this.cameras.main.fadeOut(1000, 0, 0, 0);
-        this.tweens.add({
-            targets: this.battleBgm,
-            volume: 1,
-            duration: 2000
-        });
+    this.cameras.main.fadeOut(1000, 0, 0, 0);
+    this.tweens.add({
+        targets: this.battleBgm,
+        volume: 1,
+        duration: 2000
+    });
 
-        this.cameras.main.once("camerafadeoutcomplete", () => {
-            let randomChoice = Math.random();
-            if (randomChoice < 0.05) {
-                this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
-                this.bg.setScale(1.2);
-                this.bg.play(true);
-            } else {
-                let selectedField = randomChoice < 0.5 ? "battleField1" : "battleField2";
-                this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, selectedField);
-                this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
-            }
-            this.cameras.main.fadeIn(1000, 0, 0, 0);
-            this.battleBgm.play();
-            this.displayCharacters();
-        });
-    }
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+        let randomChoice = Math.random();
+        if (randomChoice < 0.05) {
+            this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
+            this.bg.setOrigin(0.5, 0.5);
+            this.bg.play(true);
+
+            // 📏 画面サイズに合わせてスケールを調整（アスペクト比を維持）
+            let scaleX = this.scale.width / this.bg.width;
+            let scaleY = this.scale.height / this.bg.height;
+            let scale = Math.max(scaleX, scaleY); // どちらか大きい方に合わせる
+            this.bg.setScale(scale);
+        } else {
+            let selectedField = randomChoice < 0.5 ? "battleField1" : "battleField2";
+            this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, selectedField);
+            this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
+        }
+
+        this.cameras.main.fadeIn(1000, 0, 0, 0);
+        this.battleBgm.play();
+        this.displayCharacters();
+    });
+}
+
 
     async displayCharacters() {
     let userId = firebase.auth().currentUser?.uid;
