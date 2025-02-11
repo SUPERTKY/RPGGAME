@@ -158,55 +158,93 @@ class BattleScene extends Phaser.Scene {
         });
     }
 
-    displayCharacters() {
+    async displayCharacters() {
     let userId = firebase.auth().currentUser?.uid;
     if (!userId) {
         console.error("❌ ユーザーIDが取得できません。");
         return;
     }
 
-    let playerData = this.players.find(p => p.id === userId);
-    if (!playerData) {
-        console.error("❌ 自分のプレイヤーデータが見つかりません。");
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.error("❌ ルームIDが取得できません。");
         return;
     }
 
-    let localTeam = playerData.team; // 自分のチーム（"red" or "blue"）
+    try {
+        // 🔥 Firebase から自分のチーム情報を取得
+        let snapshot = await firebase.database().ref(`gameRooms/${roomId}/players/${userId}/team`).once("value");
+        let localTeam = snapshot.val();
 
-    let allyY = this.scale.height * 0.8;
-    let enemyY = this.scale.height * 0.2;
-    let centerX = this.scale.width / 2;
-    let spacing = 150;
+        if (!localTeam) {
+            console.error("❌ 自分のチーム情報が見つかりません。");
+            return;
+        }
 
-    // 🟥 自分と同じチーム → 味方 (ally)
-    let allies = this.players.filter(p => p.team === localTeam);
-    // 🟦 自分と異なるチーム → 敵 (enemy)
-    let enemies = this.players.filter(p => p.team !== localTeam);
+        console.log("✅ 自分のチーム:", localTeam);
 
-    // 🎨 仲間の表示
-    allies.forEach((player, index) => {
-        let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-        this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
-        this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
-            fontSize: "18px",
-            fill: "#fff",
-            align: "center"
-        }).setOrigin(0.5);
-    });
+        // 🔥 Firebase から全プレイヤーの情報を取得
+        let playersSnapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
+        let playersData = playersSnapshot.val();
 
-    // 🎭 敵の表示
-    enemies.forEach((player, index) => {
-        let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-        this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
-        this.add.text(x, enemyY - 50, `${player.name}\nHP: ${player.hp}`, {
-            fontSize: "18px",
-            fill: "#fff",
-            align: "center"
-        }).setOrigin(0.5);
-    });
+        if (!playersData) {
+            console.error("❌ プレイヤーデータが取得できません。");
+            return;
+        }
 
-    console.log("✅ キャラクター表示完了", { allies, enemies });
+        // 🔥 全プレイヤーをオブジェクトから配列に変換
+        this.players = Object.keys(playersData).map(playerId => ({
+            id: playerId,
+            name: playersData[playerId].name || "???",
+            role: playersData[playerId].role || "不明",
+            team: playersData[playerId].team || "未定",
+            hp: this.getInitialHP(playersData[playerId].role),
+            mp: this.getInitialMP(playersData[playerId].role),
+            lp: 3 // LPは固定
+        }));
+
+        console.log("✅ 取得したプレイヤーリスト:", this.players);
+
+        let allyY = this.scale.height * 0.8;
+        let enemyY = this.scale.height * 0.2;
+        let centerX = this.scale.width / 2;
+        let spacing = 150;
+
+        // 🟥 自分と同じチーム → 味方 (ally)
+        let allies = this.players.filter(p => p.team === localTeam);
+        // 🟦 自分と異なるチーム → 敵 (enemy)
+        let enemies = this.players.filter(p => p.team !== localTeam);
+
+        console.log("✅ 味方:", allies);
+        console.log("✅ 敵:", enemies);
+
+        // 🎨 仲間の表示
+        allies.forEach((player, index) => {
+            let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
+            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+            this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
+                fontSize: "18px",
+                fill: "#fff",
+                align: "center"
+            }).setOrigin(0.5);
+        });
+
+        // 🎭 敵の表示
+        enemies.forEach((player, index) => {
+            let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
+            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+            this.add.text(x, enemyY - 50, `${player.name}\nHP: ${player.hp}`, {
+                fontSize: "18px",
+                fill: "#fff",
+                align: "center"
+            }).setOrigin(0.5);
+        });
+
+        console.log("✅ キャラクター表示完了");
+
+    } catch (error) {
+        console.error("❌ Firebase からチーム情報を取得中にエラー:", error);
+    }
 }
-
 
 }
