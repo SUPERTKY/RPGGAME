@@ -215,12 +215,21 @@ class GameScene extends Phaser.Scene {
 
         console.log(`現在のプレイヤー数: ${playerCount}`);
 
-        if (playerCount >= 6) {
-            console.log("✅ マッチング完了！ゲーム開始！");
-            this.startGame();
+        if (playerCount === 0) {
+            console.log("🚨 部屋が空になったため `gameStarted` と `partyFormed` をリセットします");
+
+            this.roomRef.parent.update({
+                gameStarted: false,
+                partyFormed: false
+            }).then(() => {
+                console.log("✅ `gameStarted` と `partyFormed` をリセットしました");
+            }).catch(error => {
+                console.error("🔥 部屋リセットエラー:", error);
+            });
         }
     });
 }
+
 
 
    startGame() {
