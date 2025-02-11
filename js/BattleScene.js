@@ -143,7 +143,7 @@ class BattleScene extends Phaser.Scene {
 
         this.cameras.main.once("camerafadeoutcomplete", () => {
             let randomChoice = Math.random();
-            if (randomChoice < 0.05) {
+            if (randomChoice < 0.55) {
                 this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
                 this.bg.setScale(1.2);
                 this.bg.play(true);
