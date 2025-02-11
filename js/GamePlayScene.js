@@ -459,27 +459,30 @@ async assignRolesAndSendToFirebase() {
 
         // ✅ 役職リスト（各役職2つずつ）
         let roles = ["priest", "priest", "mage", "mage", "swordsman", "swordsman"];
+        Phaser.Utils.Array.Shuffle(roles); // 🔥 役職をシャッフル
 
-        // ✅ 役職をシャッフル（偏りを防ぐ）
-        Phaser.Utils.Array.Shuffle(roles);
+        // ✅ チーム分け（前半3人が Red, 後半3人が Blue）
+        let teamAssignments = ["Red", "Red", "Red", "Blue", "Blue", "Blue"];
 
-        // ✅ プレイヤーに役職を割り当て
         this.players.forEach((player, index) => {
             player.role = roles[index]; // シャッフル済みのリストから役職を取得
+            player.team = teamAssignments[index]; // チームを割り当て
         });
 
         // ✅ Firebase にデータ送信
         this.players.forEach(player => {
             updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
+            updates[`gameRooms/${roomId}/players/${player.id}/team`] = player.team; // チーム情報を追加
         });
 
         await firebase.database().ref().update(updates);
-        console.log("✅ 役職を均等に割り当て、Firebase に保存しました:", updates);
+        console.log("✅ 役職とチームを Firebase に保存しました:", updates);
 
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
     }
 }
+
 
 showVsScreen() {
     console.log("🟢 VS画面を表示しようとしています。");
