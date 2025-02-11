@@ -4,6 +4,28 @@ class BattleScene extends Phaser.Scene {
         this.isListening = false;
         this.players = [];
     }
+    async getUserId() {
+    return new Promise((resolve, reject) => {
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                console.log("✅ Firebase 認証成功 ユーザーID:", user.uid);
+                resolve(user.uid);
+            } else {
+                console.warn("⚠️ ユーザーが未ログインです。匿名ログインを試行...");
+                firebase.auth().signInAnonymously()
+                    .then(result => {
+                        console.log("✅ 匿名ログイン成功 ユーザーID:", result.user.uid);
+                        resolve(result.user.uid);
+                    })
+                    .catch(error => {
+                        console.error("❌ ログインエラー:", error);
+                        reject(error);
+                    });
+            }
+        });
+    });
+}
+
 
     preload() {
         this.load.audio("battleBgm", "assets/ピエロは暗闇で踊る.mp3");
@@ -167,18 +189,17 @@ class BattleScene extends Phaser.Scene {
 
 
    async displayCharacters() {
-    let firebaseUserId = firebase.auth().currentUser?.uid;
-    let localUserId = localStorage.getItem("userId");
-    let userId = firebaseUserId || localUserId;
-
-    if (!userId) {
-        console.error("❌ ユーザーIDが取得できません。(Firebase・ローカルストレージの両方で失敗)");
+    let userId;
+    try {
+        userId = await this.getUserId();
+        console.log("✅ ユーザーID取得成功:", userId);
+    } catch (error) {
+        console.error("❌ ユーザーIDの取得に失敗しました:", error);
         return;
     }
 
     let roomId = localStorage.getItem("roomId");
     
-    // ✅ ルームIDがない場合は Firebase から取得
     if (!roomId) {
         console.warn("⚠️ ルームIDが見つかりません。Firebase から検索します...");
         try {
@@ -197,7 +218,6 @@ class BattleScene extends Phaser.Scene {
     }
 
     try {
-        // ✅ `players` データ取得
         let playersSnapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
         let playersData = playersSnapshot.val();
 
@@ -206,7 +226,6 @@ class BattleScene extends Phaser.Scene {
             return;
         }
 
-        // ✅ 自分のチーム情報を取得
         let myTeam = playersData[userId]?.team;
         if (!myTeam) {
             console.warn("⚠️ Firebase からチーム情報を取得できません。ローカルストレージを参照します...");
@@ -220,7 +239,6 @@ class BattleScene extends Phaser.Scene {
 
         console.log("✅ 自分のチーム:", myTeam);
 
-        // ✅ `playersData` を配列に変換
         this.players = Object.keys(playersData).map(playerId => ({
             id: playerId,
             name: playersData[playerId].name || "???",
@@ -228,7 +246,7 @@ class BattleScene extends Phaser.Scene {
             team: playersData[playerId].team || "未定",
             hp: this.getInitialHP(playersData[playerId].role),
             mp: this.getInitialMP(playersData[playerId].role),
-            lp: 3 // LPは固定
+            lp: 3
         }));
 
         console.log("✅ 取得したプレイヤーリスト:", this.players);
@@ -238,15 +256,12 @@ class BattleScene extends Phaser.Scene {
         let centerX = this.scale.width / 2;
         let spacing = 150;
 
-        // 🟥 自分と同じチーム → 味方 (ally)
         let allies = this.players.filter(p => p.team === myTeam);
-        // 🟦 自分と異なるチーム → 敵 (enemy)
         let enemies = this.players.filter(p => p.team !== myTeam);
 
         console.log("✅ 味方:", allies);
         console.log("✅ 敵:", enemies);
 
-        // 🎨 仲間の表示
         allies.forEach((player, index) => {
             let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
             this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
@@ -257,7 +272,6 @@ class BattleScene extends Phaser.Scene {
             }).setOrigin(0.5);
         });
 
-        // 🎭 敵の表示
         enemies.forEach((player, index) => {
             let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
             this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
@@ -274,5 +288,6 @@ class BattleScene extends Phaser.Scene {
         console.error("❌ Firebase からチーム情報を取得中にエラー:", error);
     }
 }
+
 
 }
