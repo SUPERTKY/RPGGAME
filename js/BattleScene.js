@@ -121,7 +121,6 @@ class BattleScene extends Phaser.Scene {
         });
     }
 
-    // カウントダウン関数を追加
     startCountdown() {
         console.log("⏱️ カウントダウン開始");
         this.statusText.setText("");
@@ -160,7 +159,6 @@ class BattleScene extends Phaser.Scene {
         showNextNumber();
     }
 
-    // バトル開始関数を追加
     startBattle() {
         console.log("⚔️ バトル開始処理実行");
         this.cameras.main.fadeOut(1000, 0, 0, 0);
@@ -193,7 +191,6 @@ class BattleScene extends Phaser.Scene {
         });
     }
 
-    // HPの初期設定
     getInitialHP(role) {
         const hp = {
             swordsman: 200,
@@ -204,7 +201,6 @@ class BattleScene extends Phaser.Scene {
         return hp;
     }
 
-    // MPの初期設定
     getInitialMP(role) {
         const mp = {
             swordsman: 8,
@@ -254,15 +250,23 @@ class BattleScene extends Phaser.Scene {
             console.log("🔍 Firebase から取得したチーム情報:", myTeam);
 
             if (!myTeam) {
-                console.warn("⚠️ Firebase からチーム情報を取得できません。ローカルストレージを確認します...");
-                myTeam = localStorage.getItem("team");
-                console.log("🔍 ローカルストレージから取得したチーム情報:", myTeam);
-            }
+                // 既存プレイヤーのチームを確認
+                const existingTeams = Object.values(playersData)
+                    .map(player => player.team)
+                    .filter(team => team); // undefined/nullを除外
 
-            if (!myTeam) {
-                console.error("❌ チーム情報が見つかりません（Firebase・ローカルストレージともに失敗）");
-                // チーム情報がない場合は、自動的にチームを割り当て
-                myTeam = "team1"; // または "team2" - ここは適切なロジックで決定
+                console.log("👥 既存のチーム:", existingTeams);
+
+                // "Blue" と "Red" の数をカウント
+                const teamCounts = existingTeams.reduce((acc, team) => {
+                    acc[team] = (acc[team] || 0) + 1;
+                    return acc;
+                }, { Blue: 0, Red: 0 });
+
+                // 人数が少ない方のチームを選択
+                myTeam = teamCounts.Blue <= teamCounts.Red ? "Blue" : "Red";
+                
+                // 新しいチーム情報を保存
                 await playersRef.child(userId).update({ team: myTeam });
                 localStorage.setItem("team", myTeam);
                 console.log("✅ チーム自動割り当て:", myTeam);
