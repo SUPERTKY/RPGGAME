@@ -121,6 +121,78 @@ class BattleScene extends Phaser.Scene {
         });
     }
 
+    // カウントダウン関数を追加
+    startCountdown() {
+        console.log("⏱️ カウントダウン開始");
+        this.statusText.setText("");
+        const countdownNumbers = ["3", "2", "1", "スタート！"];
+        let index = 0;
+
+        const showNextNumber = () => {
+            if (index >= countdownNumbers.length) {
+                console.log("✅ カウントダウン完了、バトル開始");
+                this.startBattle();
+                return;
+            }
+
+            let countText = this.add.text(this.scale.width / 2, this.scale.height / 2, countdownNumbers[index], {
+                fontSize: "80px",
+                fill: "#ffffff",
+                stroke: "#000000",
+                strokeThickness: 8
+            }).setOrigin(0.5);
+
+            countText.setAlpha(0);
+            this.tweens.add({
+                targets: countText,
+                alpha: 1,
+                scale: 1.5,
+                duration: 500,
+                ease: "Cubic.easeOut",
+                yoyo: true,
+                onComplete: () => {
+                    countText.destroy();
+                    index++;
+                    this.time.delayedCall(500, showNextNumber);
+                }
+            });
+        };
+        showNextNumber();
+    }
+
+    // バトル開始関数を追加
+    startBattle() {
+        console.log("⚔️ バトル開始処理実行");
+        this.cameras.main.fadeOut(1000, 0, 0, 0);
+        this.tweens.add({
+            targets: this.battleBgm,
+            volume: 1,
+            duration: 2000
+        });
+
+        this.cameras.main.once("camerafadeoutcomplete", () => {
+            let randomChoice = Math.random();
+            if (randomChoice < 0.05) {
+                this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
+                this.bg.setOrigin(0.5, 0.5);
+                this.bg.play(true);
+
+                let scaleX = this.scale.width / this.bg.width;
+                let scaleY = this.scale.height / this.bg.height;
+                let scale = Math.max(scaleX, scaleY);
+                this.bg.setScale(scale);
+            } else {
+                let selectedField = randomChoice < 0.5 ? "battleField1" : "battleField2";
+                this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, selectedField);
+                this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
+            }
+
+            this.cameras.main.fadeIn(1000, 0, 0, 0);
+            this.battleBgm.play();
+            this.displayCharacters();
+        });
+    }
+
     // HPの初期設定
     getInitialHP(role) {
         const hp = {
@@ -189,41 +261,29 @@ class BattleScene extends Phaser.Scene {
 
             if (!myTeam) {
                 console.error("❌ チーム情報が見つかりません（Firebase・ローカルストレージともに失敗）");
-                return;
+                // チーム情報がない場合は、自動的にチームを割り当て
+                myTeam = "team1"; // または "team2" - ここは適切なロジックで決定
+                await playersRef.child(userId).update({ team: myTeam });
+                localStorage.setItem("team", myTeam);
+                console.log("✅ チーム自動割り当て:", myTeam);
             }
 
             // この時点でのデータを確認
             console.log("✅ 最終的に使用するチーム情報:", myTeam);
             console.log("📊 プレイヤーリスト作成開始");
 
-            this.players = Object.keys(playersData).map(playerId => {
-                const player = {
-                    id: playerId,
-                    name: playersData[playerId].name || "???",
-                    role: playersData[playerId].role || "不明",
-                    team: playersData[playerId].team || "未定",
-                    hp: this.getInitialHP(playersData[playerId].role),
-                    mp: this.getInitialMP(playersData[playerId].role),
-                    lp: 3
-                };
-                console.log(`👤 プレイヤー作成: ${JSON.stringify(player)}`);
-                return player;
-            });
-
-            // 味方・敵の振り分け
             let allies = this.players.filter(p => p.team === myTeam);
             let enemies = this.players.filter(p => p.team !== myTeam);
 
             console.log("✅ 味方チーム:", allies);
             console.log("✅ 敵チーム:", enemies);
 
-            // キャラクター表示処理は変更なし
+            // キャラクター表示処理
             let allyY = this.scale.height * 0.8;
             let enemyY = this.scale.height * 0.2;
             let centerX = this.scale.width / 2;
             let spacing = 150;
 
-            // 味方キャラクター表示
             allies.forEach((player, index) => {
                 let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
                 this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
@@ -235,7 +295,6 @@ class BattleScene extends Phaser.Scene {
                 console.log(`✅ 味方キャラクター表示: ${player.name}`);
             });
 
-            // 敵キャラクター表示
             enemies.forEach((player, index) => {
                 let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
                 this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
@@ -251,7 +310,6 @@ class BattleScene extends Phaser.Scene {
 
         } catch (error) {
             console.error("❌ エラーが発生しました:", error);
-            // エラーメッセージをゲーム画面に表示
             this.add.text(
                 this.scale.width / 2,
                 this.scale.height / 2,
