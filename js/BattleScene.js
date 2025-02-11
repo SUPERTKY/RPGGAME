@@ -3,31 +3,34 @@ class BattleScene extends Phaser.Scene {
         super({ key: "BattleScene" });
         this.isListening = false;
         this.players = [];
+        console.log("🎮 BattleScene コンストラクタ実行");
     }
-    async getUserId() {
-    return new Promise((resolve, reject) => {
-        firebase.auth().onAuthStateChanged(user => {
-            if (user) {
-                console.log("✅ Firebase 認証成功 ユーザーID:", user.uid);
-                resolve(user.uid);
-            } else {
-                console.warn("⚠️ ユーザーが未ログインです。匿名ログインを試行...");
-                firebase.auth().signInAnonymously()
-                    .then(result => {
-                        console.log("✅ 匿名ログイン成功 ユーザーID:", result.user.uid);
-                        resolve(result.user.uid);
-                    })
-                    .catch(error => {
-                        console.error("❌ ログインエラー:", error);
-                        reject(error);
-                    });
-            }
-        });
-    });
-}
 
+    async getUserId() {
+        console.log("👤 getUserId 開始");
+        return new Promise((resolve, reject) => {
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    console.log("✅ Firebase 認証成功 ユーザーID:", user.uid);
+                    resolve(user.uid);
+                } else {
+                    console.warn("⚠️ ユーザーが未ログインです。匿名ログインを試行...");
+                    firebase.auth().signInAnonymously()
+                        .then(result => {
+                            console.log("✅ 匿名ログイン成功 ユーザーID:", result.user.uid);
+                            resolve(result.user.uid);
+                        })
+                        .catch(error => {
+                            console.error("❌ ログインエラー:", error);
+                            reject(error);
+                        });
+                }
+            });
+        });
+    }
 
     preload() {
+        console.log("🎮 アセットのプリロード開始");
         this.load.audio("battleBgm", "assets/ピエロは暗闇で踊る.mp3");
         this.load.image("battleBackground", "assets/旅立ち.png");
         this.load.image("battleField1", "assets/森.png");
@@ -43,9 +46,11 @@ class BattleScene extends Phaser.Scene {
         this.load.image("swordsman_enemy", "assets/剣士全身.png");
         this.load.image("mage_enemy", "assets/魔法使い全身.png");
         this.load.image("priest_enemy", "assets/僧侶全身.png");
+        console.log("✅ アセットのプリロード完了");
     }
 
     async create() {
+        console.log("🎮 create メソッド開始");
         this.cameras.main.setBackgroundColor("#000000");
 
         this.statusText = this.add.text(this.scale.width / 2, this.scale.height * 0.1, "バトル開始を待っています...", {
@@ -58,6 +63,8 @@ class BattleScene extends Phaser.Scene {
         this.battleBgm = this.sound.add("battleBgm", { volume: 0 });
 
         let roomId = localStorage.getItem("roomId");
+        console.log("📝 取得したルームID:", roomId);
+        
         if (!roomId) {
             console.error("❌ ルームIDが取得できません。");
             return;
@@ -65,6 +72,7 @@ class BattleScene extends Phaser.Scene {
 
         try {
             this.playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
+            console.log("✅ Firebase リファレンス作成成功");
             this.listenForPlayers(roomId);
         } catch (error) {
             console.error("❌ Firebase の監視エラー:", error);
@@ -72,24 +80,37 @@ class BattleScene extends Phaser.Scene {
     }
 
     listenForPlayers(roomId) {
-        if (this.isListening) return;
+        console.log("👥 プレイヤー監視開始", roomId);
+        if (this.isListening) {
+            console.log("ℹ️ 既に監視中です");
+            return;
+        }
         this.isListening = true;
 
         this.playersRef.on("value", (snapshot) => {
             let playersData = snapshot.val();
-            if (!playersData) return;
+            console.log("📊 取得したプレイヤーデータ:", playersData);
+            
+            if (!playersData) {
+                console.warn("⚠️ プレイヤーデータが空です");
+                return;
+            }
 
-            this.players = Object.keys(playersData).map(playerId => ({
-                id: playerId,
-                name: playersData[playerId].name || "???",
-                role: playersData[playerId].role || "不明",
-                team: playersData[playerId].team || "未定",
-                hp: this.getInitialHP(playersData[playerId].role), // HP設定
-                mp: this.getInitialMP(playersData[playerId].role), // MP設定
-                lp: 3 // LPは固定
-            }));
+            this.players = Object.keys(playersData).map(playerId => {
+                console.log(`👤 プレイヤー処理: ${playerId}`);
+                return {
+                    id: playerId,
+                    name: playersData[playerId].name || "???",
+                    role: playersData[playerId].role || "不明",
+                    team: playersData[playerId].team || "未定",
+                    hp: this.getInitialHP(playersData[playerId].role),
+                    mp: this.getInitialMP(playersData[playerId].role),
+                    lp: 3
+                };
+            });
 
             let playerCount = this.players.length;
+            console.log(`👥 現在のプレイヤー数: ${playerCount}`);
             this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
 
             if (playerCount === 6) {
@@ -102,195 +123,145 @@ class BattleScene extends Phaser.Scene {
 
     // HPの初期設定
     getInitialHP(role) {
-        switch (role) {
-            case "swordsman": return 200;
-            case "mage": return 160;
-            case "priest": return 180;
-            default: return 100;
-        }
+        const hp = {
+            swordsman: 200,
+            mage: 160,
+            priest: 180
+        }[role] || 100;
+        console.log(`💪 ${role}の初期HP設定: ${hp}`);
+        return hp;
     }
 
     // MPの初期設定
     getInitialMP(role) {
-        switch (role) {
-            case "swordsman": return 8;
-            case "mage": return 12;
-            case "priest": return 14;
-            default: return 10;
-        }
+        const mp = {
+            swordsman: 8,
+            mage: 12,
+            priest: 14
+        }[role] || 10;
+        console.log(`✨ ${role}の初期MP設定: ${mp}`);
+        return mp;
     }
 
-    startCountdown() {
-        this.statusText.setText("");
-        const countdownNumbers = ["3", "2", "1", "スタート！"];
-        let index = 0;
-
-        const showNextNumber = () => {
-            if (index >= countdownNumbers.length) {
-                this.startBattle();
-                return;
-            }
-            let countText = this.add.text(this.scale.width / 2, this.scale.height / 2, countdownNumbers[index], {
-                fontSize: "80px",
-                fill: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 8
-            }).setOrigin(0.5);
-
-            countText.setAlpha(0);
-            this.tweens.add({
-                targets: countText,
-                alpha: 1,
-                scale: 1.5,
-                duration: 500,
-                ease: "Cubic.easeOut",
-                yoyo: true,
-                onComplete: () => {
-                    countText.destroy();
-                    index++;
-                    this.time.delayedCall(500, showNextNumber);
-                }
-            });
-        };
-        showNextNumber();
-    }
-
-    startBattle() {
-    this.cameras.main.fadeOut(1000, 0, 0, 0);
-    this.tweens.add({
-        targets: this.battleBgm,
-        volume: 1,
-        duration: 2000
-    });
-
-    this.cameras.main.once("camerafadeoutcomplete", () => {
-        let randomChoice = Math.random();
-        if (randomChoice < 0.05) {
-            this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
-            this.bg.setOrigin(0.5, 0.5);
-            this.bg.play(true);
-
-            // 📏 画面サイズに合わせてスケールを調整（アスペクト比を維持）
-            let scaleX = this.scale.width / this.bg.width;
-            let scaleY = this.scale.height / this.bg.height;
-            let scale = Math.max(scaleX, scaleY); // どちらか大きい方に合わせる
-            this.bg.setScale(scale);
-        } else {
-            let selectedField = randomChoice < 0.5 ? "battleField1" : "battleField2";
-            this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, selectedField);
-            this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
-        }
-
-        this.cameras.main.fadeIn(1000, 0, 0, 0);
-        this.battleBgm.play();
-        this.displayCharacters();
-    });
-}
-
-
-   async displayCharacters() {
-    let userId;
-    try {
-        userId = await this.getUserId();
-        console.log("✅ ユーザーID取得成功:", userId);
-    } catch (error) {
-        console.error("❌ ユーザーIDの取得に失敗しました:", error);
-        return;
-    }
-
-    let roomId = localStorage.getItem("roomId");
-    
-    if (!roomId) {
-        console.warn("⚠️ ルームIDが見つかりません。Firebase から検索します...");
+    async displayCharacters() {
+        console.log("🎮 displayCharacters 開始");
+        let userId;
         try {
-            roomId = await this.findRoomByUserId(userId);
-            if (roomId) {
-                localStorage.setItem("roomId", roomId);
-                console.log("✅ 取得したルームID:", roomId);
-            } else {
-                console.error("⚠️ ルームIDが取得できませんでした。");
+            userId = await this.getUserId();
+            console.log("✅ ユーザーID取得成功:", userId);
+        } catch (error) {
+            console.error("❌ ユーザーIDの取得に失敗しました:", error);
+            return;
+        }
+
+        let roomId = localStorage.getItem("roomId");
+        console.log("🔍 取得したルームID:", roomId);
+        
+        if (!roomId) {
+            console.warn("⚠️ ルームIDが見つかりません");
+            return;
+        }
+
+        try {
+            const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
+            console.log("📌 Firebaseパス:", `gameRooms/${roomId}/players`);
+            
+            const playersSnapshot = await playersRef.once("value");
+            const playersData = playersSnapshot.val();
+            
+            console.log("📊 取得したプレイヤーデータ全体:", playersData);
+            console.log("🔍 現在のユーザーID:", userId);
+            console.log("🔍 自分のプレイヤーデータ:", playersData[userId]);
+
+            if (!playersData) {
+                console.error("❌ プレイヤーデータが取得できません。");
                 return;
             }
+
+            let myTeam = playersData[userId]?.team;
+            console.log("🔍 Firebase から取得したチーム情報:", myTeam);
+
+            if (!myTeam) {
+                console.warn("⚠️ Firebase からチーム情報を取得できません。ローカルストレージを確認します...");
+                myTeam = localStorage.getItem("team");
+                console.log("🔍 ローカルストレージから取得したチーム情報:", myTeam);
+            }
+
+            if (!myTeam) {
+                console.error("❌ チーム情報が見つかりません（Firebase・ローカルストレージともに失敗）");
+                return;
+            }
+
+            // この時点でのデータを確認
+            console.log("✅ 最終的に使用するチーム情報:", myTeam);
+            console.log("📊 プレイヤーリスト作成開始");
+
+            this.players = Object.keys(playersData).map(playerId => {
+                const player = {
+                    id: playerId,
+                    name: playersData[playerId].name || "???",
+                    role: playersData[playerId].role || "不明",
+                    team: playersData[playerId].team || "未定",
+                    hp: this.getInitialHP(playersData[playerId].role),
+                    mp: this.getInitialMP(playersData[playerId].role),
+                    lp: 3
+                };
+                console.log(`👤 プレイヤー作成: ${JSON.stringify(player)}`);
+                return player;
+            });
+
+            // 味方・敵の振り分け
+            let allies = this.players.filter(p => p.team === myTeam);
+            let enemies = this.players.filter(p => p.team !== myTeam);
+
+            console.log("✅ 味方チーム:", allies);
+            console.log("✅ 敵チーム:", enemies);
+
+            // キャラクター表示処理は変更なし
+            let allyY = this.scale.height * 0.8;
+            let enemyY = this.scale.height * 0.2;
+            let centerX = this.scale.width / 2;
+            let spacing = 150;
+
+            // 味方キャラクター表示
+            allies.forEach((player, index) => {
+                let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
+                this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+                this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
+                    fontSize: "18px",
+                    fill: "#fff",
+                    align: "center"
+                }).setOrigin(0.5);
+                console.log(`✅ 味方キャラクター表示: ${player.name}`);
+            });
+
+            // 敵キャラクター表示
+            enemies.forEach((player, index) => {
+                let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
+                this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+                this.add.text(x, enemyY - 50, `${player.name}\nHP: ${player.hp}`, {
+                    fontSize: "18px",
+                    fill: "#fff",
+                    align: "center"
+                }).setOrigin(0.5);
+                console.log(`✅ 敵キャラクター表示: ${player.name}`);
+            });
+
+            console.log("✅ キャラクター表示完了");
+
         } catch (error) {
-            console.error("❌ Firebase からルームID取得中にエラー:", error);
-            return;
+            console.error("❌ エラーが発生しました:", error);
+            // エラーメッセージをゲーム画面に表示
+            this.add.text(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                "エラーが発生しました。\n画面を更新してください。",
+                {
+                    fontSize: "24px",
+                    fill: "#ff0000",
+                    align: "center"
+                }
+            ).setOrigin(0.5);
         }
     }
-
-    try {
-        let playersSnapshot = await firebase.database().ref(`gameRooms/${roomId}/players`).once("value");
-        let playersData = playersSnapshot.val();
-
-        if (!playersData) {
-            console.error("❌ プレイヤーデータが取得できません。");
-            return;
-        }
-
-        let myTeam = playersData[userId]?.team;
-        if (!myTeam) {
-            console.log("📌 取得前のプレイヤーデータ:", playersData);
-console.log("📌 自分のチーム (取得直後):", playersData[userId]?.team);
-
-            console.warn("⚠️ Firebase からチーム情報を取得できません。ローカルストレージを参照します...");
-            myTeam = localStorage.getItem("team");
-        }
-
-        if (!myTeam) {
-            console.error("❌ 自分のチーム情報が見つかりません。(Firebase・ローカルストレージの両方で失敗)");
-            return;
-        }
-
-        console.log("✅ 自分のチーム:", myTeam);
-
-        this.players = Object.keys(playersData).map(playerId => ({
-            id: playerId,
-            name: playersData[playerId].name || "???",
-            role: playersData[playerId].role || "不明",
-            team: playersData[playerId].team || "未定",
-            hp: this.getInitialHP(playersData[playerId].role),
-            mp: this.getInitialMP(playersData[playerId].role),
-            lp: 3
-        }));
-
-        console.log("✅ 取得したプレイヤーリスト:", this.players);
-
-        let allyY = this.scale.height * 0.8;
-        let enemyY = this.scale.height * 0.2;
-        let centerX = this.scale.width / 2;
-        let spacing = 150;
-
-        let allies = this.players.filter(p => p.team === myTeam);
-        let enemies = this.players.filter(p => p.team !== myTeam);
-
-        console.log("✅ 味方:", allies);
-        console.log("✅ 敵:", enemies);
-
-        allies.forEach((player, index) => {
-            let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
-            this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
-                fontSize: "18px",
-                fill: "#fff",
-                align: "center"
-            }).setOrigin(0.5);
-        });
-
-        enemies.forEach((player, index) => {
-            let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
-            this.add.text(x, enemyY - 50, `${player.name}\nHP: ${player.hp}`, {
-                fontSize: "18px",
-                fill: "#fff",
-                align: "center"
-            }).setOrigin(0.5);
-        });
-
-        console.log("✅ キャラクター表示完了");
-
-    } catch (error) {
-        console.error("❌ Firebase からチーム情報を取得中にエラー:", error);
-    }
-}
-
-
 }
