@@ -78,9 +78,9 @@ class GameScene extends Phaser.Scene {
     let roomId = localStorage.getItem("roomId");
     if (!roomId || !this.roomRef) return;
 
-    let playerRef = window.db.ref(`gameRooms/${roomId}/players/${this.playerId}`);
+    let playerRef = window.db.ref(gameRooms/${roomId}/players/${this.playerId});
     playerRef.remove().then(() => {
-        console.log(`🚪 ルーム ${roomId} からプレイヤー ${this.playerId} を削除しました`);
+        console.log(🚪 ルーム ${roomId} からプレイヤー ${this.playerId} を削除しました);
     }).catch(error => {
         console.error("🔥 ルーム退出エラー:", error);
     });
@@ -114,7 +114,7 @@ class GameScene extends Phaser.Scene {
                 if (rooms[roomKey].players && rooms[roomKey].players[this.playerId]) {
                     console.log("すでにマッチング済み:", this.playerId);
                     localStorage.setItem("roomId", roomKey);
-                    this.roomRef = window.db.ref(`gameRooms/${roomKey}/players`);
+                    this.roomRef = window.db.ref(gameRooms/${roomKey}/players);
                     this.monitorPlayers();
                     return;
                 }
@@ -123,49 +123,34 @@ class GameScene extends Phaser.Scene {
     }
 
     findRoomAndJoin() {
-    window.db.ref("gameRooms").once("value").then(snapshot => {
-        let rooms = snapshot.val() || {};
-        let foundRoom = false;
+        window.db.ref("gameRooms").once("value").then(snapshot => {
+            let rooms = snapshot.val() || {};
+            let foundRoom = false;
 
-        for (let roomKey in rooms) {
-            let roomData = rooms[roomKey];
-            let playerCount = Object.keys(roomData.players || {}).length;
-
-            // 🔥 一度結成されたパーティには参加しない（ゲーム開始フラグがある場合も除外）
-            if (playerCount < 6 && !roomData.partyFormed && !roomData.gameStarted) {
-                this.roomRef = window.db.ref(`gameRooms/${roomKey}/players`);
-                localStorage.setItem("roomId", roomKey);
-                foundRoom = true;
-                this.startMatching();
-                break;
+            for (let roomKey in rooms) {
+                let playerCount = Object.keys(rooms[roomKey].players || {}).length;
+                if (playerCount < 6) {
+                    this.roomRef = window.db.ref(gameRooms/${roomKey}/players);
+                    localStorage.setItem("roomId", roomKey);
+                    foundRoom = true;
+                    this.startMatching();
+                    break;
+                }
             }
-        }
 
-        if (!foundRoom) {
-            this.createNewRoom();
-        }
-    });
-}
-
+            if (!foundRoom) {
+                this.createNewRoom();
+            }
+        });
+    }
 
     createNewRoom() {
-    let newRoomKey = window.db.ref("gameRooms").push().key;
-    let newRoomRef = window.db.ref(`gameRooms/${newRoomKey}`);
-    
-    newRoomRef.set({
-        players: {},
-        partyFormed: false, // 新しい部屋はまだパーティが結成されていない
-        gameStarted: false
-    }).then(() => {
-        this.roomRef = newRoomRef.child("players");
+        let newRoomKey = window.db.ref("gameRooms").push().key;
+        this.roomRef = window.db.ref(gameRooms/${newRoomKey}/players);
         localStorage.setItem("roomId", newRoomKey);
         console.log("🆕 新しい部屋を作成:", newRoomKey);
         this.startMatching();
-    }).catch(error => {
-        console.error("🔥 部屋作成エラー:", error);
-    });
-}
-
+    }
 
     startMatching() {
         this.roomRef.once("value").then(snapshot => {
@@ -188,7 +173,7 @@ class GameScene extends Phaser.Scene {
                 id: this.playerId,
                 joinedAt: firebase.database.ServerValue.TIMESTAMP
             }).then(() => {
-                console.log(`✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key})`);
+                console.log(✅ マッチング成功: ${this.playerId} (部屋: ${this.roomRef.parent.key}));
 
                 window.addEventListener("beforeunload", () => {
                     playerRef.remove();
@@ -201,9 +186,9 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-monitorPlayers() {
+   monitorPlayers() {
     if (this.isGameStarted) {
-        console.warn("⚠️ `monitorPlayers()` ですでにゲーム開始済みのため、Firebase の監視を停止");
+        console.warn("⚠️ monitorPlayers() ですでにゲーム開始済みのため、Firebase の監視を停止");
         return;
     }
 
@@ -213,26 +198,19 @@ monitorPlayers() {
         console.log("🟢 Firebase 更新検知:", players);
         let playerCount = Object.keys(players).length;
 
-        console.log(`現在のプレイヤー数: ${playerCount}`);
+        console.log(現在のプレイヤー数: ${playerCount});
 
-        if (playerCount === 0) {
-            console.log("🚨 部屋が空になったため `gameStarted` や `partyFormed` を削除します");
-
-            this.roomRef.parent.child("gameStarted").remove() // 🔥 完全削除
-                .then(() => console.log("✅ `gameStarted` を削除しました"))
-                .catch(error => console.error("🔥 `gameStarted` 削除エラー:", error));
-
-            this.roomRef.parent.child("partyFormed").remove() // 🔥 完全削除
-                .then(() => console.log("✅ `partyFormed` を削除しました"))
-                .catch(error => console.error("🔥 `partyFormed` 削除エラー:", error));
+        if (playerCount >= 6) {
+            console.log("✅ マッチング完了！ゲーム開始！");
+            this.startGame();
         }
     });
 }
 
 
-startGame() {
+    startGame() {
     if (this.isGameStarted) {
-        console.warn("⚠️ すでに `startGame()` が実行されています。再実行を防ぎます。");
+        console.warn("⚠️ すでに startGame() が実行されています。再実行を防ぎます。");
         return;
     }
     this.isGameStarted = true;
@@ -242,14 +220,9 @@ startGame() {
     let roomId = localStorage.getItem("roomId");
     console.log("📌 保存された roomId:", roomId);
 
-    let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
-    let roomRef = window.db.ref(`gameRooms/${roomId}`);
-
-    roomRef.update({ gameStarted: true }) // 🔥 ゲームが開始されたことを記録
-        .then(() => console.log("✅ `gameStarted` を Firebase に保存"))
-        .catch(error => console.error("🔥 `gameStarted` 保存エラー:", error));
-
+    let playerName = localStorage.getItem("playerName") || プレイヤー${Math.floor(Math.random() * 1000)};
     let playerRef = this.roomRef.child(this.playerId);
+
     playerRef.update({ name: playerName })
         .then(() => console.log("✅ プレイヤー名を Firebase に保存:", playerName))
         .catch(error => console.error("🔥 プレイヤー名保存エラー:", error));
