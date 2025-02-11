@@ -2,7 +2,7 @@ https://supertky.github.io/RPGGAME/
 
 
 
-
+[
 https://rpggame-b7e7e-default-rtdb.asia-southeast1.firebasedatabase.app/
 gameRooms
 -OInPX4sKjItw4tb7XJs
@@ -34,4 +34,31 @@ team
 zhux7fhsVweZSZxFL3UsvRaDyeO2
 team
 :
+"team1"](https://rpggame-b7e7e-default-rtdb.asia-southeast1.firebasedatabase.app/
+gameRooms
+-OInRczuE7MJ5ngI1ElD
+players
+KRN7cb7gCPT58lTGmOf7OJcPSQ92
+team
+:
 "team1"
+OZRJrFvXWiXOLg04K0nIWzPa6Io1
+team
+:
+"team1"
+YyaXYy2VbGTCdU9WVw3G3zYzqEB3
+team
+:
+"team1"
+pNe173E8KcNLdZpWmp6Y4kdaoGo2
+team
+:
+"Blue"
+user-b1ymtejbr
+role
+:
+"swordsman"
+team
+:
+"Blue"
+)
