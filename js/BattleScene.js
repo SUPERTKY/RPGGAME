@@ -228,6 +228,9 @@ class BattleScene extends Phaser.Scene {
 
         let myTeam = playersData[userId]?.team;
         if (!myTeam) {
+            console.log("📌 取得前のプレイヤーデータ:", playersData);
+console.log("📌 自分のチーム (取得直後):", playersData[userId]?.team);
+
             console.warn("⚠️ Firebase からチーム情報を取得できません。ローカルストレージを参照します...");
             myTeam = localStorage.getItem("team");
         }
