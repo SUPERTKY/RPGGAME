@@ -216,20 +216,21 @@ monitorPlayers() {
         console.log(`現在のプレイヤー数: ${playerCount}`);
 
         if (playerCount === 0) {
-            console.log("🚨 部屋が空になったため `gameStarted` をリセットします");
+            console.log("🚨 部屋が空になったため `gameStarted` や `partyFormed` を削除します");
 
-            this.roomRef.parent.child("gameStarted").remove()
-                .then(() => {
-                    console.log("✅ `gameStarted` をリセットしました");
-                })
-                .catch(error => {
-                    console.error("🔥 `gameStarted` リセットエラー:", error);
-                });
+            this.roomRef.parent.child("gameStarted").remove() // 🔥 完全削除
+                .then(() => console.log("✅ `gameStarted` を削除しました"))
+                .catch(error => console.error("🔥 `gameStarted` 削除エラー:", error));
+
+            this.roomRef.parent.child("partyFormed").remove() // 🔥 完全削除
+                .then(() => console.log("✅ `partyFormed` を削除しました"))
+                .catch(error => console.error("🔥 `partyFormed` 削除エラー:", error));
         }
     });
 }
 
-   startGame() {
+
+startGame() {
     if (this.isGameStarted) {
         console.warn("⚠️ すでに `startGame()` が実行されています。再実行を防ぎます。");
         return;
@@ -263,7 +264,5 @@ monitorPlayers() {
     // 🔥 **ゲーム開始後にマッチングの監視を停止**
     this.roomRef.off("value");
 }
-
-
 
 }
