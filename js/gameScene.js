@@ -201,7 +201,7 @@ class GameScene extends Phaser.Scene {
         });
     }
 
-   monitorPlayers() {
+monitorPlayers() {
     if (this.isGameStarted) {
         console.warn("⚠️ `monitorPlayers()` ですでにゲーム開始済みのため、Firebase の監視を停止");
         return;
@@ -216,21 +216,18 @@ class GameScene extends Phaser.Scene {
         console.log(`現在のプレイヤー数: ${playerCount}`);
 
         if (playerCount === 0) {
-            console.log("🚨 部屋が空になったため `gameStarted` と `partyFormed` をリセットします");
+            console.log("🚨 部屋が空になったため `gameStarted` をリセットします");
 
-            this.roomRef.parent.update({
-                gameStarted: false,
-                partyFormed: false
-            }).then(() => {
-                console.log("✅ `gameStarted` と `partyFormed` をリセットしました");
-            }).catch(error => {
-                console.error("🔥 部屋リセットエラー:", error);
-            });
+            this.roomRef.parent.child("gameStarted").remove()
+                .then(() => {
+                    console.log("✅ `gameStarted` をリセットしました");
+                })
+                .catch(error => {
+                    console.error("🔥 `gameStarted` リセットエラー:", error);
+                });
         }
     });
 }
-
-
 
    startGame() {
     if (this.isGameStarted) {
@@ -247,9 +244,9 @@ class GameScene extends Phaser.Scene {
     let playerName = localStorage.getItem("playerName") || `プレイヤー${Math.floor(Math.random() * 1000)}`;
     let roomRef = window.db.ref(`gameRooms/${roomId}`);
 
-    roomRef.update({ gameStarted: true }) // ゲームが開始されたことを Firebase に記録
-        .then(() => console.log("✅ ゲーム開始フラグを Firebase に保存"))
-        .catch(error => console.error("🔥 ゲーム開始フラグ保存エラー:", error));
+    roomRef.update({ gameStarted: true }) // 🔥 ゲームが開始されたことを記録
+        .then(() => console.log("✅ `gameStarted` を Firebase に保存"))
+        .catch(error => console.error("🔥 `gameStarted` 保存エラー:", error));
 
     let playerRef = this.roomRef.child(this.playerId);
     playerRef.update({ name: playerName })
@@ -266,6 +263,7 @@ class GameScene extends Phaser.Scene {
     // 🔥 **ゲーム開始後にマッチングの監視を停止**
     this.roomRef.off("value");
 }
+
 
 
 }
