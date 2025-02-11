@@ -1,3 +1,52 @@
+// RoomManager.js
+class RoomManager {
+    static async checkAndCleanupRoom(roomId) {
+        try {
+            console.log("🧹 ルームクリーンアップチェック開始:", roomId);
+            
+            const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
+            const snapshot = await playersRef.once('value');
+            const players = snapshot.val();
+
+            if (!players) {
+                console.log("👥 プレイヤーが0人になりました。ルームを削除します");
+                await firebase.database().ref(`gameRooms/${roomId}`).remove();
+                console.log("✅ ルーム削除完了:", roomId);
+                return true;
+            }
+
+            const activePlayers = Object.values(players).filter(player => 
+                player && (player.team === "Blue" || player.team === "Red")
+            );
+
+            console.log("👥 アクティブプレイヤー数:", activePlayers.length);
+
+            if (activePlayers.length === 0) {
+                await firebase.database().ref(`gameRooms/${roomId}`).remove();
+                console.log("✅ アクティブプレイヤー0のためルーム削除完了:", roomId);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error("❌ ルームクリーンアップエラー:", error);
+            return false;
+        }
+    }
+
+    static async removePlayer(roomId, userId) {
+        try {
+            console.log("👤 プレイヤー削除開始:", userId);
+            await firebase.database().ref(`gameRooms/${roomId}/players/${userId}`).remove();
+            console.log("✅ プレイヤー削除完了");
+            await this.checkAndCleanupRoom(roomId);
+        } catch (error) {
+            console.error("❌ プレイヤー削除エラー:", error);
+        }
+    }
+}
+
+// BattleScene.js
 class BattleScene extends Phaser.Scene {
     constructor() {
         super({ key: "BattleScene" });
@@ -291,7 +340,7 @@ class BattleScene extends Phaser.Scene {
             allies.forEach((player, index) => {
                 let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
                 this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
-                this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
+this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
                     fontSize: "18px",
                     fill: "#fff",
                     align: "center"
@@ -326,4 +375,35 @@ class BattleScene extends Phaser.Scene {
             ).setOrigin(0.5);
         }
     }
+
+    shutdown() {
+        console.log("🔄 シーンシャットダウン開始");
+        this.cleanupRoom();
+    }
+
+    async cleanupRoom() {
+        console.log("🧹 ルームクリーンアップ開始");
+        const roomId = localStorage.getItem('roomId');
+        const userId = await this.getUserId();
+        
+        if (roomId && userId) {
+            await RoomManager.removePlayer(roomId, userId);
+            // ローカルストレージのクリーンアップ
+            localStorage.removeItem('roomId');
+            localStorage.removeItem('team');
+            console.log("✅ ルームクリーンアップ完了");
+        }
+    }
 }
+
+// ページ離脱時のクリーンアップ処理
+window.addEventListener('beforeunload', async (event) => {
+    console.log("👋 ページ離脱処理開始");
+    const roomId = localStorage.getItem('roomId');
+    const userId = firebase.auth().currentUser?.uid;
+    
+    if (roomId && userId) {
+        await RoomManager.removePlayer(roomId, userId);
+        console.log("✅ ページ離脱時のクリーンアップ完了");
+    }
+});
