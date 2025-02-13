@@ -261,7 +261,7 @@ class BattleScene extends Phaser.Scene {
         return mp;
     }
 
-  async displayCharacters() {
+async displayCharacters() {
     console.log("🎮 displayCharacters 開始");
     let userId;
     try {
@@ -288,6 +288,16 @@ class BattleScene extends Phaser.Scene {
         }
 
         let myTeam = playersData[userId]?.team;
+        if (!myTeam) {
+            const existingTeams = Object.values(playersData).map(player => player.team).filter(team => team);
+            const teamCounts = existingTeams.reduce((acc, team) => {
+                acc[team] = (acc[team] || 0) + 1;
+                return acc;
+            }, { Blue: 0, Red: 0 });
+            myTeam = teamCounts.Blue <= teamCounts.Red ? "Blue" : "Red";
+            await playersRef.child(userId).update({ team: myTeam });
+            localStorage.setItem("team", myTeam);
+        }
 
         let allies = this.players.filter(p => p.team === myTeam);
         let enemies = this.players.filter(p => p.team !== myTeam);
@@ -298,11 +308,12 @@ class BattleScene extends Phaser.Scene {
         let enemyY = this.scale.height * 0.3;
         let textOffsetX = 80;
         let textOffsetY = 20;
+        let frameScale = 0.5; // フレームのサイズ調整
 
         allies.forEach((player, index) => {
             let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
             let character = this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
-            let frame = this.add.image(x + textOffsetX + 40, allyY, "frame_asset").setScale(1);
+            let frame = this.add.image(x + textOffsetX + 40, allyY, "frame_asset").setScale(frameScale);
             let text = this.add.text(x + textOffsetX, allyY, `HP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
                 fontSize: "18px",
                 fill: "#fff",
@@ -313,7 +324,7 @@ class BattleScene extends Phaser.Scene {
         enemies.forEach((player, index) => {
             let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
             let character = this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
-            let frame = this.add.image(x + textOffsetX + 40, enemyY, "frame_asset").setScale(1);
+            let frame = this.add.image(x + textOffsetX + 40, enemyY, "frame_asset").setScale(frameScale);
             let text = this.add.text(x + textOffsetX, enemyY, `HP: ${player.hp}\nMP: ${player.mp}`, {
                 fontSize: "18px",
                 fill: "#fff",
@@ -336,6 +347,7 @@ class BattleScene extends Phaser.Scene {
         ).setOrigin(0.5);
     }
 }
+
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
