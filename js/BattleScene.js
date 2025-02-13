@@ -288,16 +288,7 @@ async displayCharacters() {
         }
 
         let myTeam = playersData[userId]?.team;
-        if (!myTeam) {
-            const existingTeams = Object.values(playersData).map(player => player.team).filter(team => team);
-            const teamCounts = existingTeams.reduce((acc, team) => {
-                acc[team] = (acc[team] || 0) + 1;
-                return acc;
-            }, { Blue: 0, Red: 0 });
-            myTeam = teamCounts.Blue <= teamCounts.Red ? "Blue" : "Red";
-            await playersRef.child(userId).update({ team: myTeam });
-            localStorage.setItem("team", myTeam);
-        }
+
 
         let allies = this.players.filter(p => p.team === myTeam);
         let enemies = this.players.filter(p => p.team !== myTeam);
