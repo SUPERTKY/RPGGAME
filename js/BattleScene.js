@@ -130,35 +130,32 @@ class BattleScene extends Phaser.Scene {
         console.log("✅ アセットのプリロード完了");
     }
 
-    async create() {
-        console.log("🎮 create メソッド開始");
-        this.cameras.main.setBackgroundColor("#000000");
+   async create() {
+    console.log("🎮 create メソッド開始");
 
-        this.statusText = this.add.text(this.scale.width / 2, this.scale.height * 0.1, "バトル開始を待っています...", {
-            fontSize: "32px",
-            fill: "#ffffff",
-            stroke: "#000000",
-            strokeThickness: 5
-        }).setOrigin(0.5);
-
-        this.battleBgm = this.sound.add("battleBgm", { volume: 0 });
-
-        let roomId = localStorage.getItem("roomId");
-        console.log("📝 取得したルームID:", roomId);
-        
-        if (!roomId) {
-            console.error("❌ ルームIDが取得できません。");
+    try {
+        this.userId = await this.getCorrectUserId();
+        if (!this.userId) {
+            console.error("❌ ユーザーIDが取得できませんでした。");
             return;
         }
-
-        try {
-            this.playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-            console.log("✅ Firebase リファレンス作成成功");
-            this.listenForPlayers(roomId);
-        } catch (error) {
-            console.error("❌ Firebase の監視エラー:", error);
-        }
+        console.log("✅ ユーザーID取得成功:", this.userId);
+    } catch (error) {
+        console.error("❌ ユーザーIDの取得に失敗しました:", error);
+        return;
     }
+
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.error("❌ ルームIDが取得できません。");
+        return;
+    }
+
+    this.playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
+    console.log("✅ Firebase リファレンス作成成功");
+    this.listenForPlayers(roomId);
+}
+
 
     listenForPlayers(roomId) {
         console.log("👥 プレイヤー監視開始", roomId);
