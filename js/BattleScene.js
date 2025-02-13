@@ -271,7 +271,7 @@ async displayCharacters() {
         console.error("❌ ユーザーIDの取得に失敗しました:", error);
         return;
     }
-
+    
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
         console.warn("⚠️ ルームIDが見つかりません");
@@ -292,6 +292,9 @@ if (!myTeam) {
     console.warn("⚠️ myTeam が取得できませんでした。デフォルトチームを割り当てます。");
 }
 
+        console.log("🔍 プレイヤーデータ:", playersData);
+console.log("🔍 自分のデータ:", playersData[userId]);
+console.log("🔍 チーム:", playersData[userId]?.team);
 
         let allies = this.players.filter(p => p.team === myTeam);
         let enemies = this.players.filter(p => p.team !== myTeam);
