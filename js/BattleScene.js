@@ -303,33 +303,33 @@ async displayCharacters() {
         let enemies = this.players.filter(p => p.team !== myTeam);
 
         let centerX = this.scale.width / 2;
-        let spacing = this.scale.width * 0.15;
+        let spacing = this.scale.width * 0.12;
         let allyY = this.scale.height * 0.6;
         let enemyY = this.scale.height * 0.3;
-        let textOffsetX = 80;
-        let textOffsetY = 20;
-        let frameScale = 0.5; // フレームのサイズ調整
+        let textOffsetX = 100;
+        let frameScale = 0.4; // フレームのサイズを適切に調整
+        let textScale = 0.8; // テキストのサイズ調整
 
         allies.forEach((player, index) => {
             let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-            let character = this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
-            let frame = this.add.image(x + textOffsetX + 40, allyY, "frame_asset").setScale(frameScale);
-            let text = this.add.text(x + textOffsetX, allyY, `HP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
+            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+            this.add.image(x + textOffsetX, allyY, "frame_asset").setScale(frameScale);
+            this.add.text(x + textOffsetX, allyY, `HP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
                 fontSize: "18px",
                 fill: "#fff",
                 align: "left"
-            }).setOrigin(0, 0.5);
+            }).setOrigin(0, 0.5).setScale(textScale);
         });
 
         enemies.forEach((player, index) => {
             let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-            let character = this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
-            let frame = this.add.image(x + textOffsetX + 40, enemyY, "frame_asset").setScale(frameScale);
-            let text = this.add.text(x + textOffsetX, enemyY, `HP: ${player.hp}\nMP: ${player.mp}`, {
+            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+            this.add.image(x + textOffsetX, enemyY, "frame_asset").setScale(frameScale);
+            this.add.text(x + textOffsetX, enemyY, `HP: ${player.hp}\nMP: ${player.mp}`, {
                 fontSize: "18px",
                 fill: "#fff",
                 align: "left"
-            }).setOrigin(0, 0.5);
+            }).setOrigin(0, 0.5).setScale(textScale);
         });
 
         console.log("✅ キャラクター表示完了");
@@ -347,6 +347,7 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
+
 
 
     shutdown() {
