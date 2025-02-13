@@ -77,6 +77,37 @@ class BattleScene extends Phaser.Scene {
             });
         });
     }
+    async function getCorrectUserId() {
+    console.log("👤 正しいユーザーIDを取得開始");
+
+    // 1️⃣ ローカルストレージに保存された `userId` を取得
+    let storedUserId = localStorage.getItem("userId");
+    if (!storedUserId) {
+        console.warn("⚠️ ローカルストレージに `userId` が見つかりません！");
+        return null;
+    }
+    console.log("🔍 ローカルストレージから取得したユーザーID:", storedUserId);
+
+    try {
+        // 2️⃣ Firebaseのデータベースを検索し、その `userId` が存在するか確認
+        const usersRef = firebase.database().ref("users");
+        const snapshot = await usersRef.orderByChild("gameUserId").equalTo(storedUserId).once("value");
+
+        if (snapshot.exists()) {
+            // 3️⃣ Firebaseに登録済み → 正常なユーザーIDとして返す
+            console.log("✅ Firebaseで一致するユーザーIDを発見:", storedUserId);
+            return storedUserId;
+        } else {
+            // 4️⃣ Firebaseに存在しない → 警告を出し、新規登録は行わない
+            console.error("❌ Firebaseにこの `userId` は登録されていません:", storedUserId);
+            return null;
+        }
+    } catch (error) {
+        console.error("❌ Firebaseデータ取得エラー:", error);
+        return null;
+    }
+}
+
 
     preload() {
         console.log("🎮 アセットのプリロード開始");
