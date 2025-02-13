@@ -260,121 +260,90 @@ class BattleScene extends Phaser.Scene {
         return mp;
     }
 
-    async displayCharacters() {
-        console.log("🎮 displayCharacters 開始");
-        let userId;
-        try {
-            userId = await this.getUserId();
-            console.log("✅ ユーザーID取得成功:", userId);
-        } catch (error) {
-            console.error("❌ ユーザーIDの取得に失敗しました:", error);
-            return;
-        }
-
-        let roomId = localStorage.getItem("roomId");
-        console.log("🔍 取得したルームID:", roomId);
-        
-        if (!roomId) {
-            console.warn("⚠️ ルームIDが見つかりません");
-            return;
-        }
-
-        try {
-            const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-            console.log("📌 Firebaseパス:", `gameRooms/${roomId}/players`);
-            
-            const playersSnapshot = await playersRef.once("value");
-            const playersData = playersSnapshot.val();
-            
-            console.log("📊 取得したプレイヤーデータ全体:", playersData);
-            console.log("🔍 現在のユーザーID:", userId);
-            console.log("🔍 自分のプレイヤーデータ:", playersData[userId]);
-
-            if (!playersData) {
-                console.error("❌ プレイヤーデータが取得できません。");
-                return;
-            }
-
-            let myTeam = playersData[userId]?.team;
-            console.log("🔍 Firebase から取得したチーム情報:", myTeam);
-
-            if (!myTeam) {
-                // 既存プレイヤーのチームを確認
-                const existingTeams = Object.values(playersData)
-                    .map(player => player.team)
-                    .filter(team => team); // undefined/nullを除外
-
-                console.log("👥 既存のチーム:", existingTeams);
-
-                // "Blue" と "Red" の数をカウント
-                const teamCounts = existingTeams.reduce((acc, team) => {
-                    acc[team] = (acc[team] || 0) + 1;
-                    return acc;
-                }, { Blue: 0, Red: 0 });
-
-                // 人数が少ない方のチームを選択
-                myTeam = teamCounts.Blue <= teamCounts.Red ? "Blue" : "Red";
-                
-                // 新しいチーム情報を保存
-                await playersRef.child(userId).update({ team: myTeam });
-                localStorage.setItem("team", myTeam);
-                console.log("✅ チーム自動割り当て:", myTeam);
-            }
-
-            // この時点でのデータを確認
-            console.log("✅ 最終的に使用するチーム情報:", myTeam);
-            console.log("📊 プレイヤーリスト作成開始");
-
-            let allies = this.players.filter(p => p.team === myTeam);
-            let enemies = this.players.filter(p => p.team !== myTeam);
-
-            console.log("✅ 味方チーム:", allies);
-            console.log("✅ 敵チーム:", enemies);
-
-            // キャラクター表示処理
-            let allyY = this.scale.height * 0.8;
-            let enemyY = this.scale.height * 0.2;
-            let centerX = this.scale.width / 2;
-            let spacing = 150;
-
-            allies.forEach((player, index) => {
-                let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-                this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
-this.add.text(x, allyY + 50, `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
-                    fontSize: "18px",
-                    fill: "#fff",
-                    align: "center"
-                }).setOrigin(0.5);
-                console.log(`✅ 味方キャラクター表示: ${player.name}`);
-            });
-
-            enemies.forEach((player, index) => {
-                let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-                this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
-                this.add.text(x, enemyY - 50, `${player.name}\nHP: ${player.hp}`, {
-                    fontSize: "18px",
-                    fill: "#fff",
-                    align: "center"
-                }).setOrigin(0.5);
-                console.log(`✅ 敵キャラクター表示: ${player.name}`);
-            });
-
-            console.log("✅ キャラクター表示完了");
-
-        } catch (error) {
-            console.error("❌ エラーが発生しました:", error);
-            this.add.text(
-                this.scale.width / 2,
-                this.scale.height / 2,
-                "エラーが発生しました。\n画面を更新してください。",
-                {
-                    fontSize: "24px",
-                    fill: "#ff0000",
-                    align: "center"
-                }
-            ).setOrigin(0.5);
-        }
+  async displayCharacters() {
+    console.log("🎮 displayCharacters 開始");
+    let userId;
+    try {
+        userId = await this.getUserId();
+        console.log("✅ ユーザーID取得成功:", userId);
+    } catch (error) {
+        console.error("❌ ユーザーIDの取得に失敗しました:", error);
+        return;
     }
+
+    let roomId = localStorage.getItem("roomId");
+    if (!roomId) {
+        console.warn("⚠️ ルームIDが見つかりません");
+        return;
+    }
+
+    try {
+        const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
+        const playersSnapshot = await playersRef.once("value");
+        const playersData = playersSnapshot.val();
+        if (!playersData) {
+            console.error("❌ プレイヤーデータが取得できません。");
+            return;
+        }
+
+        let myTeam = playersData[userId]?.team;
+        if (!myTeam) {
+            const existingTeams = Object.values(playersData).map(player => player.team).filter(team => team);
+            const teamCounts = existingTeams.reduce((acc, team) => {
+                acc[team] = (acc[team] || 0) + 1;
+                return acc;
+            }, { Blue: 0, Red: 0 });
+            myTeam = teamCounts.Blue <= teamCounts.Red ? "Blue" : "Red";
+            await playersRef.child(userId).update({ team: myTeam });
+            localStorage.setItem("team", myTeam);
+        }
+
+        let allies = this.players.filter(p => p.team === myTeam);
+        let enemies = this.players.filter(p => p.team !== myTeam);
+
+        let centerX = this.scale.width / 2;
+        let spacing = this.scale.width * 0.15;
+        let allyY = this.scale.height * 0.6;
+        let enemyY = this.scale.height * 0.3;
+        let textOffsetX = 80;
+        let textOffsetY = 20;
+
+        allies.forEach((player, index) => {
+            let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
+            let character = this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+            let text = this.add.text(x + textOffsetX, allyY, `HP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
+                fontSize: "18px",
+                fill: "#fff",
+                align: "left"
+            }).setOrigin(0, 0.5);
+        });
+
+        enemies.forEach((player, index) => {
+            let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
+            let character = this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+            let text = this.add.text(x + textOffsetX, enemyY, `HP: ${player.hp}\nMP: ${player.mp}`, {
+                fontSize: "18px",
+                fill: "#fff",
+                align: "left"
+            }).setOrigin(0, 0.5);
+        });
+
+        console.log("✅ キャラクター表示完了");
+    } catch (error) {
+        console.error("❌ エラーが発生しました:", error);
+        this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            "エラーが発生しました。\n画面を更新してください。",
+            {
+                fontSize: "24px",
+                fill: "#ff0000",
+                align: "center"
+            }
+        ).setOrigin(0.5);
+    }
+}
+
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
