@@ -84,6 +84,7 @@ class BattleScene extends Phaser.Scene {
         this.load.image("battleBackground", "assets/旅立ち.png");
         this.load.image("battleField1", "assets/森.png");
         this.load.image("battleField2", "assets/海.png");
+        this.load.image("frame_asset", "assets/フレーム.png");
         this.load.video("gorillaVideo", "assets/ゴリラ.mp4", "loadeddata", true);
 
         // 仲間用アイコン
@@ -311,6 +312,7 @@ class BattleScene extends Phaser.Scene {
         allies.forEach((player, index) => {
             let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
             let character = this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+            let frame = this.add.image(x + textOffsetX + 40, allyY, "frame_asset").setScale(1);
             let text = this.add.text(x + textOffsetX, allyY, `HP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
                 fontSize: "18px",
                 fill: "#fff",
@@ -321,6 +323,7 @@ class BattleScene extends Phaser.Scene {
         enemies.forEach((player, index) => {
             let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
             let character = this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+            let frame = this.add.image(x + textOffsetX + 40, enemyY, "frame_asset").setScale(1);
             let text = this.add.text(x + textOffsetX, enemyY, `HP: ${player.hp}\nMP: ${player.mp}`, {
                 fontSize: "18px",
                 fill: "#fff",
@@ -343,7 +346,6 @@ class BattleScene extends Phaser.Scene {
         ).setOrigin(0.5);
     }
 }
-
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
