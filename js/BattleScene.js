@@ -303,19 +303,19 @@ async displayCharacters() {
         let enemies = this.players.filter(p => p.team !== myTeam);
 
         let centerX = this.scale.width / 2;
-        let spacing = this.scale.width * 0.12;
-        let allyY = this.scale.height * 0.6;
-        let enemyY = this.scale.height * 0.3;
-        let textOffsetX = 100;
-        let frameScale = 0.4; // フレームのサイズを適切に調整
-        let textScale = 0.8; // テキストのサイズ調整
+        let spacing = this.scale.width * 0.1;
+        let allyY = this.scale.height * 0.65;
+        let enemyY = this.scale.height * 0.35;
+        let textOffsetX = 60;
+        let frameScale = 0.3; // フレームのサイズをさらに小さく調整
+        let textScale = 1.2; // フレーム内のテキストを少し大きく
 
         allies.forEach((player, index) => {
             let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.7);
+            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.5);
             this.add.image(x + textOffsetX, allyY, "frame_asset").setScale(frameScale);
             this.add.text(x + textOffsetX, allyY, `HP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
-                fontSize: "18px",
+                fontSize: "20px",
                 fill: "#fff",
                 align: "left"
             }).setOrigin(0, 0.5).setScale(textScale);
@@ -323,10 +323,10 @@ async displayCharacters() {
 
         enemies.forEach((player, index) => {
             let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.7);
+            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.5);
             this.add.image(x + textOffsetX, enemyY, "frame_asset").setScale(frameScale);
             this.add.text(x + textOffsetX, enemyY, `HP: ${player.hp}\nMP: ${player.mp}`, {
-                fontSize: "18px",
+                fontSize: "20px",
                 fill: "#fff",
                 align: "left"
             }).setOrigin(0, 0.5).setScale(textScale);
@@ -347,8 +347,6 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
-
-
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
