@@ -288,9 +288,14 @@ async displayCharacters() {
         }
 
         let myTeam = playersData[userId]?.team;
+if (!myTeam) {
+    console.warn("⚠️ myTeam が取得できませんでした。デフォルトチームを割り当てます。");
+}
+
 
         let allies = this.players.filter(p => p.team === myTeam);
         let enemies = this.players.filter(p => p.team !== myTeam);
+        
 
         let centerX = this.scale.width / 2;
         let spacing = this.scale.width * 0.08;
