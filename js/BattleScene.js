@@ -426,11 +426,15 @@ console.log("🔍 チーム:", playersData[userId]?.team);
 // ページ離脱時のクリーンアップ処理
 window.addEventListener('beforeunload', async (event) => {
     console.log("👋 ページ離脱処理開始");
+
     const roomId = localStorage.getItem('roomId');
-    const userId = firebase.auth().currentUser?.uid;
-    
+    const userId = await getCorrectUserId(); // ここで正しいユーザーIDを取得
+
     if (roomId && userId) {
         await RoomManager.removePlayer(roomId, userId);
         console.log("✅ ページ離脱時のクリーンアップ完了");
+    } else {
+        console.warn("⚠️ ルームIDまたはユーザーIDが取得できませんでした");
     }
 });
+
