@@ -80,12 +80,18 @@ class BattleScene extends Phaser.Scene {
 async getCorrectUserId() {
     console.log("👤 正しいユーザーIDを取得開始");
 
-    let storedUserId = localStorage.getItem("userId");
-    if (!storedUserId) {
-        console.warn("⚠️ ローカルストレージに `userId` が見つかりません！");
-        return null;
+    let user = firebase.auth().currentUser;
+    let userId = user ? user.uid : null;
+
+    if (!userId) {
+        console.warn("⚠️ Firebase認証中のユーザーがいません。認証を試行します...");
+        try {
+            userId = await this.getUserId(); // ここで新しく取得
+        } catch (error) {
+            console.error("❌ ユーザー認証失敗:", error);
+            return null;
+        }
     }
-    console.log("🔍 ローカルストレージから取得したユーザーID:", storedUserId);
 
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
@@ -94,15 +100,14 @@ async getCorrectUserId() {
     }
 
     try {
-        // 🔍 `gameRooms/{roomId}/players` から `userId` を検索
         const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-        const snapshot = await playersRef.child(storedUserId).once("value");
+        const snapshot = await playersRef.child(userId).once("value");
 
         if (snapshot.exists()) {
-            console.log("✅ Firebaseで一致するユーザーIDを発見:", storedUserId);
-            return storedUserId;
+            console.log("✅ Firebaseで一致するユーザーIDを発見:", userId);
+            return userId;
         } else {
-            console.error("❌ Firebaseにこの `userId` は登録されていません:", storedUserId);
+            console.error("❌ Firebaseにこの `userId` は登録されていません:", userId);
             return null;
         }
     } catch (error) {
@@ -110,6 +115,7 @@ async getCorrectUserId() {
         return null;
     }
 }
+
 
 
     preload() {
@@ -186,47 +192,44 @@ async create() {
 }
 
 
-    listenForPlayers(roomId) {
-        console.log("👥 プレイヤー監視開始", roomId);
-        if (this.isListening) {
-            console.log("ℹ️ 既に監視中です");
-            return;
-        }
-        this.isListening = true;
-
-        this.playersRef.on("value", (snapshot) => {
-            let playersData = snapshot.val();
-            console.log("📊 取得したプレイヤーデータ:", playersData);
-            
-            if (!playersData) {
-                console.warn("⚠️ プレイヤーデータが空です");
-                return;
-            }
-
-            this.players = Object.keys(playersData).map(playerId => {
-                console.log(`👤 プレイヤー処理: ${playerId}`);
-                return {
-                    id: playerId,
-                    name: playersData[playerId].name || "???",
-                    role: playersData[playerId].role || "不明",
-                    team: playersData[playerId].team || "未定",
-                    hp: this.getInitialHP(playersData[playerId].role),
-                    mp: this.getInitialMP(playersData[playerId].role),
-                    lp: 3
-                };
-            });
-
-            let playerCount = this.players.length;
-            console.log(`👥 現在のプレイヤー数: ${playerCount}`);
-            this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
-
-            if (playerCount === 6) {
-                console.log("🟢 全プレイヤーが揃いました。バトル開始！");
-                this.playersRef.off("value");
-                this.startCountdown();
-            }
-        });
+    this.playersRef.on("value", async (snapshot) => {
+    let playersData = snapshot.val();
+    console.log("📊 取得したプレイヤーデータ:", playersData);
+    
+    if (!playersData) {
+        console.warn("⚠️ プレイヤーデータが空です");
+        return;
     }
+
+    let myUserId = await this.getCorrectUserId(); // 自分のユーザーIDを取得
+    if (!myUserId) {
+        console.error("❌ 正しいユーザーIDが取得できません");
+        return;
+    }
+
+    let myData = playersData[myUserId];
+    if (!myData) {
+        console.error("❌ Firebaseに自分のデータがありません:", myUserId);
+        return;
+    }
+
+    console.log("🔍 自分のデータ:", myData);
+
+    this.players = Object.keys(playersData).map(playerId => ({
+        id: playerId,
+        name: playersData[playerId].name || "???",
+        role: playersData[playerId].role || "不明",
+        team: playersData[playerId].team || "未定",
+        hp: this.getInitialHP(playersData[playerId].role),
+        mp: this.getInitialMP(playersData[playerId].role),
+        lp: 3
+    }));
+
+    let playerCount = this.players.length;
+    console.log(`👥 現在のプレイヤー数: ${playerCount}`);
+    this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
+});
+
 
     startCountdown() {
         console.log("⏱️ カウントダウン開始");
