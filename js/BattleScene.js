@@ -123,8 +123,26 @@ async getCorrectUserId() {
 
 async create() {
     console.log("🎮 create メソッド開始");
+    this.cameras.main.setBackgroundColor("#000000");
+
+    // ✅ ステータステキストの定義を元に戻す
+    this.statusText = this.add.text(
+        this.scale.width / 2,
+        this.scale.height * 0.1,
+        "バトル開始を待っています...",
+        {
+            fontSize: "32px",
+            fill: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 5
+        }
+    ).setOrigin(0.5);
+
+    this.battleBgm = this.sound.add("battleBgm", { volume: 0 });
 
     let roomId = localStorage.getItem("roomId");
+    console.log("📝 取得したルームID:", roomId);
+
     if (!roomId) {
         console.error("❌ ルームIDが取得できません。");
         return;
@@ -138,7 +156,7 @@ async create() {
             return;
         }
 
-        // 🔍 `RoomManager.getUserIdFromFirebase()` を正しく呼び出す
+        // 🔍 Firebase Database から `userId` を取得
         this.userId = await RoomManager.getUserIdFromFirebase(roomId, firebaseAuthUserId);
 
         if (!this.userId) {
@@ -153,16 +171,24 @@ async create() {
     }
 
     try {
-        // Firebase リファレンスの作成
+        // ✅ Firebase リファレンスの作成
         this.playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
         console.log("✅ Firebase リファレンス作成成功");
 
-        // プレイヤーの監視開始
+        // ✅ プレイヤーの監視開始
         this.listenForPlayers(roomId);
     } catch (error) {
         console.error("❌ Firebase の監視エラー:", error);
     }
+
+    // ✅ `displayCharacters()` を呼び出し、バトルの準備をする
+    try {
+        this.displayCharacters();
+    } catch (error) {
+        console.error("❌ キャラクター表示エラー:", error);
+    }
 }
+
 
 
     listenForPlayers(roomId) {
