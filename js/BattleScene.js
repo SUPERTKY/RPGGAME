@@ -384,7 +384,7 @@ async displayCharacters() {
             let x = allySpacing * (index + 1);
             this.add.image(x, allyY, `${player.role}_ally`).setScale(0.4);
             this.add.image(x, allyY + textOffsetY, "frame_asset").setScale(frameScale);
-            this.add.text(x, allyY + textOffsetY, `HP: ${player.hp || 0}\nMP: ${player.mp || 0}`, {
+            this.add.text(x, allyY + textOffsetY, `HP: ${player.hp !== undefined ? player.hp : '?'}\nMP: ${player.mp !== undefined ? player.mp : '?'}`, {
                 fontSize: "22px",
                 fill: "#fff",
                 align: "left"
@@ -396,7 +396,7 @@ async displayCharacters() {
             let x = enemySpacing * (index + 1);
             this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.4);
             this.add.image(x, enemyY - textOffsetY, "frame_asset").setScale(frameScale);
-            this.add.text(x, enemyY - textOffsetY, `HP: ${player.hp || 0}\nMP: ${player.mp || 0}`, {
+            this.add.text(x, enemyY - textOffsetY, `HP: ${player.hp !== undefined ? player.hp : this.getInitialHP(player.role)}\nMP: ${player.mp !== undefined ? player.mp : this.getInitialMP(player.role)}`, {
                 fontSize: "22px",
                 fill: "#fff",
                 align: "left"
@@ -418,8 +418,6 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
-
-
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
