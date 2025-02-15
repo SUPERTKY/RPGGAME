@@ -94,11 +94,14 @@ async getCorrectUserId() {
     }
 
     try {
-        // 🔍 `gameRooms/{roomId}/players` から `userId` を検索
+        // 🔍 `gameRooms/{roomId}/players` から全データを取得
         const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-        const snapshot = await playersRef.child(storedUserId).once("value");
+        const snapshot = await playersRef.once("value");
+        const playersData = snapshot.val();
 
-        if (snapshot.exists()) {
+        console.log("📊 取得したプレイヤーデータ:", playersData);
+
+        if (playersData && playersData[storedUserId]) {
             console.log("✅ Firebaseで一致するユーザーIDを発見:", storedUserId);
             return storedUserId;
         } else {
@@ -110,6 +113,7 @@ async getCorrectUserId() {
         return null;
     }
 }
+
 
 
     preload() {
@@ -317,18 +321,23 @@ async create() {
         console.log(`✨ ${role}の初期MP設定: ${mp}`);
         return mp;
     }
-
 async displayCharacters() {
     console.log("🎮 displayCharacters 開始");
+
     let userId;
     try {
-        userId = await this.getUserId();
+        userId = await this.getCorrectUserId();
         console.log("✅ ユーザーID取得成功:", userId);
     } catch (error) {
         console.error("❌ ユーザーIDの取得に失敗しました:", error);
         return;
     }
-    
+
+    if (!userId) {
+        console.error("❌ ユーザーIDが取得できませんでした。");
+        return;
+    }
+
     let roomId = localStorage.getItem("roomId");
     if (!roomId) {
         console.warn("⚠️ ルームIDが見つかりません");
@@ -339,31 +348,36 @@ async displayCharacters() {
         const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
         const playersSnapshot = await playersRef.once("value");
         const playersData = playersSnapshot.val();
+
         if (!playersData) {
             console.error("❌ プレイヤーデータが取得できません。");
             return;
         }
 
-        let myTeam = playersData[userId]?.team;
-if (!myTeam) {
-    console.warn("⚠️ myTeam が取得できませんでした。デフォルトチームを割り当てます。");
-}
+        console.log("📊 取得した全プレイヤーデータ:", playersData);
 
-        console.log("🔍 プレイヤーデータ:", playersData);
-console.log("🔍 自分のデータ:", playersData[userId]);
-console.log("🔍 チーム:", playersData[userId]?.team);
+        // ✅ ユーザーのデータがあるかチェック
+        if (!playersData[userId]) {
+            console.error(`❌ ユーザー(${userId})のデータが Firebase に見つかりません！`);
+            return;
+        }
 
-        let allies = this.players.filter(p => p.team === myTeam);
-        let enemies = this.players.filter(p => p.team !== myTeam);
-        
+        let myTeam = playersData[userId].team || "未定";
+        console.log("🔍 ユーザーのチーム:", myTeam);
+
+        let allies = Object.values(playersData).filter(p => p.team === myTeam);
+        let enemies = Object.values(playersData).filter(p => p.team !== myTeam);
+
+        console.log(`👥 味方 (${allies.length}):`, allies);
+        console.log(`👥 敵 (${enemies.length}):`, enemies);
 
         let centerX = this.scale.width / 2;
         let spacing = this.scale.width * 0.08;
         let allyY = this.scale.height * 0.7;
         let enemyY = this.scale.height * 0.3;
         let textOffsetX = 50;
-        let frameScale = 0.25; // フレームのサイズをさらに小さく調整
-        let textScale = 1.3; // フレーム内のテキストを少し大きく
+        let frameScale = 0.25;
+        let textScale = 1.3;
 
         allies.forEach((player, index) => {
             let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
