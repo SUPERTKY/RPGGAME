@@ -387,4 +387,26 @@ window.addEventListener("beforeunload", (event) => {
         console.warn("⚠️ ルームIDまたはユーザーIDが取得できませんでした");
     }
 });
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+
+admin.initializeApp();
+
+exports.removePlayer = functions.https.onRequest(async (req, res) => {
+    const roomId = req.query.roomId;
+    const userId = req.query.userId;
+
+    if (!roomId || !userId) {
+        return res.status(400).send("Missing roomId or userId");
+    }
+
+    try {
+        await admin.database().ref(`gameRooms/${roomId}/players/${userId}`).remove();
+        console.log("✅ プレイヤー削除成功:", userId);
+        res.status(200).send("Player removed");
+    } catch (error) {
+        console.error("❌ プレイヤー削除エラー:", error);
+        res.status(500).send("Error removing player");
+    }
+});
 
