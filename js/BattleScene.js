@@ -371,15 +371,17 @@ async displayCharacters() {
         console.log(`👥 敵 (${enemies.length}):`, enemies);
 
         let screenWidth = this.scale.width;
-        let spacing = screenWidth / Math.max(allies.length, enemies.length, 6);
+        let allySpacing = screenWidth / (allies.length + 1);
+        let enemySpacing = screenWidth / (enemies.length + 1);
         let allyY = this.scale.height * 0.7;
         let enemyY = this.scale.height * 0.3;
         let textOffsetY = 60;
         let frameScale = 0.25;
         let textScale = 1.3;
 
+        // 味方の配置
         allies.forEach((player, index) => {
-            let x = spacing * (index + 1);
+            let x = allySpacing * (index + 1);
             this.add.image(x, allyY, `${player.role}_ally`).setScale(0.4);
             this.add.image(x, allyY + textOffsetY, "frame_asset").setScale(frameScale);
             this.add.text(x, allyY + textOffsetY, `HP: ${player.hp || 0}\nMP: ${player.mp || 0}`, {
@@ -389,8 +391,9 @@ async displayCharacters() {
             }).setOrigin(0.5, 0.5).setScale(textScale);
         });
 
+        // 敵の配置
         enemies.forEach((player, index) => {
-            let x = screenWidth - spacing * (index + 1);
+            let x = enemySpacing * (index + 1);
             this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.4);
             this.add.image(x, enemyY - textOffsetY, "frame_asset").setScale(frameScale);
             this.add.text(x, enemyY - textOffsetY, `HP: ${player.hp || 0}\nMP: ${player.mp || 0}`, {
@@ -415,6 +418,7 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
+
 
 
     shutdown() {
