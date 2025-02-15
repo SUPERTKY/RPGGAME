@@ -192,16 +192,20 @@ async create() {
 }
 
 
-    this.playersRef.on("value", async (snapshot) => {
+    this.playersRef.on("value", (snapshot) => {  
+    this.handlePlayerData(snapshot);  // ✅ 別の関数に async を適用
+});
+
+async handlePlayerData(snapshot) {
     let playersData = snapshot.val();
     console.log("📊 取得したプレイヤーデータ:", playersData);
-    
+
     if (!playersData) {
         console.warn("⚠️ プレイヤーデータが空です");
         return;
     }
 
-    let myUserId = await this.getCorrectUserId(); // 自分のユーザーIDを取得
+    let myUserId = await this.getCorrectUserId(); // ✅ 非同期処理を正しく扱う
     if (!myUserId) {
         console.error("❌ 正しいユーザーIDが取得できません");
         return;
@@ -228,7 +232,8 @@ async create() {
     let playerCount = this.players.length;
     console.log(`👥 現在のプレイヤー数: ${playerCount}`);
     this.statusText.setText(`戦闘準備完了: ${playerCount} / 6`);
-});
+}
+
 
 
     startCountdown() {
