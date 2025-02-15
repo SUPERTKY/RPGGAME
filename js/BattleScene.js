@@ -1,70 +1,28 @@
-// RoomManager.js
 class RoomManager {
-    static async checkAndCleanupRoom(roomId) {
+    static async getUserIdFromFirebase(roomId, firebaseAuthUserId) {
+        console.log("👤 Firebase からユーザーIDを取得開始:", firebaseAuthUserId);
+
         try {
-            console.log("🧹 ルームクリーンアップチェック開始:", roomId);
-            
-            const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-            const snapshot = await playersRef.once('value');
-            const players = snapshot.val();
+            // `gameRooms/{roomId}/players/{firebaseAuthUserId}` のデータを取得
+            const playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${firebaseAuthUserId}`);
+            const snapshot = await playerRef.once("value");
 
-            if (!players) {
-                console.log("👥 プレイヤーが0人になりました。ルームを削除します");
-                await firebase.database().ref(`gameRooms/${roomId}`).remove();
-                console.log("✅ ルーム削除完了:", roomId);
-                return true;
+            if (snapshot.exists()) {
+                console.log("✅ Firebase に登録されているユーザーID:", firebaseAuthUserId);
+                return firebaseAuthUserId; // プレイヤー ID を返す
+            } else {
+                console.error("❌ Firebase にこのユーザーIDは登録されていません:", firebaseAuthUserId);
+                return null;
             }
-
-            const activePlayers = Object.values(players).filter(player => 
-                player && (player.team === "Blue" || player.team === "Red")
-            );
-
-            console.log("👥 アクティブプレイヤー数:", activePlayers.length);
-
-            if (activePlayers.length === 0) {
-                await firebase.database().ref(`gameRooms/${roomId}`).remove();
-                console.log("✅ アクティブプレイヤー0のためルーム削除完了:", roomId);
-                return true;
-            }
-
-            return false;
         } catch (error) {
-            console.error("❌ ルームクリーンアップエラー:", error);
-            return false;
-        }
-    }
-    async getUserIdFromFirebase(roomId, targetUserId) {
-    console.log("👤 Firebase からユーザーIDを取得開始");
-
-    try {
-        // `gameRooms/{roomId}/players` を参照
-        const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-        const snapshot = await playersRef.child(targetUserId).once("value");
-
-        if (snapshot.exists()) {
-            console.log("✅ Firebase に登録されているユーザーID:", targetUserId);
-            return targetUserId;
-        } else {
-            console.error("❌ Firebase にこのユーザーIDは登録されていません:", targetUserId);
+            console.error("❌ Firebase からユーザーID取得エラー:", error);
             return null;
         }
-    } catch (error) {
-        console.error("❌ Firebase からユーザーID取得エラー:", error);
-        return null;
     }
+
+    // 他の RoomManager のメソッドがある場合、ここに追加
 }
 
-    static async removePlayer(roomId, userId) {
-        try {
-            console.log("👤 プレイヤー削除開始:", userId);
-            await firebase.database().ref(`gameRooms/${roomId}/players/${userId}`).remove();
-            console.log("✅ プレイヤー削除完了");
-            await this.checkAndCleanupRoom(roomId);
-        } catch (error) {
-            console.error("❌ プレイヤー削除エラー:", error);
-        }
-    }
-}
 
 // BattleScene.js
 class BattleScene extends Phaser.Scene {
@@ -155,40 +113,22 @@ async getCorrectUserId() {
 
 async create() {
     console.log("🎮 create メソッド開始");
-    this.cameras.main.setBackgroundColor("#000000");
-
-    // ✅ `this.statusText` を確実に定義
-    this.statusText = this.add.text(
-        this.scale.width / 2,
-        this.scale.height * 0.1,
-        "バトル開始を待っています...",
-        {
-            fontSize: "32px",
-            fill: "#ffffff",
-            stroke: "#000000",
-            strokeThickness: 5
-        }
-    ).setOrigin(0.5);
-
-    this.battleBgm = this.sound.add("battleBgm", { volume: 0 });
 
     let roomId = localStorage.getItem("roomId");
-    console.log("📝 取得したルームID:", roomId);
-
     if (!roomId) {
         console.error("❌ ルームIDが取得できません。");
         return;
     }
 
     try {
-        // ✅ Firebase Authentication の `userId` を取得
+        // Firebase Authentication の `userId` を取得
         let firebaseAuthUserId = firebase.auth().currentUser?.uid;
         if (!firebaseAuthUserId) {
             console.error("❌ Firebase Authentication のユーザーIDが取得できません");
             return;
         }
 
-        // ✅ Firebase Database から `userId` を取得
+        // 🔍 `RoomManager.getUserIdFromFirebase()` を正しく呼び出す
         this.userId = await RoomManager.getUserIdFromFirebase(roomId, firebaseAuthUserId);
 
         if (!this.userId) {
@@ -203,11 +143,11 @@ async create() {
     }
 
     try {
-        // ✅ Firebase リファレンスの作成
+        // Firebase リファレンスの作成
         this.playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
         console.log("✅ Firebase リファレンス作成成功");
 
-        // ✅ プレイヤーの監視開始
+        // プレイヤーの監視開始
         this.listenForPlayers(roomId);
     } catch (error) {
         console.error("❌ Firebase の監視エラー:", error);
