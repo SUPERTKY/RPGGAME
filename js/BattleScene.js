@@ -77,39 +77,34 @@ class BattleScene extends Phaser.Scene {
             });
         });
     }
-async getCorrectUserId() {
+async function getCorrectUserId() {
     console.log("👤 正しいユーザーIDを取得開始");
 
     let storedUserId = localStorage.getItem("userId");
-    if (!storedUserId) {
-        console.warn("⚠️ ローカルストレージに `userId` が見つかりません！");
-        return null;
-    }
-    console.log("🔍 ローカルストレージから取得したユーザーID:", storedUserId);
-
     let roomId = localStorage.getItem("roomId");
-    if (!roomId) {
-        console.error("❌ ルームIDが見つかりません");
+
+    if (!storedUserId || !roomId) {
+        console.warn("⚠️ `userId` または `roomId` がローカルストレージに存在しません。");
         return null;
     }
 
     try {
-        // 🔍 `gameRooms/{roomId}/players` から `userId` を検索
-        const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-        const snapshot = await playersRef.child(storedUserId).once("value");
+        const playerRef = firebase.database().ref(`gameRooms/${roomId}/players/${storedUserId}`);
+        const snapshot = await playerRef.once("value");
 
         if (snapshot.exists()) {
             console.log("✅ Firebaseで一致するユーザーIDを発見:", storedUserId);
             return storedUserId;
         } else {
-            console.error("❌ Firebaseにこの `userId` は登録されていません:", storedUserId);
+            console.warn("⚠️ ローカルストレージの `userId` は Firebase に登録されていません。");
             return null;
         }
     } catch (error) {
-        console.error("❌ Firebaseデータ取得エラー:", error);
+        console.error("❌ `userId` の検証中にエラー:", error);
         return null;
     }
 }
+
 
 
     preload() {
@@ -318,120 +313,75 @@ async create() {
         return mp;
     }
 
-async displayCharacters() {
-    console.log("🎮 displayCharacters 開始");
-    let userId;
-    try {
-        userId = await this.getUserId();
-        console.log("✅ ユーザーID取得成功:", userId);
-    } catch (error) {
-        console.error("❌ ユーザーIDの取得に失敗しました:", error);
-        return;
-    }
-    
-    let roomId = localStorage.getItem("roomId");
-    if (!roomId) {
-        console.warn("⚠️ ルームIDが見つかりません");
-        return;
-    }
-
-    try {
-        const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-        const playersSnapshot = await playersRef.once("value");
-        const playersData = playersSnapshot.val();
-        if (!playersData) {
-            console.error("❌ プレイヤーデータが取得できません。");
-            return;
-        }
-
-        let myTeam = playersData[userId]?.team;
-if (!myTeam) {
-    console.warn("⚠️ myTeam が取得できませんでした。デフォルトチームを割り当てます。");
-}
-
-        console.log("🔍 プレイヤーデータ:", playersData);
-console.log("🔍 自分のデータ:", playersData[userId]);
-console.log("🔍 チーム:", playersData[userId]?.team);
-
-        let allies = this.players.filter(p => p.team === myTeam);
-        let enemies = this.players.filter(p => p.team !== myTeam);
-        
-
-        let centerX = this.scale.width / 2;
-        let spacing = this.scale.width * 0.08;
-        let allyY = this.scale.height * 0.7;
-        let enemyY = this.scale.height * 0.3;
-        let textOffsetX = 50;
-        let frameScale = 0.25; // フレームのサイズをさらに小さく調整
-        let textScale = 1.3; // フレーム内のテキストを少し大きく
-
-        allies.forEach((player, index) => {
-            let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.4);
-            this.add.image(x + textOffsetX, allyY, "frame_asset").setScale(frameScale);
-            this.add.text(x + textOffsetX, allyY, `HP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
-                fontSize: "22px",
-                fill: "#fff",
-                align: "left"
-            }).setOrigin(0, 0.5).setScale(textScale);
-        });
-
-        enemies.forEach((player, index) => {
-            let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.4);
-            this.add.image(x + textOffsetX, enemyY, "frame_asset").setScale(frameScale);
-            this.add.text(x + textOffsetX, enemyY, `HP: ${player.hp}\nMP: ${player.mp}`, {
-                fontSize: "22px",
-                fill: "#fff",
-                align: "left"
-            }).setOrigin(0, 0.5).setScale(textScale);
-        });
-
-        console.log("✅ キャラクター表示完了");
-    } catch (error) {
-        console.error("❌ エラーが発生しました:", error);
-        this.add.text(
-            this.scale.width / 2,
-            this.scale.height / 2,
-            "エラーが発生しました。\n画面を更新してください。",
-            {
-                fontSize: "24px",
-                fill: "#ff0000",
-                align: "center"
-            }
-        ).setOrigin(0.5);
-    }
-}
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
         this.cleanupRoom();
     }
 
-    async cleanupRoom() {
-        console.log("🧹 ルームクリーンアップ開始");
-        const roomId = localStorage.getItem('roomId');
-        const userId = await this.getUserId();
-        
-        if (roomId && userId) {
-            await RoomManager.removePlayer(roomId, userId);
-            // ローカルストレージのクリーンアップ
-            localStorage.removeItem('roomId');
-            localStorage.removeItem('team');
-            console.log("✅ ルームクリーンアップ完了");
+    class RoomManager {
+    static async checkAndCleanupRoom(roomId) {
+        try {
+            console.log("🧹 ルームクリーンアップチェック開始:", roomId);
+
+            const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
+            const snapshot = await playersRef.once('value');
+            const players = snapshot.val();
+
+            if (!players) {
+                console.log("👥 プレイヤーが0人になりました。ルームを削除します");
+                await firebase.database().ref(`gameRooms/${roomId}`).remove();
+                console.log("✅ ルーム削除完了:", roomId);
+                return true;
+            }
+
+            const activePlayers = Object.values(players).filter(player =>
+                player && (player.team === "Blue" || player.team === "Red")
+            );
+
+            console.log("👥 アクティブプレイヤー数:", activePlayers.length);
+
+            if (activePlayers.length === 0) {
+                await firebase.database().ref(`gameRooms/${roomId}`).remove();
+                console.log("✅ アクティブプレイヤー0のためルーム削除完了:", roomId);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error("❌ ルームクリーンアップエラー:", error);
+            return false;
+        }
+    }
+
+    static async removePlayer(roomId, userId) {
+        try {
+            console.log("👤 プレイヤー削除開始:", userId);
+            await firebase.database().ref(`gameRooms/${roomId}/players/${userId}`).remove();
+            console.log("✅ プレイヤー削除完了");
+            await this.checkAndCleanupRoom(roomId);
+        } catch (error) {
+            console.error("❌ プレイヤー削除エラー:", error);
         }
     }
 }
 
-// ページ離脱時のクリーンアップ処理
-window.addEventListener('beforeunload', async (event) => {
+}
+
+let userIdForUnload = null;
+
+// 事前にユーザーIDを取得
+(async () => {
+    userIdForUnload = await getCorrectUserId();
+})();
+
+window.addEventListener("beforeunload", (event) => {
     console.log("👋 ページ離脱処理開始");
 
-    const roomId = localStorage.getItem('roomId');
-    const userId = await getCorrectUserId(); // ここで正しいユーザーIDを取得
-
-    if (roomId && userId) {
-        await RoomManager.removePlayer(roomId, userId);
+    const roomId = localStorage.getItem("roomId");
+    if (roomId && userIdForUnload) {
+        const url = `https://your-firebase-function-url/removePlayer?roomId=${roomId}&userId=${userIdForUnload}`;
+        navigator.sendBeacon(url);
         console.log("✅ ページ離脱時のクリーンアップ完了");
     } else {
         console.warn("⚠️ ルームIDまたはユーザーIDが取得できませんでした");
