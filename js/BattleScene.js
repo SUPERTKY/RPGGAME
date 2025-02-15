@@ -33,6 +33,26 @@ class RoomManager {
             return false;
         }
     }
+    async getUserIdFromFirebase(roomId, targetUserId) {
+    console.log("👤 Firebase からユーザーIDを取得開始");
+
+    try {
+        // `gameRooms/{roomId}/players` を参照
+        const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
+        const snapshot = await playersRef.child(targetUserId).once("value");
+
+        if (snapshot.exists()) {
+            console.log("✅ Firebase に登録されているユーザーID:", targetUserId);
+            return targetUserId;
+        } else {
+            console.error("❌ Firebase にこのユーザーIDは登録されていません:", targetUserId);
+            return null;
+        }
+    } catch (error) {
+        console.error("❌ Firebase からユーザーID取得エラー:", error);
+        return null;
+    }
+}
 
     static async removePlayer(roomId, userId) {
         try {
@@ -161,12 +181,21 @@ async create() {
     }
 
     try {
-        // ✅ ユーザーIDの取得方法を修正
-        this.userId = await this.getCorrectUserId();
-        if (!this.userId) {
-            console.error("❌ ユーザーIDが取得できませんでした。");
+        // ✅ Firebase Authentication の `userId` を取得
+        let firebaseAuthUserId = firebase.auth().currentUser?.uid;
+        if (!firebaseAuthUserId) {
+            console.error("❌ Firebase Authentication のユーザーIDが取得できません");
             return;
         }
+
+        // ✅ Firebase Database から `userId` を取得
+        this.userId = await RoomManager.getUserIdFromFirebase(roomId, firebaseAuthUserId);
+
+        if (!this.userId) {
+            console.error("❌ Firebase Database に自分のユーザーIDが存在しません");
+            return;
+        }
+
         console.log("✅ ユーザーID取得成功:", this.userId);
     } catch (error) {
         console.error("❌ ユーザーIDの取得に失敗しました:", error);
