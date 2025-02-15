@@ -1,38 +1,50 @@
+// RoomManager.js
 class RoomManager {
-    static async getUserIdFromFirebase(roomId, firebaseAuthUserId) {
-        console.log("👤 Firebase から自分のユーザーIDを取得開始");
-
+    static async checkAndCleanupRoom(roomId) {
         try {
-            // `gameRooms/{roomId}/players` のデータを取得
+            console.log("🧹 ルームクリーンアップチェック開始:", roomId);
+            
             const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
-            const snapshot = await playersRef.once("value");
-
-            if (!snapshot.exists()) {
-                console.error("❌ プレイヤーリストが存在しません！");
-                return null;
-            }
-
+            const snapshot = await playersRef.once('value');
             const players = snapshot.val();
-            console.log("📊 取得したプレイヤーデータ:", players);
 
-            // 🔍 自分の Firebase Authentication ID (`firebaseAuthUserId`) に対応する `userId` を検索
-            for (const [userId, playerData] of Object.entries(players)) {
-                if (playerData.id === userId) {  // `id` フィールドとキーが一致するか確認
-                    console.log("✅ 自分の `userId` を発見:", userId);
-                    return userId;
-                }
+            if (!players) {
+                console.log("👥 プレイヤーが0人になりました。ルームを削除します");
+                await firebase.database().ref(`gameRooms/${roomId}`).remove();
+                console.log("✅ ルーム削除完了:", roomId);
+                return true;
             }
 
-            console.error("❌ Firebase に一致する `userId` が見つかりません！");
-            return null;
+            const activePlayers = Object.values(players).filter(player => 
+                player && (player.team === "Blue" || player.team === "Red")
+            );
+
+            console.log("👥 アクティブプレイヤー数:", activePlayers.length);
+
+            if (activePlayers.length === 0) {
+                await firebase.database().ref(`gameRooms/${roomId}`).remove();
+                console.log("✅ アクティブプレイヤー0のためルーム削除完了:", roomId);
+                return true;
+            }
+
+            return false;
         } catch (error) {
-            console.error("❌ Firebase からユーザーID取得エラー:", error);
-            return null;
+            console.error("❌ ルームクリーンアップエラー:", error);
+            return false;
+        }
+    }
+
+    static async removePlayer(roomId, userId) {
+        try {
+            console.log("👤 プレイヤー削除開始:", userId);
+            await firebase.database().ref(`gameRooms/${roomId}/players/${userId}`).remove();
+            console.log("✅ プレイヤー削除完了");
+            await this.checkAndCleanupRoom(roomId);
+        } catch (error) {
+            console.error("❌ プレイヤー削除エラー:", error);
         }
     }
 }
-
-
 
 // BattleScene.js
 class BattleScene extends Phaser.Scene {
@@ -125,7 +137,7 @@ async create() {
     console.log("🎮 create メソッド開始");
     this.cameras.main.setBackgroundColor("#000000");
 
-    // ✅ ステータステキストの定義を元に戻す
+    // ✅ `this.statusText` を確実に定義
     this.statusText = this.add.text(
         this.scale.width / 2,
         this.scale.height * 0.1,
@@ -149,21 +161,12 @@ async create() {
     }
 
     try {
-        // Firebase Authentication の `userId` を取得
-        let firebaseAuthUserId = firebase.auth().currentUser?.uid;
-        if (!firebaseAuthUserId) {
-            console.error("❌ Firebase Authentication のユーザーIDが取得できません");
-            return;
-        }
-
-        // 🔍 Firebase Database から `userId` を取得
-        this.userId = await RoomManager.getUserIdFromFirebase(roomId, firebaseAuthUserId);
-
+        // ✅ ユーザーIDの取得方法を修正
+        this.userId = await this.getCorrectUserId();
         if (!this.userId) {
-            console.error("❌ Firebase Database に自分のユーザーIDが存在しません");
+            console.error("❌ ユーザーIDが取得できませんでした。");
             return;
         }
-
         console.log("✅ ユーザーID取得成功:", this.userId);
     } catch (error) {
         console.error("❌ ユーザーIDの取得に失敗しました:", error);
@@ -180,15 +183,7 @@ async create() {
     } catch (error) {
         console.error("❌ Firebase の監視エラー:", error);
     }
-
-    // ✅ `displayCharacters()` を呼び出し、バトルの準備をする
-    try {
-        this.displayCharacters();
-    } catch (error) {
-        console.error("❌ キャラクター表示エラー:", error);
-    }
 }
-
 
 
     listenForPlayers(roomId) {
