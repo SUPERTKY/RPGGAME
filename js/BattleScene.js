@@ -77,7 +77,7 @@ class BattleScene extends Phaser.Scene {
             });
         });
     }
-async function getCorrectUserId() {
+async getCorrectUserId() {
     console.log("👤 正しいユーザーIDを取得開始");
 
     let storedUserId = localStorage.getItem("userId");
