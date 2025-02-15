@@ -356,7 +356,6 @@ async displayCharacters() {
 
         console.log("📊 取得した全プレイヤーデータ:", playersData);
 
-        // ✅ ユーザーのデータがあるかチェック
         if (!playersData[userId]) {
             console.error(`❌ ユーザー(${userId})のデータが Firebase に見つかりません！`);
             return;
@@ -371,26 +370,34 @@ async displayCharacters() {
         console.log(`👥 味方 (${allies.length}):`, allies);
         console.log(`👥 敵 (${enemies.length}):`, enemies);
 
-        let totalPlayers = allies.length + enemies.length;
-        let spacing = this.scale.width / (totalPlayers + 1);
-        let centerY = this.scale.height * 0.5;
+        let screenWidth = this.scale.width;
+        let spacing = screenWidth / Math.max(allies.length, enemies.length, 6);
+        let allyY = this.scale.height * 0.7;
+        let enemyY = this.scale.height * 0.3;
+        let textOffsetY = 60;
         let frameScale = 0.25;
         let textScale = 1.3;
-        let index = 0;
 
-        [...allies, ...enemies].forEach(player => {
+        allies.forEach((player, index) => {
             let x = spacing * (index + 1);
-            let imgKey = player.team === myTeam ? `${player.role}_ally` : `${player.role}_enemy`;
-
-            this.add.image(x, centerY, imgKey).setScale(0.4);
-            this.add.image(x, centerY + 60, "frame_asset").setScale(frameScale);
-            this.add.text(x, centerY + 60, `HP: ${player.hp}\nMP: ${player.mp}`, {
+            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.4);
+            this.add.image(x, allyY + textOffsetY, "frame_asset").setScale(frameScale);
+            this.add.text(x, allyY + textOffsetY, `HP: ${player.hp || 0}\nMP: ${player.mp || 0}`, {
                 fontSize: "22px",
                 fill: "#fff",
-                align: "center"
-            }).setOrigin(0.5).setScale(textScale);
+                align: "left"
+            }).setOrigin(0.5, 0.5).setScale(textScale);
+        });
 
-            index++;
+        enemies.forEach((player, index) => {
+            let x = screenWidth - spacing * (index + 1);
+            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.4);
+            this.add.image(x, enemyY - textOffsetY, "frame_asset").setScale(frameScale);
+            this.add.text(x, enemyY - textOffsetY, `HP: ${player.hp || 0}\nMP: ${player.mp || 0}`, {
+                fontSize: "22px",
+                fill: "#fff",
+                align: "left"
+            }).setOrigin(0.5, 0.5).setScale(textScale);
         });
 
         console.log("✅ キャラクター表示完了");
