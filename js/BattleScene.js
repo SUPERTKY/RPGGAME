@@ -371,34 +371,26 @@ async displayCharacters() {
         console.log(`👥 味方 (${allies.length}):`, allies);
         console.log(`👥 敵 (${enemies.length}):`, enemies);
 
-        let centerX = this.scale.width / 2;
-        let spacing = this.scale.width * 0.08;
-        let allyY = this.scale.height * 0.7;
-        let enemyY = this.scale.height * 0.3;
-        let textOffsetX = 50;
+        let totalPlayers = allies.length + enemies.length;
+        let spacing = this.scale.width / (totalPlayers + 1);
+        let centerY = this.scale.height * 0.5;
         let frameScale = 0.25;
         let textScale = 1.3;
+        let index = 0;
 
-        allies.forEach((player, index) => {
-            let x = centerX - (allies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, allyY, `${player.role}_ally`).setScale(0.4);
-            this.add.image(x + textOffsetX, allyY, "frame_asset").setScale(frameScale);
-            this.add.text(x + textOffsetX, allyY, `HP: ${player.hp}\nMP: ${player.mp}\nLP: ${player.lp}`, {
+        [...allies, ...enemies].forEach(player => {
+            let x = spacing * (index + 1);
+            let imgKey = player.team === myTeam ? `${player.role}_ally` : `${player.role}_enemy`;
+
+            this.add.image(x, centerY, imgKey).setScale(0.4);
+            this.add.image(x, centerY + 60, "frame_asset").setScale(frameScale);
+            this.add.text(x, centerY + 60, `HP: ${player.hp}\nMP: ${player.mp}`, {
                 fontSize: "22px",
                 fill: "#fff",
-                align: "left"
-            }).setOrigin(0, 0.5).setScale(textScale);
-        });
+                align: "center"
+            }).setOrigin(0.5).setScale(textScale);
 
-        enemies.forEach((player, index) => {
-            let x = centerX - (enemies.length - 1) * spacing / 2 + index * spacing;
-            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.4);
-            this.add.image(x + textOffsetX, enemyY, "frame_asset").setScale(frameScale);
-            this.add.text(x + textOffsetX, enemyY, `HP: ${player.hp}\nMP: ${player.mp}`, {
-                fontSize: "22px",
-                fill: "#fff",
-                align: "left"
-            }).setOrigin(0, 0.5).setScale(textScale);
+            index++;
         });
 
         console.log("✅ キャラクター表示完了");
@@ -416,6 +408,7 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
+
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
