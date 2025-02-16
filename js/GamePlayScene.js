@@ -457,22 +457,42 @@ async assignRolesAndSendToFirebase() {
     try {
         let updates = {};
 
-        // ✅ 役職リスト（各役職2つずつ）
-        let roles = ["priest", "priest", "mage", "mage", "swordsman", "swordsman"];
-        Phaser.Utils.Array.Shuffle(roles); // 🔥 役職をシャッフル
+        // 🔥 役職リスト（3種類 x 2人 = 6人）
+        let roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
+        Phaser.Utils.Array.Shuffle(roles); // 🔀 役職をシャッフル
 
-        // ✅ チーム分け（前半3人が Red, 後半3人が Blue）
-        let teamAssignments = ["Red", "Red", "Red", "Blue", "Blue", "Blue"];
+        // 🔥 プレイヤーリストをシャッフル
+        Phaser.Utils.Array.Shuffle(this.players);
+
+        // ✅ 各チームに役職ごと1人ずつ配置
+        let redTeam = [];
+        let blueTeam = [];
+
+        let roleAssignment = {}; // 役職ごとのプレイヤー管理
 
         this.players.forEach((player, index) => {
-            player.role = roles[index]; // シャッフル済みのリストから役職を取得
-            player.team = teamAssignments[index]; // チームを割り当て
+            let role = roles[index];
+            roleAssignment[role] = roleAssignment[role] || [];
+            roleAssignment[role].push(player);
+        });
+
+        // 各役職ごとに1人ずつチーム分け
+        ["priest", "mage", "swordsman"].forEach(role => {
+            if (roleAssignment[role] && roleAssignment[role].length === 2) {
+                redTeam.push(roleAssignment[role][0]);
+                blueTeam.push(roleAssignment[role][1]);
+            }
         });
 
         // ✅ Firebase にデータ送信
-        this.players.forEach(player => {
+        redTeam.forEach(player => {
             updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
-            updates[`gameRooms/${roomId}/players/${player.id}/team`] = player.team; // チーム情報を追加
+            updates[`gameRooms/${roomId}/players/${player.id}/team`] = "Red";
+        });
+
+        blueTeam.forEach(player => {
+            updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
+            updates[`gameRooms/${roomId}/players/${player.id}/team`] = "Blue";
         });
 
         await firebase.database().ref().update(updates);
