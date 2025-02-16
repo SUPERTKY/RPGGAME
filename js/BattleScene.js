@@ -372,24 +372,24 @@ async displayCharacters() {
         console.log(`👥 敵 (${enemies.length}):`, enemies);
 
         let screenWidth = this.scale.width;
-        let padding = screenWidth * 0.1; // 画面端の余白を増やす
+        let padding = screenWidth * 0.05; // 画面端の余白
         let availableWidth = screenWidth - 2 * padding;
-        let maxCharacterSize = availableWidth / Math.max(allies.length, enemies.length + 1);
-        let characterScale = Math.min(0.3, maxCharacterSize / 300); // 適切なスケール調整
+        let maxCharacters = Math.max(allies.length, enemies.length);
+        let characterScale = Math.min(0.25, availableWidth / (maxCharacters * 300)); // キャラクターの大きさを適正化
         let allySpacing = availableWidth / (allies.length + 1);
         let enemySpacing = availableWidth / (enemies.length + 1);
         let allyY = this.scale.height * 0.7;
         let enemyY = this.scale.height * 0.3;
-        let statusOffsetX = 120;
-        let textOffsetY = -40;
+        let statusOffsetX = characterScale * 180;
+        let textOffsetY = -20;
 
         // 味方の配置
         allies.forEach((player, index) => {
             let x = padding + allySpacing * (index + 1);
             this.add.image(x, allyY, `${player.role}_ally`).setScale(characterScale);
-            this.add.image(x + statusOffsetX, allyY, "frame_asset").setScale(0.35);
+            this.add.image(x + statusOffsetX, allyY, "frame_asset").setScale(characterScale * 1.2);
             this.add.text(x + statusOffsetX, allyY + textOffsetY, `${player.name}\nHP: ${player.hp !== undefined ? player.hp : '?'}\nMP: ${player.mp !== undefined ? player.mp : '?'}`, {
-                fontSize: "20px",
+                fontSize: "18px",
                 fill: "#fff",
                 align: "left"
             }).setOrigin(0.5);
@@ -399,9 +399,9 @@ async displayCharacters() {
         enemies.forEach((player, index) => {
             let x = padding + enemySpacing * (index + 1);
             this.add.image(x, enemyY, `${player.role}_enemy`).setScale(characterScale);
-            this.add.image(x + statusOffsetX, enemyY, "frame_asset").setScale(0.35);
+            this.add.image(x + statusOffsetX, enemyY, "frame_asset").setScale(characterScale * 1.2);
             this.add.text(x + statusOffsetX, enemyY + textOffsetY, `${player.name}\nHP: ${player.hp !== undefined ? player.hp : this.getInitialHP(player.role)}`, {
-                fontSize: "20px",
+                fontSize: "18px",
                 fill: "#fff",
                 align: "left"
             }).setOrigin(0.5);
@@ -422,6 +422,7 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
+
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
