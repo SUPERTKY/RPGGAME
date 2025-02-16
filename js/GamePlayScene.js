@@ -457,6 +457,13 @@ async assignRolesAndSendToFirebase() {
     try {
         let updates = {};
 
+        // 🔥 役職ごとのHPとMPの設定
+        const roleStats = {
+            swordsman: { HP: 200, MP: 8 },
+            mage: { HP: 160, MP: 12 },
+            priest: { HP: 180, MP: 14 }
+        };
+
         // 🔥 役職リスト（3種類 x 2人 = 6人）
         let roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
         Phaser.Utils.Array.Shuffle(roles); // 🔀 役職をシャッフル
@@ -486,17 +493,23 @@ async assignRolesAndSendToFirebase() {
 
         // ✅ Firebase にデータ送信
         redTeam.forEach(player => {
-            updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
+            let role = roles.find(r => r === player.role);
+            updates[`gameRooms/${roomId}/players/${player.id}/role`] = role;
             updates[`gameRooms/${roomId}/players/${player.id}/team`] = "Red";
+            updates[`gameRooms/${roomId}/players/${player.id}/HP`] = roleStats[role].HP;
+            updates[`gameRooms/${roomId}/players/${player.id}/MP`] = roleStats[role].MP;
         });
 
         blueTeam.forEach(player => {
-            updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
+            let role = roles.find(r => r === player.role);
+            updates[`gameRooms/${roomId}/players/${player.id}/role`] = role;
             updates[`gameRooms/${roomId}/players/${player.id}/team`] = "Blue";
+            updates[`gameRooms/${roomId}/players/${player.id}/HP`] = roleStats[role].HP;
+            updates[`gameRooms/${roomId}/players/${player.id}/MP`] = roleStats[role].MP;
         });
 
         await firebase.database().ref().update(updates);
-        console.log("✅ 役職とチームを Firebase に保存しました:", updates);
+        console.log("✅ 役職、チーム、HP、MPを Firebase に保存しました:", updates);
 
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
