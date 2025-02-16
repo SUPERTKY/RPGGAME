@@ -270,37 +270,38 @@ async create() {
         showNextNumber();
     }
 
-    startBattle() {
-        console.log("⚔️ バトル開始処理実行");
-        this.cameras.main.fadeOut(1000, 0, 0, 0);
-        this.tweens.add({
-            targets: this.battleBgm,
-            volume: 1,
-            duration: 2000
-        });
+startBattle() {
+    console.log("⚔️ バトル開始処理実行");
+    this.cameras.main.fadeOut(1000, 0, 0, 0);
+    this.tweens.add({
+        targets: this.battleBgm,
+        volume: 1,
+        duration: 2000,
+        loop: -1 // 🔁 BGMをループ再生
+    });
 
-        this.cameras.main.once("camerafadeoutcomplete", () => {
-            let randomChoice = Math.random();
-            if (randomChoice < 0.55) {
-                this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
-                this.bg.setOrigin(0.5, 0.5);
-                this.bg.play(true);
+    this.cameras.main.once("camerafadeoutcomplete", () => {
+        let randomChoice = Math.random();
+        if (randomChoice < 0.55) {
+            this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
+            this.bg.setOrigin(0.5, 0.5);
+            this.bg.play(true);
 
-                let scaleX = this.scale.width / this.bg.width;
-                let scaleY = this.scale.height / this.bg.height;
-                let scale = Math.max(scaleX, scaleY);
-                this.bg.setScale(scale);
-            } else {
-                let selectedField = randomChoice < 0.5 ? "battleField1" : "battleField2";
-                this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, selectedField);
-                this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
-            }
+            let scaleX = this.scale.width / this.bg.width;
+            let scaleY = this.scale.height / this.bg.height;
+            let scale = Math.max(scaleX, scaleY);
+            this.bg.setScale(scale);
+        } else {
+            let selectedField = randomChoice < 0.5 ? "battleField1" : "battleField2";
+            this.bg = this.add.image(this.scale.width / 2, this.scale.height / 2, selectedField);
+            this.bg.setScale(Math.max(this.scale.width / this.bg.width, this.scale.height / this.bg.height));
+        }
 
-            this.cameras.main.fadeIn(1000, 0, 0, 0);
-            this.battleBgm.play();
-            this.displayCharacters();
-        });
-    }
+        this.cameras.main.fadeIn(1000, 0, 0, 0);
+        this.battleBgm.play();
+        this.displayCharacters();
+    });
+}
 
     getInitialHP(role) {
         const hp = {
@@ -375,32 +376,30 @@ async displayCharacters() {
         let enemySpacing = screenWidth / (enemies.length + 1);
         let allyY = this.scale.height * 0.7;
         let enemyY = this.scale.height * 0.3;
-        let textOffsetY = 60;
-        let frameScale = 0.25;
-        let textScale = 1.3;
+        let statusOffsetX = 80;
 
         // 味方の配置
         allies.forEach((player, index) => {
             let x = allySpacing * (index + 1);
             this.add.image(x, allyY, `${player.role}_ally`).setScale(0.4);
-            this.add.image(x, allyY + textOffsetY, "frame_asset").setScale(frameScale);
-            this.add.text(x, allyY + textOffsetY, `HP: ${player.hp !== undefined ? player.hp : '?'}\nMP: ${player.mp !== undefined ? player.mp : '?'}`, {
+            this.add.image(x + statusOffsetX, allyY, "frame_asset").setScale(0.25);
+            this.add.text(x + statusOffsetX, allyY, `${player.name}\nHP: ${player.hp !== undefined ? player.hp : '?'}\nMP: ${player.mp !== undefined ? player.mp : '?'}`, {
                 fontSize: "22px",
                 fill: "#fff",
                 align: "left"
-            }).setOrigin(0.5, 0.5).setScale(textScale);
+            }).setOrigin(0.5);
         });
 
         // 敵の配置
         enemies.forEach((player, index) => {
             let x = enemySpacing * (index + 1);
             this.add.image(x, enemyY, `${player.role}_enemy`).setScale(0.4);
-            this.add.image(x, enemyY - textOffsetY, "frame_asset").setScale(frameScale);
-            this.add.text(x, enemyY - textOffsetY, `HP: ${player.hp !== undefined ? player.hp : this.getInitialHP(player.role)}\nMP: ${player.mp !== undefined ? player.mp : this.getInitialMP(player.role)}`, {
+            this.add.image(x + statusOffsetX, enemyY, "frame_asset").setScale(0.25);
+            this.add.text(x + statusOffsetX, enemyY, `${player.name}\nHP: ${player.hp !== undefined ? player.hp : this.getInitialHP(player.role)}`, {
                 fontSize: "22px",
                 fill: "#fff",
                 align: "left"
-            }).setOrigin(0.5, 0.5).setScale(textScale);
+            }).setOrigin(0.5);
         });
 
         console.log("✅ キャラクター表示完了");
@@ -418,7 +417,6 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
-
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
         this.cleanupRoom();
