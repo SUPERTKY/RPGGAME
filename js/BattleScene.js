@@ -372,42 +372,38 @@ async displayCharacters() {
         console.log(`👥 敵 (${enemies.length}):`, enemies);
 
         let screenWidth = this.scale.width;
-        let screenHeight = this.scale.height;
-        let padding = screenWidth * 0.08; // 画面端の余白を広めに
+        let padding = screenWidth * 0.05; // 画面端の余白
         let availableWidth = screenWidth - 2 * padding;
         let maxCharacters = Math.max(allies.length, enemies.length);
-
-        let characterSize = Math.min(screenWidth / (maxCharacters * 2), 100); // キャラの最大幅を100px以下に
-        let frameSize = characterSize * 1.2; // フレームサイズをキャラサイズよりやや大きめに
-        let statusOffsetX = frameSize * 0.6; // フレームとHP/MP表示の位置調整
-        let textOffsetY = -frameSize * 0.3; // HP/MPテキストのY位置調整
-
+        let characterScale = Math.min(0.25, availableWidth / (maxCharacters * 300)); // キャラクターの大きさを適正化
         let allySpacing = availableWidth / (allies.length + 1);
         let enemySpacing = availableWidth / (enemies.length + 1);
-        let allyY = screenHeight * 0.75; // 味方は下側
-        let enemyY = screenHeight * 0.35; // 敵は上側
+        let allyY = this.scale.height * 0.7;
+        let enemyY = this.scale.height * 0.3;
+        let statusOffsetX = characterScale * 180;
+        let textOffsetY = -20;
 
         // 味方の配置
         allies.forEach((player, index) => {
             let x = padding + allySpacing * (index + 1);
-            this.add.image(x, allyY, `${player.role}_ally`).setScale(characterSize / 200);
-            this.add.image(x, allyY, "frame_asset").setScale(frameSize / 200);
-            this.add.text(x, allyY + textOffsetY, `${player.name}\nHP: ${player.hp ?? '?'}`, {
-                fontSize: "16px",
+            this.add.image(x, allyY, `${player.role}_ally`).setScale(characterScale);
+            this.add.image(x + statusOffsetX, allyY, "frame_asset").setScale(characterScale * 1.2);
+            this.add.text(x + statusOffsetX, allyY + textOffsetY, `${player.name}\nHP: ${player.hp !== undefined ? player.hp : '?'}\nMP: ${player.mp !== undefined ? player.mp : '?'}`, {
+                fontSize: "18px",
                 fill: "#fff",
-                align: "center"
+                align: "left"
             }).setOrigin(0.5);
         });
 
         // 敵の配置
         enemies.forEach((player, index) => {
             let x = padding + enemySpacing * (index + 1);
-            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(characterSize / 200);
-            this.add.image(x, enemyY, "frame_asset").setScale(frameSize / 200);
-            this.add.text(x, enemyY + textOffsetY, `${player.name}\nHP: ${player.hp ?? this.getInitialHP(player.role)}`, {
-                fontSize: "16px",
+            this.add.image(x, enemyY, `${player.role}_enemy`).setScale(characterScale);
+            this.add.image(x + statusOffsetX, enemyY, "frame_asset").setScale(characterScale * 1.2);
+            this.add.text(x + statusOffsetX, enemyY + textOffsetY, `${player.name}\nHP: ${player.hp !== undefined ? player.hp : this.getInitialHP(player.role)}`, {
+                fontSize: "18px",
                 fill: "#fff",
-                align: "center"
+                align: "left"
             }).setOrigin(0.5);
         });
 
