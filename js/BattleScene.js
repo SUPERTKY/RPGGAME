@@ -380,7 +380,7 @@ async displayCharacters() {
             const y = isEnemy ? screenHeight * 0.3 : screenHeight * 0.7;
 
             // キャラクターとステータスの間隔（unitWidthの30%）
-            const spacing = unitWidth * 0.3;
+            const spacing = unitWidth * 0.1;
             
             // キャラクターの配置（左側）
             const characterX = baseX - spacing;
