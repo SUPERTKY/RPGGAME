@@ -355,86 +355,71 @@ async displayCharacters() {
             return;
         }
 
-        console.log("📊 取得した全プレイヤーデータ:", playersData);
-
-        if (!playersData[userId]) {
-            console.error(`❌ ユーザー(${userId})のデータが Firebase に見つかりません！`);
-            return;
-        }
-
         let myTeam = playersData[userId].team || "未定";
-        console.log("🔍 ユーザーのチーム:", myTeam);
-
         let allies = Object.values(playersData).filter(p => p.team === myTeam);
         let enemies = Object.values(playersData).filter(p => p.team !== myTeam);
 
-        console.log(`👥 味方 (${allies.length}):`, allies);
-        console.log(`👥 敵 (${enemies.length}):`, enemies);
-
-        // 画面レイアウトの計算
+        // レイアウト計算
         const screenWidth = this.scale.width;
         const screenHeight = this.scale.height;
+        const padding = screenWidth * 0.05; // 画面端の余白 5%
+        const availableWidth = screenWidth - (padding * 2);
         
-        // 左側のキャラクター表示エリアと右側のステータス表示エリアを分ける
-        const characterAreaWidth = screenWidth * 0.6; // 画面の60%をキャラクターエリアに
-        const statusAreaWidth = screenWidth * 0.4;   // 残りの40%をステータスエリアに
+        // 各キャラクター+ステータスのセットに必要な幅を計算
+        const characterSetWidth = availableWidth / Math.max(allies.length, enemies.length);
+        const characterScale = Math.min(0.25, characterSetWidth / 500); // キャラクターの最大サイズを制限
         
-        // キャラクターのスケーリングを計算
-        const maxCharacters = Math.max(allies.length, enemies.length);
-        const characterSpacing = characterAreaWidth / (maxCharacters + 1);
-        const characterScale = Math.min(0.3, characterSpacing / 300); // キャラクターの最大サイズを制限
+        // キャラクターとステータスフレームの間隔
+        const spaceBetween = characterSetWidth * 0.2;
         
-        // 縦方向の位置設定
-        const enemyY = screenHeight * 0.3;  // 敵チームは上部30%の位置
-        const allyY = screenHeight * 0.7;   // 味方チームは下部70%の位置
-        
-        // ステータスフレームのサイズ設定
-        const frameScale = 0.25; // フレームサイズを固定
-        const frameWidth = 200 * frameScale;
-        const frameHeight = 100 * frameScale;
-
-        // 敵チームの配置
+        // 敵チームの配置（上段）
         enemies.forEach((player, index) => {
-            // キャラクター配置（左側）
-            const characterX = characterSpacing * (index + 1);
-            const characterSprite = this.add.image(characterX, enemyY, `${player.role}_enemy`)
+            const baseX = padding + (characterSetWidth * index) + (characterSetWidth / 2);
+            const characterX = baseX - spaceBetween;
+            const statusX = baseX + spaceBetween;
+            const y = screenHeight * 0.3;
+
+            // キャラクター
+            this.add.image(characterX, y, `${player.role}_enemy`)
                 .setScale(characterScale);
             
-            // ステータスフレーム配置（右側）
-            const frameX = screenWidth - statusAreaWidth + (statusAreaWidth / enemies.length) * index + (statusAreaWidth / enemies.length / 2);
-            const frame = this.add.image(frameX, enemyY, "frame_asset")
-                .setScale(frameScale);
+            // ステータスフレーム
+            this.add.image(statusX, y, "frame_asset")
+                .setScale(characterScale * 1.2);
             
             // ステータステキスト
-            this.add.text(frameX, enemyY - 10, 
+            this.add.text(statusX, y - 10, 
                 `${player.name}\nHP: ${player.hp || this.getInitialHP(player.role)}`, {
                 fontSize: "16px",
                 fill: "#ffffff",
                 stroke: "#000000",
-                strokeThickness: 4,
+                strokeThickness: 3,
                 align: "center"
             }).setOrigin(0.5);
         });
 
-        // 味方チームの配置
+        // 味方チームの配置（下段）
         allies.forEach((player, index) => {
-            // キャラクター配置（左側）
-            const characterX = characterSpacing * (index + 1);
-            const characterSprite = this.add.image(characterX, allyY, `${player.role}_ally`)
+            const baseX = padding + (characterSetWidth * index) + (characterSetWidth / 2);
+            const characterX = baseX - spaceBetween;
+            const statusX = baseX + spaceBetween;
+            const y = screenHeight * 0.7;
+
+            // キャラクター
+            this.add.image(characterX, y, `${player.role}_ally`)
                 .setScale(characterScale);
             
-            // ステータスフレーム配置（右側）
-            const frameX = screenWidth - statusAreaWidth + (statusAreaWidth / allies.length) * index + (statusAreaWidth / allies.length / 2);
-            const frame = this.add.image(frameX, allyY, "frame_asset")
-                .setScale(frameScale);
+            // ステータスフレーム
+            this.add.image(statusX, y, "frame_asset")
+                .setScale(characterScale * 1.2);
             
             // ステータステキスト
-            this.add.text(frameX, allyY - 10,
+            this.add.text(statusX, y - 10,
                 `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}`, {
                 fontSize: "16px",
                 fill: "#ffffff",
                 stroke: "#000000",
-                strokeThickness: 4,
+                strokeThickness: 3,
                 align: "center"
             }).setOrigin(0.5);
         });
