@@ -282,7 +282,7 @@ startBattle() {
 
     this.cameras.main.once("camerafadeoutcomplete", () => {
         let randomChoice = Math.random();
-        if (randomChoice < 0.55) {
+        if (randomChoice < 0.05) {
             this.bg = this.add.video(this.scale.width / 2, this.scale.height / 2, "gorillaVideo");
             this.bg.setOrigin(0.5, 0.5);
             this.bg.play(true);
@@ -380,7 +380,7 @@ async displayCharacters() {
             const y = isEnemy ? screenHeight * 0.3 : screenHeight * 0.7;
 
             // キャラクターとステータスの間隔（unitWidthの30%）
-            const spacing = unitWidth * 0.1;
+            const spacing = unitWidth * 0.2;
             
             // キャラクターの配置（左側）
             const characterX = baseX - spacing;
