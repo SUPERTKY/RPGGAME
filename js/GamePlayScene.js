@@ -457,12 +457,30 @@ async assignRolesAndSendToFirebase() {
     try {
         let updates = {};
 
-        // ✅ 役職リスト（各役職1人ずつ x 2チーム）
+        // ✅ 役職リスト（各チームに1人ずつバランスよく割り当て）
         let roles = ["swordsman", "mage", "priest", "swordsman", "mage", "priest"];
         Phaser.Utils.Array.Shuffle(roles); // 🔥 役職をシャッフル
 
-        // ✅ チーム分け（前半3人が Red, 後半3人が Blue）
-        let teamAssignments = ["Red", "Red", "Red", "Blue", "Blue", "Blue"];
+        // ✅ チーム分け（各チームに剣士・魔法使い・僧侶を1人ずつ）
+        let redTeamRoles = ["swordsman", "mage", "priest"];
+        let blueTeamRoles = ["swordsman", "mage", "priest"];
+
+        let redTeam = [];
+        let blueTeam = [];
+
+        this.players.forEach(player => {
+            if (redTeam.length < 3) {
+                let role = redTeamRoles.pop();
+                player.role = role;
+                player.team = "Red";
+                redTeam.push(player);
+            } else {
+                let role = blueTeamRoles.pop();
+                player.role = role;
+                player.team = "Blue";
+                blueTeam.push(player);
+            }
+        });
 
         // ✅ HP & MP 設定
         let hpValues = {
@@ -477,14 +495,9 @@ async assignRolesAndSendToFirebase() {
             priest: 14
         };
 
-        this.players.forEach((player, index) => {
-            let role = roles[index];
-            let team = teamAssignments[index];
-
-            player.role = role;
-            player.team = team;
-            player.hp = hpValues[role];
-            player.mp = mpValues[role];
+        this.players.forEach(player => {
+            player.hp = hpValues[player.role];
+            player.mp = mpValues[player.role];
         });
 
         // ✅ Firebase にデータ送信
