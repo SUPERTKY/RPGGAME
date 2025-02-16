@@ -457,59 +457,46 @@ async assignRolesAndSendToFirebase() {
     try {
         let updates = {};
 
-        // 🔥 役職ごとのHPとMPの設定
-        const roleStats = {
-            swordsman: { HP: 200, MP: 8 },
-            mage: { HP: 160, MP: 12 },
-            priest: { HP: 180, MP: 14 }
+        // ✅ 役職リスト（各役職1人ずつ x 2チーム）
+        let roles = ["swordsman", "mage", "priest", "swordsman", "mage", "priest"];
+        Phaser.Utils.Array.Shuffle(roles); // 🔥 役職をシャッフル
+
+        // ✅ チーム分け（前半3人が Red, 後半3人が Blue）
+        let teamAssignments = ["Red", "Red", "Red", "Blue", "Blue", "Blue"];
+
+        // ✅ HP & MP 設定
+        let hpValues = {
+            swordsman: 200,
+            mage: 160,
+            priest: 180
         };
 
-        // 🔥 役職リスト（3種類 x 2人 = 6人）
-        let roles = ["priest", "mage", "swordsman", "priest", "mage", "swordsman"];
-        Phaser.Utils.Array.Shuffle(roles); // 🔀 役職をシャッフル
-
-        // 🔥 プレイヤーリストをシャッフル
-        Phaser.Utils.Array.Shuffle(this.players);
-
-        // ✅ 各チームに役職ごと1人ずつ配置
-        let redTeam = [];
-        let blueTeam = [];
-
-        let roleAssignment = {}; // 役職ごとのプレイヤー管理
+        let mpValues = {
+            swordsman: 8,
+            mage: 12,
+            priest: 14
+        };
 
         this.players.forEach((player, index) => {
             let role = roles[index];
-            roleAssignment[role] = roleAssignment[role] || [];
-            roleAssignment[role].push(player);
-        });
+            let team = teamAssignments[index];
 
-        // 各役職ごとに1人ずつチーム分け
-        ["priest", "mage", "swordsman"].forEach(role => {
-            if (roleAssignment[role] && roleAssignment[role].length === 2) {
-                redTeam.push(roleAssignment[role][0]);
-                blueTeam.push(roleAssignment[role][1]);
-            }
+            player.role = role;
+            player.team = team;
+            player.hp = hpValues[role];
+            player.mp = mpValues[role];
         });
 
         // ✅ Firebase にデータ送信
-        redTeam.forEach(player => {
-            let role = roles.find(r => r === player.role);
-            updates[`gameRooms/${roomId}/players/${player.id}/role`] = role;
-            updates[`gameRooms/${roomId}/players/${player.id}/team`] = "Red";
-            updates[`gameRooms/${roomId}/players/${player.id}/HP`] = roleStats[role].HP;
-            updates[`gameRooms/${roomId}/players/${player.id}/MP`] = roleStats[role].MP;
-        });
-
-        blueTeam.forEach(player => {
-            let role = roles.find(r => r === player.role);
-            updates[`gameRooms/${roomId}/players/${player.id}/role`] = role;
-            updates[`gameRooms/${roomId}/players/${player.id}/team`] = "Blue";
-            updates[`gameRooms/${roomId}/players/${player.id}/HP`] = roleStats[role].HP;
-            updates[`gameRooms/${roomId}/players/${player.id}/MP`] = roleStats[role].MP;
+        this.players.forEach(player => {
+            updates[`gameRooms/${roomId}/players/${player.id}/role`] = player.role;
+            updates[`gameRooms/${roomId}/players/${player.id}/team`] = player.team;
+            updates[`gameRooms/${roomId}/players/${player.id}/hp`] = player.hp;
+            updates[`gameRooms/${roomId}/players/${player.id}/mp`] = player.mp;
         });
 
         await firebase.database().ref().update(updates);
-        console.log("✅ 役職、チーム、HP、MPを Firebase に保存しました:", updates);
+        console.log("✅ 役職、チーム、HP、MP を Firebase に保存しました:", updates);
 
     } catch (error) {
         console.error("❌ Firebase へのデータ送信エラー:", error);
