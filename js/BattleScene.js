@@ -189,7 +189,23 @@ async create() {
     }
 }
 
+    async determineFirstMove(roomId) {
+    console.log("🎲 先行チームを決定中...");
+    
+    const firstMoveRef = firebase.database().ref(`gameRooms/${roomId}/firstMove`);
+    const snapshot = await firstMoveRef.once("value");
+    let firstMove = snapshot.val();
 
+    if (!firstMove) {
+        firstMove = Math.random() < 0.5 ? "Red" : "Blue"; // 50%の確率で決定
+        await firstMoveRef.set(firstMove);
+        console.log(`🎯 先行チーム決定: ${firstMove}`);
+    } else {
+        console.log(`🎯 既に先行チームが設定されています: ${firstMove}`);
+    }
+
+    return firstMove;
+}
     listenForPlayers(roomId) {
         console.log("👥 プレイヤー監視開始", roomId);
         if (this.isListening) {
@@ -270,14 +286,15 @@ async create() {
         showNextNumber();
     }
 
-startBattle() {
-    console.log("⚔️ バトル開始処理実行");
+startBattle(firstMove) {
+    console.log(`⚔️ バトル開始！${firstMove} チームの先攻`);
     this.cameras.main.fadeOut(1000, 0, 0, 0);
+
     this.tweens.add({
         targets: this.battleBgm,
         volume: 1,
         duration: 2000,
-        loop: -1 // 🔁 BGMをループ再生
+        loop: -1
     });
 
     this.cameras.main.once("camerafadeoutcomplete", () => {
@@ -300,7 +317,17 @@ startBattle() {
         this.cameras.main.fadeIn(1000, 0, 0, 0);
         this.battleBgm.play();
         this.displayCharacters();
+        
+        // ここでバトルフェーズ開始処理を追加
+        this.startTurnPhase(firstMove);
     });
+}
+
+startTurnPhase(firstMove) {
+    console.log(`🚀 ターンフェーズ開始！${firstMove} チームが先攻`);
+
+    // ここでターン管理ロジックを実装
+    this.currentTurnTeam = firstMove;
 }
 
     getInitialHP(role) {
@@ -345,6 +372,14 @@ async displayCharacters() {
         return;
     }
 
+    let firstMove;
+    try {
+        firstMove = await this.determineFirstMove(roomId);
+    } catch (error) {
+        console.error("❌ 先行チームの決定に失敗:", error);
+        return;
+    }
+
     try {
         const playersRef = firebase.database().ref(`gameRooms/${roomId}/players`);
         const playersSnapshot = await playersRef.once("value");
@@ -359,43 +394,37 @@ async displayCharacters() {
         let allies = Object.values(playersData).filter(p => p.team === myTeam);
         let enemies = Object.values(playersData).filter(p => p.team !== myTeam);
 
+        // バトルにおける左端のキャラクターに「攻撃」テキストをつける
+        let firstMoveCharacters = firstMove === "Red" ? enemies : allies;
+
         // レイアウト計算の改善
         const screenWidth = this.scale.width;
         const screenHeight = this.scale.height;
-        const sideMargin = screenWidth * 0.05; // 左右の余白 5%
+        const sideMargin = screenWidth * 0.05;
         const availableWidth = screenWidth - (sideMargin * 2);
-        
-        // キャラクターセットの基本サイズ計算
-        const maxPlayers = Math.max(allies.length, enemies.length);
-        const unitWidth = availableWidth / maxPlayers; // 1ユニットあたりの基本幅
-        
-        // キャラクターとステータスのスケール計算
-        const characterScale = Math.min(0.2, unitWidth / 800); // キャラクターサイズを少し小さく
-        const frameScale = characterScale * 0.8; // フレームをキャラクターより小さく
 
-        // 配置計算用の関数
+        const maxPlayers = Math.max(allies.length, enemies.length);
+        const unitWidth = availableWidth / maxPlayers;
+
+        const characterScale = Math.min(0.2, unitWidth / 800);
+        const frameScale = characterScale * 0.8;
+
         const placeCharacterSet = (player, index, isEnemy) => {
-            // ベースとなるX座標（各ユニットの中心）
             const baseX = sideMargin + (unitWidth * index) + (unitWidth / 2);
             const y = isEnemy ? screenHeight * 0.3 : screenHeight * 0.7;
 
-            // キャラクターとステータスの間隔（unitWidthの30%）
             const spacing = unitWidth * 0.2;
-            
-            // キャラクターの配置（左側）
             const characterX = baseX - spacing;
+            const frameX = baseX + spacing;
+
             const characterSprite = this.add.image(
                 characterX, 
                 y, 
                 `${player.role}_${isEnemy ? 'enemy' : 'ally'}`
             ).setScale(characterScale);
 
-            // ステータスフレームの配置（右側）
-            const frameX = baseX + spacing;
-            const frame = this.add.image(frameX, y, "frame_asset")
-                .setScale(frameScale);
+            const frame = this.add.image(frameX, y, "frame_asset").setScale(frameScale);
 
-            // ステータステキストの配置
             const text = isEnemy
                 ? `${player.name}\nHP: ${player.hp || this.getInitialHP(player.role)}`
                 : `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}`;
@@ -408,20 +437,22 @@ async displayCharacters() {
                 align: "center"
             }).setOrigin(0.5);
 
-            // デバッグ用の位置表示（開発時のみ）
-            if (false) { // デバッグフラグ
-                this.add.rectangle(baseX, y, 2, screenHeight * 0.1, 0xff0000);
-                this.add.rectangle(characterX, y, 2, screenHeight * 0.1, 0x00ff00);
-                this.add.rectangle(frameX, y, 2, screenHeight * 0.1, 0x0000ff);
+            // 先行チームの一番左端のキャラに「攻撃」テキストを付与
+            if (firstMoveCharacters.length > 0 && player === firstMoveCharacters[0]) {
+                this.add.text(characterX, y - 50, "攻撃", {
+                    fontSize: "20px",
+                    fill: "#ff0000",
+                    stroke: "#000000",
+                    strokeThickness: 5
+                }).setOrigin(0.5);
+                console.log(`⚔️ 先行チームの先頭キャラ「${player.name}」に「攻撃」テキストを付与`);
             }
         };
 
-        // 敵チームの配置
         enemies.forEach((player, index) => {
             placeCharacterSet(player, index, true);
         });
 
-        // 味方チームの配置
         allies.forEach((player, index) => {
             placeCharacterSet(player, index, false);
         });
@@ -441,7 +472,6 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
-
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
