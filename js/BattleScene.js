@@ -413,46 +413,46 @@ async displayCharacters() {
 
         const characterScale = Math.min(0.2, unitWidth / 800);
         const frameScale = characterScale * 0.8;
+const placeCharacterSet = (player, index, isEnemy) => {
+    const baseX = sideMargin + (unitWidth * index) + (unitWidth / 2);
+    const y = isEnemy ? screenHeight * 0.3 : screenHeight * 0.7;
 
-        const placeCharacterSet = (player, index, isEnemy) => {
-            const baseX = sideMargin + (unitWidth * index) + (unitWidth / 2);
-            const y = isEnemy ? screenHeight * 0.3 : screenHeight * 0.7;
+    const spacing = unitWidth * 0.2;
+    const characterX = baseX - spacing;
+    const frameX = baseX + spacing;
 
-            const spacing = unitWidth * 0.2;
-            const characterX = baseX - spacing;
-            const frameX = baseX + spacing;
+    const characterSprite = this.add.image(
+        characterX, 
+        y, 
+        `${player.role}_${isEnemy ? 'enemy' : 'ally'}`
+    ).setScale(characterScale);
 
-            const characterSprite = this.add.image(
-                characterX, 
-                y, 
-                `${player.role}_${isEnemy ? 'enemy' : 'ally'}`
-            ).setScale(characterScale);
+    const frame = this.add.image(frameX, y, "frame_asset").setScale(frameScale);
 
-            const frame = this.add.image(frameX, y, "frame_asset").setScale(frameScale);
+    const text = isEnemy
+        ? `${player.name}\nHP: ${player.hp || this.getInitialHP(player.role)}`
+        : `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}`;
 
-            const text = isEnemy
-                ? `${player.name}\nHP: ${player.hp || this.getInitialHP(player.role)}`
-                : `${player.name}\nHP: ${player.hp}\nMP: ${player.mp}`;
+    this.add.text(frameX, y - 5, text, {
+        fontSize: "14px",
+        fill: "#ffffff",
+        stroke: "#000000",
+        strokeThickness: 3,
+        align: "center"
+    }).setOrigin(0.5);
 
-            this.add.text(frameX, y - 5, text, {
-                fontSize: "14px",
-                fill: "#ffffff",
-                stroke: "#000000",
-                strokeThickness: 3,
-                align: "center"
-            }).setOrigin(0.5);
+    // 🔥 先行チームの最初のキャラに「攻撃」マークを左上に表示
+    if (player.id === firstAttacker.id) {
+        this.add.text(characterX - 20, y - 50, "攻撃", {
+            fontSize: "20px",
+            fill: "#ff0000",
+            stroke: "#000000",
+            strokeThickness: 5
+        }).setOrigin(1, 1); // 左上基準
+        console.log(`⚔️ 先行キャラ「${player.name}」の左上に「攻撃」テキストを表示`);
+    }
+};
 
-            // 🔥 先行チームの最初のキャラに「攻撃」マークを表示
-            if (player.id === firstAttacker.id) {
-                this.add.text(characterX, y - 50, "攻撃", {
-                    fontSize: "20px",
-                    fill: "#ff0000",
-                    stroke: "#000000",
-                    strokeThickness: 5
-                }).setOrigin(0.5);
-                console.log(`⚔️ 先行キャラ「${player.name}」に「攻撃」テキストを表示`);
-            }
-        };
 
         enemies.forEach((player, index) => {
             placeCharacterSet(player, index, true);
