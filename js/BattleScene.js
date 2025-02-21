@@ -394,10 +394,15 @@ async displayCharacters() {
         let allies = Object.values(playersData).filter(p => p.team === myTeam);
         let enemies = Object.values(playersData).filter(p => p.team !== myTeam);
 
-        // バトルにおける左端のキャラクターに「攻撃」テキストをつける
-        let firstMoveCharacters = firstMove === "Red" ? enemies : allies;
+        // 🟥 先行チームがRedなら、「Redチームの左端のキャラ」に「攻撃」を表示
+        let firstMoveCharacters = firstMove === "Red" ? 
+            Object.values(playersData).filter(p => p.team === "Red") :
+            Object.values(playersData).filter(p => p.team === "Blue");
 
-        // レイアウト計算の改善
+        firstMoveCharacters.sort((a, b) => a.joinTime - b.joinTime); // 先に参加した順に並べる
+        let firstAttacker = firstMoveCharacters[0]; // 先行チームの左端キャラ
+
+        // レイアウト計算
         const screenWidth = this.scale.width;
         const screenHeight = this.scale.height;
         const sideMargin = screenWidth * 0.05;
@@ -437,15 +442,15 @@ async displayCharacters() {
                 align: "center"
             }).setOrigin(0.5);
 
-            // 先行チームの一番左端のキャラに「攻撃」テキストを付与
-            if (firstMoveCharacters.length > 0 && player === firstMoveCharacters[0]) {
+            // 🔥 先行チームの最初のキャラに「攻撃」マークを表示
+            if (player.id === firstAttacker.id) {
                 this.add.text(characterX, y - 50, "攻撃", {
                     fontSize: "20px",
                     fill: "#ff0000",
                     stroke: "#000000",
                     strokeThickness: 5
                 }).setOrigin(0.5);
-                console.log(`⚔️ 先行チームの先頭キャラ「${player.name}」に「攻撃」テキストを付与`);
+                console.log(`⚔️ 先行キャラ「${player.name}」に「攻撃」テキストを表示`);
             }
         };
 
@@ -472,6 +477,7 @@ async displayCharacters() {
         ).setOrigin(0.5);
     }
 }
+
 
     shutdown() {
         console.log("🔄 シーンシャットダウン開始");
